@@ -17,32 +17,27 @@ import CoreMedia
 import UIKit
 import Vision
 
-var mlModel = try! yolo11m(configuration: .init()).model
+var mlModel = try! yolo11n(configuration: .init()).model
 
 class ViewController: UIViewController {
   @IBOutlet var videoPreview: UIView!
   @IBOutlet var View0: UIView!
-  @IBOutlet var segmentedControl: UISegmentedControl!
   @IBOutlet var playButtonOutlet: UIBarButtonItem!
   @IBOutlet var pauseButtonOutlet: UIBarButtonItem!
-  @IBOutlet var slider: UISlider!
-  @IBOutlet var sliderConf: UISlider!
-  @IBOutlet weak var sliderConfLandScape: UISlider!
-  @IBOutlet var sliderIoU: UISlider!
-  @IBOutlet weak var sliderIoULandScape: UISlider!
   @IBOutlet weak var labelName: UILabel!
   @IBOutlet weak var labelFPS: UILabel!
   @IBOutlet weak var labelZoom: UILabel!
   @IBOutlet weak var labelVersion: UILabel!
-  @IBOutlet weak var labelSlider: UILabel!
-  @IBOutlet weak var labelSliderConf: UILabel!
-  @IBOutlet weak var labelSliderConfLandScape: UILabel!
-  @IBOutlet weak var labelSliderIoU: UILabel!
-  @IBOutlet weak var labelSliderIoULandScape: UILabel!
+  
   @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
   @IBOutlet weak var forcus: UIImageView!
   @IBOutlet weak var toolBar: UIToolbar!
 
+  private var iou = 0.45
+  private var conf = 0.5
+  private var maxPred = 10
+  var filter: String?
+    
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
   var session: AVCaptureSession!
@@ -78,7 +73,6 @@ class ViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    slider.value = 30
     setLabels()
     setUpBoundingBoxViews()
     setUpOrientationChangeNotification()
@@ -90,33 +84,6 @@ class ViewController: UIViewController {
     to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator
   ) {
     super.viewWillTransition(to: size, with: coordinator)
-
-    if size.width > size.height {
-      labelSliderConf.isHidden = true
-      sliderConf.isHidden = true
-      labelSliderIoU.isHidden = true
-      sliderIoU.isHidden = true
-      toolBar.setBackgroundImage(UIImage(), forToolbarPosition: .any, barMetrics: .default)
-      toolBar.setShadowImage(UIImage(), forToolbarPosition: .any)
-
-      labelSliderConfLandScape.isHidden = false
-      sliderConfLandScape.isHidden = false
-      labelSliderIoULandScape.isHidden = false
-      sliderIoULandScape.isHidden = false
-
-    } else {
-      labelSliderConf.isHidden = false
-      sliderConf.isHidden = false
-      labelSliderIoU.isHidden = false
-      sliderIoU.isHidden = false
-      toolBar.setBackgroundImage(nil, forToolbarPosition: .any, barMetrics: .default)
-      toolBar.setShadowImage(nil, forToolbarPosition: .any)
-
-      labelSliderConfLandScape.isHidden = true
-      sliderConfLandScape.isHidden = true
-      labelSliderIoULandScape.isHidden = true
-      sliderIoULandScape.isHidden = true
-    }
     self.videoCapture.previewLayer?.frame = CGRect(
       x: 0, y: 0, width: size.width, height: size.height)
 
@@ -133,44 +100,13 @@ class ViewController: UIViewController {
     //      frameSizeCaptured = false
   }
 
-  @IBAction func vibrate(_ sender: Any) {
-    selection.selectionChanged()
-  }
 
-  @IBAction func indexChanged(_ sender: Any) {
-    selection.selectionChanged()
-    activityIndicator.startAnimating()
-
-    /// Switch model
-    switch segmentedControl.selectedSegmentIndex {
-    case 0:
-      self.labelName.text = "YOLO11n"
-      mlModel = try! yolo11n(configuration: .init()).model
-    case 1:
-      self.labelName.text = "YOLO11s"
-      mlModel = try! yolo11s(configuration: .init()).model
-    case 2:
-      self.labelName.text = "YOLO11m"
-      mlModel = try! yolo11m(configuration: .init()).model
-    case 3:
-      self.labelName.text = "YOLO11l"
-      mlModel = try! yolo11l(configuration: .init()).model
-    case 4:
-      self.labelName.text = "YOLO11x"
-      mlModel = try! yolo11x(configuration: .init()).model
-    default:
-      break
-    }
-    setModel()
-    setUpBoundingBoxViews()
-    activityIndicator.stopAnimating()
-  }
 
   func setModel() {
 
     /// VNCoreMLModel
     detector = try! VNCoreMLModel(for: mlModel)
-    detector.featureProvider = ThresholdProvider()
+      detector.featureProvider = ThresholdProvider(iouThreshold: iou, confidenceThreshold: conf)
 
     /// VNCoreMLRequest
     let request = VNCoreMLRequest(
@@ -185,14 +121,6 @@ class ViewController: UIViewController {
     t4 = 0.0  // FPS dt smoothed
   }
 
-  /// Update thresholds from slider values
-  @IBAction func sliderChanged(_ sender: Any) {
-    let conf = Double(round(100 * sliderConf.value)) / 100
-    let iou = Double(round(100 * sliderIoU.value)) / 100
-    self.labelSliderConf.text = String(conf) + " Confidence Threshold"
-    self.labelSliderIoU.text = String(iou) + " IoU Threshold"
-    detector.featureProvider = ThresholdProvider(iouThreshold: iou, confidenceThreshold: conf)
-  }
 
   @IBAction func takePhoto(_ sender: Any?) {
     let t0 = DispatchTime.now().uptimeNanoseconds
@@ -218,15 +146,9 @@ class ViewController: UIViewController {
     print("3 Done: ", Double(DispatchTime.now().uptimeNanoseconds - t0) / 1E9)
   }
 
-  @IBAction func logoButton(_ sender: Any) {
-    selection.selectionChanged()
-    if let link = URL(string: "https://www.ultralytics.com") {
-      UIApplication.shared.open(link)
-    }
-  }
 
   func setLabels() {
-    self.labelName.text = "YOLO11m"
+    self.labelName.text = "Searching..."
     self.labelVersion.text = "Version " + UserDefaults.standard.string(forKey: "app_version")!
   }
 
@@ -493,8 +415,6 @@ class ViewController: UIViewController {
     let sec_day =
       Double(hour) * 3600.0 + Double(minutes) * 60.0 + Double(seconds) + Double(nanoseconds) / 1E9  // seconds in the day
 
-    self.labelSlider.text =
-      String(predictions.count) + " items (max " + String(Int(slider.value)) + ")"
     let width = videoPreview.bounds.width  // 375 pix
     let height = videoPreview.bounds.height  // 812 pix
 
@@ -509,7 +429,7 @@ class ViewController: UIViewController {
       }
 
       for i in 0..<boundingBoxViews.count {
-        if i < predictions.count && i < Int(slider.value) {
+        if i < predictions.count && i < Int(maxPred) {
           let prediction = predictions[i]
 
           var rect = prediction.boundingBox  // normalized xywh, origin lower left
