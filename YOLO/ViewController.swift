@@ -530,6 +530,31 @@ class ViewController: UIViewController {
                 let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight, modelWidth: 384, modelHeight: 640) // Hard coded values here
                 let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
                 let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+                
+                var presentFrames = 0 // Frames where the bounding box has an intersection
+                for pastFrame in pastFrames {
+                    for obj in pastFrame { // For each detection in the old frame
+                        let iou = self.intersectionOverUnion(rect1: observation.boundingBox, rect2: obj.boundingBox)
+                        if (iou > 0.8) {
+                            presentFrames+=1
+                            break
+                        }
+                    }
+                }
+                
+                if presentFrames > 4 {
+                    isFound = true
+                    ttsHelper.speak(text: "We have found the car!")
+                    print("We ahve found the one")
+                    let rectNew = CGRect(x: imageRect.origin.x/ogWidth, y: imageRect.origin.y/ogHeight, width: imageRect.size.width/ogWidth, height: imageRect.size.height/ogHeight)
+                    initializeTracker(with: rectNew, in: pixelBuffer)
+                    return
+                }
+                
+                let _ = pastFrames.popLast()
+                pastFrames.insert(observations, at: 0)
+                
+                /*
                 let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
                 do {
                     try handler.perform([classificationRequest])
@@ -579,7 +604,7 @@ class ViewController: UIViewController {
                     let _ = pastFrames.popLast()
                     pastFrames.insert(observations, at: 0)
                     
-                }
+                }*/
             }
         }
     }
@@ -1079,13 +1104,13 @@ extension ViewController {
             
             
             if (midPoint.0 < 0.4) {
-                print("turn camera left")
+                ttsHelper.speak(text: "turn camera left")
             }
             else if midPoint.0 > 0.6 {
-                print("turn camera right")
+                ttsHelper.speak(text: "turn camera right")
             }
             else {
-                print("car is straight ahead")
+                ttsHelper.speak(text: "car is straight ahead")
             }
             lastNavigatedBox = observation.boundingBox
             framesSinceNav = 0
