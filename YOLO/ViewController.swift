@@ -40,9 +40,15 @@ class ViewController: UIViewController {
   private var pastFrames: [[VNRecognizedObjectObservation]] = [[],[],[],[],[]]
   private var sequenceRequestHandler = VNSequenceRequestHandler()
   private var trackingRequest: VNTrackObjectRequest?
+    
+  private var stepInTrackingSeq = 0
+  private let trackingSeqSteps = ["horizontally orient", "vertically orient", "move forward"]
+  private var lastNavigatedBox: CGRect = CGRect.zero
+  private var framesSinceNav = 0
+    
   var filter: String?
   var carColorfilter: String = "laptop"
-  var carMakeModelfilter: String = "laptop"
+  private var carMakeModelfilter: String = "laptop"
   private var currStreak: Int = 0
     
   let selection = UISelectionFeedbackGenerator()
@@ -431,7 +437,7 @@ class ViewController: UIViewController {
                 return nil
             }
         
-            guard var trackingRequest = trackingRequest else {
+            guard let trackingRequest = trackingRequest else {
                 print("Tracking request is nil")
                 return nil
             }
@@ -777,7 +783,13 @@ extension ViewController: VideoCaptureDelegate {
     else {
         
         if let result = trackObject(in: sampleBuffer) {
-            print(result)
+            if (framesSinceNav == 60) {
+                navigate()
+            }
+            else {
+                framesSinceNav+=1
+            }
+            
         } else { // Object went out of frame
             // Checking to see if tracking loses the object for a frame and can find it again. Commented out because it would track random things
 //            if currStreak > 0{
@@ -789,6 +801,8 @@ extension ViewController: VideoCaptureDelegate {
 //               currStreak += 1
 //            }
             isFound = false
+            lastNavigatedBox = CGRect.zero
+            framesSinceNav = 0
             print("Switching back")
         }
     }
@@ -846,4 +860,34 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
       print("AVCapturePhotoCaptureDelegate Error")
     }
   }
+}
+
+
+extension ViewController {
+    
+    private func navigate() {
+        guard let trackingRequest = trackingRequest else {
+            print("Tracking request is nil")
+            return
+        } // Unwrap trackingrequest
+        
+        if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation, trackingRequest.isLastFrame == false {
+            
+            let area = observation.boundingBox.width*observation.boundingBox.height
+            let midPoint = (observation.boundingBox.midX, observation.boundingBox.midY)
+            
+            
+            if (midPoint.0 < 0.4) {
+                print("turn camera left")
+            }
+            else if midPoint.0 > 0.6 {
+                print("turn camera right")
+            }
+            else {
+                print("car is straight ahead")
+            }
+            lastNavigatedBox = observation.boundingBox
+            framesSinceNav = 0
+        }
+    }    
 }
