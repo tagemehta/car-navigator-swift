@@ -325,6 +325,7 @@ class ViewController: UIViewController {
             if observation.labels[0].identifier  == carColorfilter {
                 let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
                 let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
+                
                 let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight, modelWidth: 384, modelHeight: 640) // Hard coded values here
                 let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
                 let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
@@ -437,6 +438,10 @@ class ViewController: UIViewController {
                 // Retrieve the updated bounding box
                 if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation, trackingRequest.isLastFrame == false {
                     trackingRequest.inputObservation = observation
+                    let rectNew = CGRect(x: observation.boundingBox.origin.x*videoPreview.bounds.width, y: observation.boundingBox.origin.y*videoPreview.bounds.height, width: observation.boundingBox.width*videoPreview.bounds.width, height: observation.boundingBox.height*videoPreview.bounds.height)
+                    DispatchQueue.main.async {
+                        self.boundingBoxViews[0].show(frame: rectNew, label: "box", color: .red, alpha: 0.5)
+                    }
                     return observation.boundingBox
                 }
             } catch {
@@ -770,14 +775,17 @@ extension ViewController: VideoCaptureDelegate {
         if let result = trackObject(in: sampleBuffer) {
             print(result)
         } else { // Object went out of frame
-            if currStreak > 4{
-                isFound = false
-                print("Switching back")
-                currStreak = 0
-            }
-            else{
-               currStreak += 1
-            }
+            // Checking to see if tracking loses the object for a frame and can find it again. Commented out because it would track random things
+//            if currStreak > 0{
+//                isFound = false
+//                print("Switching back")
+//                currStreak = 0
+//            }
+//            else{
+//               currStreak += 1
+//            }
+            isFound = false
+            print("Switching back")
         }
     }
   }
