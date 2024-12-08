@@ -12,6 +12,7 @@
 		314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5562D04E6E000EBA818 /* InputViewController.swift */; };
 		314CB5592D05245800EBA818 /* car_classifier.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5582D05245800EBA818 /* car_classifier.mlpackage */; };
 		314CB55B2D052C3A00EBA818 /* yolo11n-cls.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 314CB55A2D052C3A00EBA818 /* yolo11n-cls.mlpackage */; };
+		314CB55D2D05429C00EBA818 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314CB55C2D05429A00EBA818 /* Helpers.swift */; };
 		633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 633BC6FA22EDE73D00821BCA /* Settings.bundle */; };
 		636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636166E9251443B20054FA7E /* ThresholdProvider.swift */; };
 		636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636EFC9C21E62DD300DE43BC /* ViewController.swift */; };
@@ -30,6 +31,7 @@
 		314CB5562D04E6E000EBA818 /* InputViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputViewController.swift; sourceTree = "<group>"; };
 		314CB5582D05245800EBA818 /* car_classifier.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = car_classifier.mlpackage; sourceTree = "<group>"; };
 		314CB55A2D052C3A00EBA818 /* yolo11n-cls.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo11n-cls.mlpackage"; sourceTree = "<group>"; };
+		314CB55C2D05429A00EBA818 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		6323C44D22186177008AE681 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6323C44F22186177008AE681 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		6323C45122186177008AE681 /* ultralytics_yolo_logotype.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ultralytics_yolo_logotype.png; sourceTree = "<group>"; };
@@ -60,6 +62,7 @@
 		636166E72514438D0054FA7E /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				314CB55C2D05429A00EBA818 /* Helpers.swift */,
 				636166E9251443B20054FA7E /* ThresholdProvider.swift */,
 				8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */,
 			);
@@ -214,6 +217,7 @@
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
 				314CB55B2D052C3A00EBA818 /* yolo11n-cls.mlpackage in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
+				314CB55D2D05429C00EBA818 /* Helpers.swift in Sources */,
 				636EFCB321E62DD300DE43BC /* AppDelegate.swift in Sources */,
 				314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */,
 				636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */,

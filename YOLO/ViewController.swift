@@ -36,7 +36,11 @@ class ViewController: UIViewController {
   private var iou = 0.45
   private var conf = 0.8
   private var maxPred = 10
+  private var isFound = false
+  private var pastFrames: [[VNRecognizedObjectObservation]] = [[],[],[],[],[]]
   var filter: String?
+  var carColorfilter: String = "laptop"
+  var carMakeModelfilter: String = "laptop"
     
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
@@ -313,27 +317,53 @@ class ViewController: UIViewController {
   }
     
     func classifyObservations(observations: [VNRecognizedObjectObservation], pixelBuffer: CVImageBuffer) {
-        let observation = observations[0]
-        let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: CGFloat(CVPixelBufferGetWidth(self.currentBuffer!)), originalHeight: CGFloat(CVPixelBufferGetHeight(self.currentBuffer!)), modelWidth: 384, modelHeight: 640) // Hard coded values here
-        let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
-        let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
-        let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
-        do {
-            try handler.perform([classificationRequest])
-
+        
+        for observation in observations {
+            if observation.labels[0].identifier  == carColorfilter {
+                let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: CGFloat(CVPixelBufferGetWidth(self.currentBuffer!)), originalHeight: CGFloat(CVPixelBufferGetHeight(self.currentBuffer!)), modelWidth: 384, modelHeight: 640) // Hard coded values here
+                let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
+                let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+                let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
+                do {
+                    try handler.perform([classificationRequest])
+                }catch {
+                    print("an error occurred")
+                }
+                guard let cObservations = classificationRequest.results as? [VNClassificationObservation] else {
+                    // Image classifiers, like MobileNet, only produce classification observations.
+                    // However, other Core ML model types can produce other observations.
+                    // For example, a style transfer model produces `VNPixelBufferObservation` instances.
+                    print("VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
+                    return
+                }
+                print(cObservations[0].identifier)
+                if (cObservations[0].identifier) == carMakeModelfilter {
+                    var presentFrames = 0 // Frames where the bounding box has an intersection
+                    for pastFrame in pastFrames {
+                        for obj in pastFrame { // For each detection in the old frame
+                            let iou = self.intersectionOverUnion(rect1: observation.boundingBox, rect2: obj.boundingBox)
+                            if (iou > 0.8) {
+                                presentFrames+=1
+                                break
+                            }
+                        }
+                    }
+                    
+                    if presentFrames > 4 {
+                        isFound = true
+                        print("We ahve found the one")
+                        break
+                    }
+                    
+                }
+            }
             
-        }catch {
-            print("an error occurred")
         }
-        guard let cObservations = classificationRequest.results as? [VNClassificationObservation] else {
-            // Image classifiers, like MobileNet, only produce classification observations.
-            // However, other Core ML model types can produce other observations.
-            // For example, a style transfer model produces `VNPixelBufferObservation` instances.
-            print("VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
-            return
+        
+        if (!isFound) {
+            pastFrames.popLast()
+            pastFrames.insert(observations, at: 0)
         }
-        print(cObservations[0].identifier)
-        print(imageRect)
         
     }
 
@@ -671,7 +701,12 @@ class ViewController: UIViewController {
 
 extension ViewController: VideoCaptureDelegate {
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
-    predict(sampleBuffer: sampleBuffer)
+      if !isFound {
+          predict(sampleBuffer: sampleBuffer)
+      }
+    else {
+        // WE are tracking
+    }
   }
 }
 
