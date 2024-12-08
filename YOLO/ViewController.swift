@@ -18,7 +18,7 @@ import UIKit
 import Vision
 
 var mlModel = try! yolo11n(configuration: .init()).model
-var classificationModel = try! yolo11n_cls(configuration: .init()).model
+var classificationModel = try! car_classifier(configuration: .init()).model
 let modelMapping = [
     "AM General Hummer SUV 2000": "AM General Hummer",
     "Acura RL Sedan 2012": "Acura RL",
@@ -540,6 +540,7 @@ class ViewController: UIViewController {
                     // Image classifiers, like MobileNet, only produce classification observations.
                     // However, other Core ML model types can produce other observations.
                     // For example, a style transfer model produces `VNPixelBufferObservation` instances.
+                    let res = classificationRequest.results
                     print("VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
                     return
                 }
@@ -551,6 +552,7 @@ class ViewController: UIViewController {
                         maxConfidence = cObservation.confidence
                     }
                 }
+                print(identifier, maxConfidence)
                 if modelMapping[identifier] == carMakeModelfilter {
                     var presentFrames = 0 // Frames where the bounding box has an intersection
                     for pastFrame in pastFrames {
@@ -688,7 +690,7 @@ class ViewController: UIViewController {
   func saveImage() {
     let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
     let fileURL = dir!.appendingPathComponent("saved.jpg")
-    let image = UIImage(named: "ultralytics_yolo_logotype.png")
+    let image = UIImage(named: "carfinder.png")
     FileManager.default.createFile(
       atPath: fileURL.path, contents: image!.jpegData(compressionQuality: 0.5), attributes: nil)
   }
