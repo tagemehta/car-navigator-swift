@@ -38,9 +38,12 @@ class ViewController: UIViewController {
   private var maxPred = 10
   private var isFound = false
   private var pastFrames: [[VNRecognizedObjectObservation]] = [[],[],[],[],[]]
+  private var sequenceRequestHandler = VNSequenceRequestHandler()
+  private var trackingRequest: VNTrackObjectRequest?
   var filter: String?
   var carColorfilter: String = "laptop"
   var carMakeModelfilter: String = "laptop"
+  private var currStreak: Int = 0
     
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
@@ -352,19 +355,18 @@ class ViewController: UIViewController {
                     if presentFrames > 4 {
                         isFound = true
                         print("We ahve found the one")
-                        break
+                        initializeTracker(with: imageRect, in: pixelBuffer)
+                        return
                     }
                     
                 }
+                if (!isFound) {
+                    pastFrames.popLast()
+                    pastFrames.insert(observations, at: 0)
+                    
+                }
             }
-            
         }
-        
-        if (!isFound) {
-            pastFrames.popLast()
-            pastFrames.insert(observations, at: 0)
-        }
-        
     }
 
     func processObservations(for request: VNRequest, error: Error?) {
@@ -385,6 +387,62 @@ class ViewController: UIViewController {
     }
   }
 
+    
+    func initializeTracker(with boundingBox: CGRect, in pixelBuffer: CVImageBuffer) {
+        let ciImage = CIImage(cvImageBuffer: pixelBuffer)
+        let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+            // Create a VNDetectedObjectObservation
+        let initialObservation = VNDetectedObjectObservation(boundingBox: boundingBox)
+
+            // Create a tracking request
+        trackingRequest = VNTrackObjectRequest(detectedObjectObservation: initialObservation)
+        currStreak = 0
+        // Perform the request on the first frame
+        do {
+            try sequenceRequestHandler.perform([trackingRequest!], on: cgImage)
+        } catch {
+            print("Error initializing tracker: \(error)")
+        }
+    }
+    
+    func trackObject(in sampleBuffer: CMSampleBuffer) -> CGRect? {
+            guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+                print("Failed to get image buffer")
+                return nil
+            }
+            
+            // Create a CIImage from the CVImageBuffer
+            let ciImage = CIImage(cvImageBuffer: imageBuffer)
+            
+            // Create a CIContext (reuse this for better performance in repeated calls)
+            let context = CIContext()
+            
+            // Render the CIImage into a CGImage
+            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+                print("Failed to create CGImage")
+                return nil
+            }
+        
+            guard var trackingRequest = trackingRequest else {
+                print("Tracking request is nil")
+                return nil
+            }
+        
+            do {
+                try sequenceRequestHandler.perform([trackingRequest], on: cgImage)
+
+                // Retrieve the updated bounding box
+                if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation, trackingRequest.isLastFrame == false {
+                    trackingRequest.inputObservation = observation
+                    return observation.boundingBox
+                }
+            } catch {
+                print("Error tracking object: \(error)")
+            }
+
+            return nil
+        }
+    
   // Save text file
   func saveText(text: String, file: String = "saved.txt") {
     if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -705,7 +763,19 @@ extension ViewController: VideoCaptureDelegate {
           predict(sampleBuffer: sampleBuffer)
       }
     else {
-        // WE are tracking
+        
+        if let result = trackObject(in: sampleBuffer) {
+            print(result)
+        } else { // Object went out of frame
+            if currStreak > 4{
+                isFound = false
+                print("Switching back")
+                currStreak = 0
+            }
+            else{
+               currStreak += 1
+            }
+        }
     }
   }
 }
