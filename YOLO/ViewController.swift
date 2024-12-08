@@ -18,7 +18,7 @@ import UIKit
 import Vision
 
 var mlModel = try! yolo11n(configuration: .init()).model
-
+var classificationModel = try! yolo11n_cls(configuration: .init()).model
 class ViewController: UIViewController {
   @IBOutlet var videoPreview: UIView!
   @IBOutlet var View0: UIView!
@@ -34,12 +34,13 @@ class ViewController: UIViewController {
   @IBOutlet weak var toolBar: UIToolbar!
 
   private var iou = 0.45
-  private var conf = 0.5
+  private var conf = 0.8
   private var maxPred = 10
   var filter: String?
     
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
+  var classifier = try! VNCoreMLModel(for: classificationModel)
   var session: AVCaptureSession!
   var videoCapture: VideoCapture!
   var currentBuffer: CVPixelBuffer?
@@ -70,6 +71,12 @@ class ViewController: UIViewController {
     request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
     return request
   }()
+    lazy var classificationRequest: VNRequest = {
+        let request = VNCoreMLRequest(model: classifier)
+        request.imageCropAndScaleOption = .centerCrop
+        
+        return request
+    }()
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -98,27 +105,6 @@ class ViewController: UIViewController {
   @objc func orientationDidChange() {
     videoCapture.updateVideoOrientation()
     //      frameSizeCaptured = false
-  }
-
-
-
-  func setModel() {
-
-    /// VNCoreMLModel
-    detector = try! VNCoreMLModel(for: mlModel)
-      detector.featureProvider = ThresholdProvider(iouThreshold: iou, confidenceThreshold: conf)
-
-    /// VNCoreMLRequest
-    let request = VNCoreMLRequest(
-      model: detector,
-      completionHandler: { [weak self] request, error in
-        self?.processObservations(for: request, error: error)
-      })
-    request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
-    visionRequest = request
-    t2 = 0.0  // inference dt smoothed
-    t3 = CACurrentMediaTime()  // FPS start
-    t4 = 0.0  // FPS dt smoothed
   }
 
 
@@ -312,6 +298,10 @@ class ViewController: UIViewController {
         t0 = CACurrentMediaTime()  // inference start
         do {
           try handler.perform([visionRequest])
+            if let results = visionRequest.results as? [VNRecognizedObjectObservation] {
+                
+                if results.count > 0 {self.classifyObservations(observations: results, pixelBuffer: pixelBuffer)}
+            }
         } catch {
           print(error)
         }
@@ -321,8 +311,33 @@ class ViewController: UIViewController {
       currentBuffer = nil
     }
   }
+    
+    func classifyObservations(observations: [VNRecognizedObjectObservation], pixelBuffer: CVImageBuffer) {
+        let observation = observations[0]
+        let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: CGFloat(CVPixelBufferGetWidth(self.currentBuffer!)), originalHeight: CGFloat(CVPixelBufferGetHeight(self.currentBuffer!)), modelWidth: 384, modelHeight: 640) // Hard coded values here
+        let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
+        let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+        let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
+        do {
+            try handler.perform([classificationRequest])
 
-  func processObservations(for request: VNRequest, error: Error?) {
+            
+        }catch {
+            print("an error occurred")
+        }
+        guard let cObservations = classificationRequest.results as? [VNClassificationObservation] else {
+            // Image classifiers, like MobileNet, only produce classification observations.
+            // However, other Core ML model types can produce other observations.
+            // For example, a style transfer model produces `VNPixelBufferObservation` instances.
+            print("VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
+            return
+        }
+        print(cObservations[0].identifier)
+        print(imageRect)
+        
+    }
+
+    func processObservations(for request: VNRequest, error: Error?) {
     DispatchQueue.main.async {
       if let results = request.results as? [VNRecognizedObjectObservation] {
         self.show(predictions: results)
@@ -402,6 +417,52 @@ class ViewController: UIViewController {
       return 0
     }
   }
+  
+    func normalizedRectToImageRect(
+        normalizedRect: CGRect,
+        originalWidth: CGFloat,
+        originalHeight: CGFloat,
+        modelWidth: CGFloat,
+        modelHeight: CGFloat
+    ) -> CGRect {
+
+        // Vision's scaleFill might have scaled and cropped the original image
+        // to fit modelWidth x modelHeight.
+
+        // Compute the scale factor Vision applied.
+        let scaleFactor = max(modelWidth / originalWidth, modelHeight / originalHeight)
+
+        // Compute the scaled image dimensions (after Vision’s scaling).
+        let scaledWidth = originalWidth * scaleFactor
+        let scaledHeight = originalHeight * scaleFactor
+
+        // Vision center-crops the scaled image to fit model dimensions:
+        let dx = (scaledWidth - modelWidth) / 2.0
+        let dy = (scaledHeight - modelHeight) / 2.0
+
+        // Convert normalized coordinates [0.0,1.0] to model coordinates
+        var x = normalizedRect.origin.x * modelWidth
+        var y = normalizedRect.origin.y * modelHeight
+        var w = normalizedRect.size.width * modelWidth
+        var h = normalizedRect.size.height * modelHeight
+
+        // Adjust for the cropping offset
+        x += dx
+        y += dy
+
+        // Convert back to original image coordinates by dividing by scaleFactor
+        x /= scaleFactor
+        y /= scaleFactor
+        w /= scaleFactor
+        h /= scaleFactor
+
+        // Vision’s bounding box (0,0) is bottom-left. Convert to a top-left origin system if needed.
+        // If your original image or CGImage coordinates start from top-left, invert the y-axis:
+        let topLeftY = originalHeight - y - h
+
+        return CGRect(x: x, y: topLeftY, width: w, height: h)
+    }
+
 
   func show(predictions: [VNRecognizedObjectObservation]) {
     var str = ""

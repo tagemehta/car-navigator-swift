@@ -10,6 +10,8 @@
 		314CB5512D04DEA000EBA818 /* yolo 2.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5502D04DEA000EBA818 /* yolo 2.mlpackage */; };
 		314CB5552D04E36B00EBA818 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5542D04E36B00EBA818 /* yolo11n.mlpackage */; };
 		314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5562D04E6E000EBA818 /* InputViewController.swift */; };
+		314CB5592D05245800EBA818 /* car_classifier.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5582D05245800EBA818 /* car_classifier.mlpackage */; };
+		314CB55B2D052C3A00EBA818 /* yolo11n-cls.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 314CB55A2D052C3A00EBA818 /* yolo11n-cls.mlpackage */; };
 		633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 633BC6FA22EDE73D00821BCA /* Settings.bundle */; };
 		636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636166E9251443B20054FA7E /* ThresholdProvider.swift */; };
 		636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636EFC9C21E62DD300DE43BC /* ViewController.swift */; };
@@ -26,6 +28,8 @@
 		314CB5502D04DEA000EBA818 /* yolo 2.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo 2.mlpackage"; sourceTree = "<group>"; };
 		314CB5542D04E36B00EBA818 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
 		314CB5562D04E6E000EBA818 /* InputViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputViewController.swift; sourceTree = "<group>"; };
+		314CB5582D05245800EBA818 /* car_classifier.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = car_classifier.mlpackage; sourceTree = "<group>"; };
+		314CB55A2D052C3A00EBA818 /* yolo11n-cls.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo11n-cls.mlpackage"; sourceTree = "<group>"; };
 		6323C44D22186177008AE681 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6323C44F22186177008AE681 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		6323C45122186177008AE681 /* ultralytics_yolo_logotype.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ultralytics_yolo_logotype.png; sourceTree = "<group>"; };
@@ -85,7 +89,9 @@
 			isa = PBXGroup;
 			children = (
 				314CB5542D04E36B00EBA818 /* yolo11n.mlpackage */,
+				314CB55A2D052C3A00EBA818 /* yolo11n-cls.mlpackage */,
 				314CB5502D04DEA000EBA818 /* yolo 2.mlpackage */,
+				314CB5582D05245800EBA818 /* car_classifier.mlpackage */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -204,7 +210,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				314CB5592D05245800EBA818 /* car_classifier.mlpackage in Sources */,
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
+				314CB55B2D052C3A00EBA818 /* yolo11n-cls.mlpackage in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
 				636EFCB321E62DD300DE43BC /* AppDelegate.swift in Sources */,
 				314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */,
