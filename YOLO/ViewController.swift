@@ -67,6 +67,9 @@ class ViewController: UIViewController {
   let save_detections = false  // write every detection to detections.txt
   let save_frames = false  // write every frame to frames.txt
 
+  // Text to Speech Helper
+  let ttsHelper = TextToSpeechHelper()
+    
   lazy var visionRequest: VNCoreMLRequest = {
     let request = VNCoreMLRequest(
       model: detector,
@@ -357,6 +360,7 @@ class ViewController: UIViewController {
                     
                     if presentFrames > 4 {
                         isFound = true
+                        ttsHelper.speak(text: "We have found the car!")
                         print("We ahve found the one")
                         let rectNew = CGRect(x: imageRect.origin.x/ogWidth, y: imageRect.origin.y/ogHeight, width: imageRect.size.width/ogWidth, height: imageRect.size.height/ogHeight)
                         initializeTracker(with: rectNew, in: pixelBuffer)

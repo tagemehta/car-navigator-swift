@@ -23,6 +23,7 @@
 		63CF37202514455300E2DEA1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44F22186177008AE681 /* Main.storyboard */; };
 		63CF37212514455300E2DEA1 /* ultralytics_yolo_logotype.png in Resources */ = {isa = PBXBuildFile; fileRef = 6323C45122186177008AE681 /* ultralytics_yolo_logotype.png */; };
 		8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */; };
+		CEE513382D056EA900F24921 /* TextToSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE513372D056EA500F24921 /* TextToSpeech.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		7BCB411721C3096100BFC4D0 /* YOLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YOLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoundingBoxView.swift; sourceTree = "<group>"; };
 		8EDAAA4507D2D23D7FAB827F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		CEE513372D056EA500F24921 /* TextToSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextToSpeech.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +74,7 @@
 		636EFC9B21E62DD300DE43BC /* YOLO */ = {
 			isa = PBXGroup;
 			children = (
+				CEE513372D056EA500F24921 /* TextToSpeech.swift */,
 				63A946D8271800E20001C3ED /* Models */,
 				636166E72514438D0054FA7E /* Utilities */,
 				636EFCA721E62DD300DE43BC /* AppDelegate.swift */,
@@ -214,6 +217,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				314CB5592D05245800EBA818 /* car_classifier.mlpackage in Sources */,
+				CEE513382D056EA900F24921 /* TextToSpeech.swift in Sources */,
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
 				314CB55B2D052C3A00EBA818 /* yolo11n-cls.mlpackage in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
