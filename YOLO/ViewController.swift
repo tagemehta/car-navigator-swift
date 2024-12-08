@@ -323,7 +323,9 @@ class ViewController: UIViewController {
         
         for observation in observations {
             if observation.labels[0].identifier  == carColorfilter {
-                let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: CGFloat(CVPixelBufferGetWidth(self.currentBuffer!)), originalHeight: CGFloat(CVPixelBufferGetHeight(self.currentBuffer!)), modelWidth: 384, modelHeight: 640) // Hard coded values here
+                let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
+                let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
+                let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight, modelWidth: 384, modelHeight: 640) // Hard coded values here
                 let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
                 let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
                 let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
@@ -355,13 +357,14 @@ class ViewController: UIViewController {
                     if presentFrames > 4 {
                         isFound = true
                         print("We ahve found the one")
-                        initializeTracker(with: imageRect, in: pixelBuffer)
+                        let rectNew = CGRect(x: imageRect.origin.x/ogWidth, y: imageRect.origin.y/ogHeight, width: imageRect.size.width/ogWidth, height: imageRect.size.height/ogHeight)
+                        initializeTracker(with: rectNew, in: pixelBuffer)
                         return
                     }
                     
                 }
                 if (!isFound) {
-                    pastFrames.popLast()
+                    let _ = pastFrames.popLast()
                     pastFrames.insert(observations, at: 0)
                     
                 }
