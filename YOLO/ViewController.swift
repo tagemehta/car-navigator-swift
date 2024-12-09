@@ -17,8 +17,8 @@ import CoreMedia
 import UIKit
 import Vision
 
-var mlModel = try! yolo11n(configuration: .init()).model
-var classificationModel = try! car_classifier(configuration: .init()).model
+var mlModel = try! carDetector(configuration: .init()).model
+var classificationModel = try! carClassifier(configuration: .init()).model
 let modelMapping = [
     "AM General Hummer SUV 2000": "AM General Hummer",
     "Acura RL Sedan 2012": "Acura RL",
@@ -239,8 +239,8 @@ class ViewController: UIViewController {
   private var framesSinceNav = 0
     
   var filter: String?
-  var carColorfilter: String = "laptop"
-  var carMakeModelfilter: String = "laptop"
+  var carColorfilter: String = ""
+  var carMakeModelfilter: String = ""
   private var currStreak: Int = 0
     
   let selection = UISelectionFeedbackGenerator()
@@ -554,6 +554,7 @@ class ViewController: UIViewController {
                 }
                 print(identifier, maxConfidence)
                 if modelMapping[identifier] == carMakeModelfilter {
+//                if identifier == carMakeModelfilter {
                     var presentFrames = 0 // Frames where the bounding box has an intersection
                     for pastFrame in pastFrames {
                         for obj in pastFrame { // For each detection in the old frame
@@ -1079,13 +1080,13 @@ extension ViewController {
             
             
             if (midPoint.0 < 0.4) {
-                print("turn camera left")
+                ttsHelper.speak(text: "Turn slightly left")
             }
             else if midPoint.0 > 0.6 {
-                print("turn camera right")
+                ttsHelper.speak(text: "Turn slightly right")
             }
             else {
-                print("car is straight ahead")
+                ttsHelper.speak(text:"Straight ahead")
             }
             lastNavigatedBox = observation.boundingBox
             framesSinceNav = 0
