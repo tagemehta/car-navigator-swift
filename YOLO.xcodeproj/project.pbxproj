@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314CB5562D04E6E000EBA818 /* InputViewController.swift */; };
 		314CB55D2D05429C00EBA818 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314CB55C2D05429A00EBA818 /* Helpers.swift */; };
+		31A82AA12D08C04F0092CBE5 /* pureDetectCars.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */; };
 		31CC56372D0684110037C289 /* carDetector.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 31CC56362D0684110037C289 /* carDetector.mlmodel */; };
 		31CC563B2D06869D0037C289 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC563A2D06869D0037C289 /* yolo11n.mlpackage */; };
 		31CC563D2D068F1D0037C289 /* yolo11n-cls.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */; };
@@ -29,6 +30,7 @@
 /* Begin PBXFileReference section */
 		314CB5562D04E6E000EBA818 /* InputViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputViewController.swift; sourceTree = "<group>"; };
 		314CB55C2D05429A00EBA818 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
+		31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = pureDetectCars.mlmodel; sourceTree = "<group>"; };
 		31CC56362D0684110037C289 /* carDetector.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = carDetector.mlmodel; sourceTree = "<group>"; };
 		31CC563A2D06869D0037C289 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
 		31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo11n-cls.mlpackage"; sourceTree = "<group>"; };
@@ -94,6 +96,7 @@
 		63A946D8271800E20001C3ED /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */,
 				31CC56422D06936C0037C289 /* carClassifier.mlpackage */,
 				31CC56362D0684110037C289 /* carDetector.mlmodel */,
 				31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */,
@@ -222,6 +225,7 @@
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
 				314CB55D2D05429C00EBA818 /* Helpers.swift in Sources */,
+				31A82AA12D08C04F0092CBE5 /* pureDetectCars.mlmodel in Sources */,
 				636EFCB321E62DD300DE43BC /* AppDelegate.swift in Sources */,
 				314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */,
 				636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */,
@@ -359,7 +363,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0;
-				DEVELOPMENT_TEAM = XK27F6NC2A;
+				DEVELOPMENT_TEAM = Q95RBB3N96;
 				INFOPLIST_FILE = YOLO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ultralytics YOLO";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -369,7 +373,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.yolo-app";
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinder;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -387,7 +391,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0;
-				DEVELOPMENT_TEAM = XK27F6NC2A;
+				DEVELOPMENT_TEAM = Q95RBB3N96;
 				INFOPLIST_FILE = YOLO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ultralytics YOLO";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -397,7 +401,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.yolo-app";
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinder;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
