@@ -113,8 +113,8 @@
                                 <rect key="frame" x="178" y="400" width="37" height="37"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
                             </activityIndicatorView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" insetsLayoutMarginsFromSafeArea="NO" text="1.00x" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vlL-Ye-WgQ" userLabel="zoom">
-                                <rect key="frame" x="166" y="736" width="60" height="20"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" misplaced="YES" insetsLayoutMarginsFromSafeArea="NO" text="1.00x" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vlL-Ye-WgQ" userLabel="zoom">
+                                <rect key="frame" x="166" y="796" width="60" height="20"/>
                                 <accessibility key="accessibilityConfiguration">
                                     <accessibilityTraits key="traits" staticText="YES" updatesFrequently="YES"/>
                                 </accessibility>
@@ -123,7 +123,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" insetsLayoutMarginsFromSafeArea="NO" text="Version 0.0 (0)" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="OCe-bb-RWv" userLabel="version">
-                                <rect key="frame" x="5" y="741" width="100" height="14"/>
+                                <rect key="frame" x="16" y="796" width="100" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <accessibility key="accessibilityConfiguration">
                                     <accessibilityTraits key="traits" staticText="YES" updatesFrequently="YES"/>
@@ -132,46 +132,6 @@
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" horizontalHuggingPriority="1" verticalHuggingPriority="1" insetsLayoutMarginsFromSafeArea="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3Rg-UC-ogI">
-                                <rect key="frame" x="0.0" y="777" width="393" height="44"/>
-                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="24" id="wAH-Ui-IPj"/>
-                                </constraints>
-                                <items>
-                                    <barButtonItem enabled="NO" width="20" systemItem="fixedSpace" id="Iws-X9-mpr"/>
-                                    <barButtonItem enabled="NO" springLoaded="YES" style="plain" systemItem="play" id="gHs-cs-nVf">
-                                        <connections>
-                                            <action selector="playButton:" destination="BYZ-38-t0r" id="pYJ-MV-Ff1"/>
-                                        </connections>
-                                    </barButtonItem>
-                                    <barButtonItem enabled="NO" width="20" systemItem="fixedSpace" id="RX1-8k-a5m"/>
-                                    <barButtonItem springLoaded="YES" systemItem="pause" id="Pes-is-qDX">
-                                        <connections>
-                                            <action selector="pauseButton:" destination="BYZ-38-t0r" id="cIw-4I-Hc9"/>
-                                        </connections>
-                                    </barButtonItem>
-                                    <barButtonItem enabled="NO" width="20" systemItem="fixedSpace" id="872-1h-RSc"/>
-                                    <barButtonItem springLoaded="YES" systemItem="action" id="4Wt-da-Ok2">
-                                        <connections>
-                                            <action selector="shareButton:" destination="BYZ-38-t0r" id="t5S-8x-M27"/>
-                                        </connections>
-                                    </barButtonItem>
-                                    <barButtonItem enabled="NO" width="20" systemItem="fixedSpace" id="JO8-jv-HRS"/>
-                                    <barButtonItem enabled="NO" systemItem="flexibleSpace" id="aMO-nw-6x7"/>
-                                </items>
-                                <color key="tintColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <variation key="default">
-                                    <mask key="constraints">
-                                        <exclude reference="wAH-Ui-IPj"/>
-                                    </mask>
-                                </variation>
-                                <variation key="heightClass=compact-widthClass=regular">
-                                    <mask key="constraints">
-                                        <include reference="wAH-Ui-IPj"/>
-                                    </mask>
-                                </variation>
-                            </toolbar>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -181,13 +141,9 @@
                             <constraint firstItem="mCE-j4-QAA" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="2Hf-C7-PKF"/>
                             <constraint firstItem="Hif-Vv-5nn" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" id="4VU-KS-qnX"/>
                             <constraint firstItem="mCE-j4-QAA" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailing" id="NnK-y0-UOk"/>
-                            <constraint firstAttribute="trailing" secondItem="3Rg-UC-ogI" secondAttribute="trailing" id="alq-cZ-iIR"/>
                             <constraint firstItem="mCE-j4-QAA" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" id="fJk-bN-O88"/>
-                            <constraint firstItem="3Rg-UC-ogI" firstAttribute="bottom" secondItem="8bC-Xf-vdC" secondAttribute="bottom" constant="-21" id="gd1-rI-r2l"/>
                             <constraint firstItem="Hif-Vv-5nn" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="onI-er-Sda"/>
-                            <constraint firstItem="3Rg-UC-ogI" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="os3-Uk-Kum"/>
                             <constraint firstItem="vlL-Ye-WgQ" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="tnc-kB-JNh"/>
-                            <constraint firstItem="3Rg-UC-ogI" firstAttribute="top" secondItem="vlL-Ye-WgQ" secondAttribute="bottom" constant="26" id="yej-cN-5fU"/>
                             <constraint firstItem="BZf-Ft-ERG" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="zJN-OL-7hd"/>
                         </constraints>
                         <variation key="heightClass=compact-widthClass=regular">
@@ -207,9 +163,6 @@
                         <outlet property="labelName" destination="Hif-Vv-5nn" id="BQr-fg-dFd"/>
                         <outlet property="labelVersion" destination="OCe-bb-RWv" id="MoL-rU-F2n"/>
                         <outlet property="labelZoom" destination="vlL-Ye-WgQ" id="OIv-03-1de"/>
-                        <outlet property="pauseButtonOutlet" destination="Pes-is-qDX" id="uqc-gB-onZ"/>
-                        <outlet property="playButtonOutlet" destination="gHs-cs-nVf" id="YgY-EV-fyY"/>
-                        <outlet property="toolBar" destination="3Rg-UC-ogI" id="9Zm-na-p2k"/>
                         <outlet property="videoPreview" destination="mCE-j4-QAA" id="mP0-Qx-oq6"/>
                     </connections>
                 </viewController>
@@ -232,7 +185,7 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.47843137254901963" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

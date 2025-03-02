@@ -21,18 +21,18 @@ var mlModel = try! carDetector(configuration: .init()).model
 var classificationModel = try! carClassifier(configuration: .init()).model
 
 class ViewController: UIViewController {
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+    
   @IBOutlet var videoPreview: UIView!
   @IBOutlet var View0: UIView!
-  @IBOutlet var playButtonOutlet: UIBarButtonItem!
-  @IBOutlet var pauseButtonOutlet: UIBarButtonItem!
   @IBOutlet weak var labelName: UILabel!
   @IBOutlet weak var labelFPS: UILabel!
   @IBOutlet weak var labelZoom: UILabel!
   @IBOutlet weak var labelVersion: UILabel!
   
   @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
-  @IBOutlet weak var forcus: UIImageView!
-  @IBOutlet weak var toolBar: UIToolbar!
 
   private var iou = 0.45
   private var conf = 0.8
@@ -153,56 +153,6 @@ class ViewController: UIViewController {
   func setLabels() {
     self.labelName.text = "Searching..."
     self.labelVersion.text = "Version " + UserDefaults.standard.string(forKey: "app_version")!
-  }
-
-  @IBAction func playButton(_ sender: Any) {
-    selection.selectionChanged()
-    self.videoCapture.start()
-    playButtonOutlet.isEnabled = false
-    pauseButtonOutlet.isEnabled = true
-  }
-
-  @IBAction func pauseButton(_ sender: Any?) {
-    selection.selectionChanged()
-    self.videoCapture.stop()
-    playButtonOutlet.isEnabled = true
-    pauseButtonOutlet.isEnabled = false
-  }
-
-  @IBAction func switchCameraTapped(_ sender: Any) {
-    self.videoCapture.captureSession.beginConfiguration()
-    let currentInput = self.videoCapture.captureSession.inputs.first as? AVCaptureDeviceInput
-    self.videoCapture.captureSession.removeInput(currentInput!)
-    // let newCameraDevice = currentInput?.device == .builtInWideAngleCamera ? getCamera(with: .front) : getCamera(with: .back)
-
-    let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)!
-    guard let videoInput1 = try? AVCaptureDeviceInput(device: device) else {
-      return
-    }
-
-    self.videoCapture.captureSession.addInput(videoInput1)
-    self.videoCapture.captureSession.commitConfiguration()
-  }
-
-  // share image
-  @IBAction func shareButton(_ sender: Any) {
-    selection.selectionChanged()
-    let settings = AVCapturePhotoSettings()
-    self.videoCapture.cameraOutput.capturePhoto(
-      with: settings, delegate: self as AVCapturePhotoCaptureDelegate)
-  }
-
-  // share screenshot
-  @IBAction func saveScreenshotButton(_ shouldSave: Bool = true) {
-    // let layer = UIApplication.shared.keyWindow!.layer
-    // let scale = UIScreen.main.scale
-    // UIGraphicsBeginImageContextWithOptions(layer.frame.size, false, scale);
-    // layer.render(in: UIGraphicsGetCurrentContext()!)
-    // let screenshot = UIGraphicsGetImageFromCurrentImageContext()
-    // UIGraphicsEndImageContext()
-
-    // let screenshot = UIApplication.shared.screenShot
-    // UIImageWriteToSavedPhotosAlbum(screenshot!, nil, nil, nil)
   }
 
   let maxBoundingBoxViews = 100
@@ -618,18 +568,6 @@ class ViewController: UIViewController {
               y: 1.0 - rect.origin.y - rect.height,
               width: rect.width,
               height: rect.height)
-          case .landscapeLeft:
-            rect = CGRect(
-              x: rect.origin.x,
-              y: rect.origin.y,
-              width: rect.width,
-              height: rect.height)
-          case .landscapeRight:
-            rect = CGRect(
-              x: rect.origin.x,
-              y: rect.origin.y,
-              width: rect.width,
-              height: rect.height)
           case .unknown:
             print("The device orientation is unknown, the predictions may be affected")
             fallthrough
@@ -709,6 +647,23 @@ class ViewController: UIViewController {
             - (rect.origin.y * shortSide * scaleY - offsetY + rect.size.height * shortSide * scaleY)
           rect.size.width *= longSide * scaleX
           rect.size.height *= shortSide * scaleY
+            
+          switch UIDevice.current.orientation {
+            case .landscapeLeft:
+              rect = CGRect(
+                x: rect.origin.x,
+                y: rect.origin.y,
+                width: rect.width,
+                height: rect.height)
+            case .landscapeRight:
+              rect = CGRect(
+                x: rect.origin.x,
+                y: rect.origin.y,
+                width: rect.width,
+                height: rect.height)
+            default:
+              print("Device orientation unknown")
+            }
 
           let bestClass = prediction.labels[0].identifier
           let confidence = prediction.labels[0].confidence
