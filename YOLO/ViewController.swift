@@ -29,7 +29,7 @@ class ViewController: UIViewController {
   @IBOutlet weak var labelFPS: UILabel!
   @IBOutlet weak var labelZoom: UILabel!
   @IBOutlet weak var labelVersion: UILabel!
-  
+
   @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
   @IBOutlet weak var forcus: UIImageView!
   @IBOutlet weak var toolBar: UIToolbar!
@@ -38,19 +38,20 @@ class ViewController: UIViewController {
   private var conf = 0.8
   private var maxPred = 10
   private var isFound = false
-  private var pastFrames: [[VNRecognizedObjectObservation]] = [[],[],[],[],[]]
+  private var pastFrames: [[VNRecognizedObjectObservation]] = [[], [], [], [], []]
   private var sequenceRequestHandler = VNSequenceRequestHandler()
   private var trackingRequest: VNTrackObjectRequest?
-    
-  private var stepInTrackingSeq = 0
+
   private var lastNavigatedBox: CGRect = CGRect.zero
   private var framesSinceNav = 0
-    
+
   var filter: String?
   var carColorfilter: String = ""
   var carMakeModelfilter: String = ""
   private var currStreak: Int = 0
-    
+  private var gptCallInProgress: Bool = false
+  private var carsCurrentlyInGPT: [Car] = []
+
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
   var classifier = try! VNCoreMLModel(for: classificationModel)
@@ -75,7 +76,7 @@ class ViewController: UIViewController {
 
   // Text to Speech Helper
   let ttsHelper = TextToSpeechHelper()
-    
+
   lazy var visionRequest: VNCoreMLRequest = {
     let request = VNCoreMLRequest(
       model: detector,
@@ -87,12 +88,12 @@ class ViewController: UIViewController {
     request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
     return request
   }()
-    lazy var classificationRequest: VNRequest = {
-        let request = VNCoreMLRequest(model: classifier)
-        request.imageCropAndScaleOption = .centerCrop
-        
-        return request
-    }()
+  lazy var classificationRequest: VNRequest = {
+    let request = VNCoreMLRequest(model: classifier)
+    request.imageCropAndScaleOption = .centerCrop
+
+    return request
+  }()
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -124,7 +125,6 @@ class ViewController: UIViewController {
     //      frameSizeCaptured = false
   }
 
-
   @IBAction func takePhoto(_ sender: Any?) {
     let t0 = DispatchTime.now().uptimeNanoseconds
 
@@ -148,7 +148,6 @@ class ViewController: UIViewController {
       with: settings, delegate: self as AVCapturePhotoCaptureDelegate)
     print("3 Done: ", Double(DispatchTime.now().uptimeNanoseconds - t0) / 1E9)
   }
-
 
   func setLabels() {
     self.labelName.text = "Searching..."
@@ -279,7 +278,7 @@ class ViewController: UIViewController {
     }
   }
 
-  func predict(sampleBuffer: CMSampleBuffer) {
+  func detectCars(sampleBuffer: CMSampleBuffer) -> [VNRecognizedObjectObservation] {
     if currentBuffer == nil, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
       currentBuffer = pixelBuffer
       if !frameSizeCaptured {
@@ -315,12 +314,14 @@ class ViewController: UIViewController {
         t0 = CACurrentMediaTime()  // inference start
         do {
           try handler.perform([visionRequest])
-            if let results = visionRequest.results as? [VNRecognizedObjectObservation] {
-                
-                if results.count > 0 {self.classifyObservations(observations: results, pixelBuffer: pixelBuffer)}
-            }
+          // Car objects bounding boxes
+          if let results = visionRequest.results as? [VNRecognizedObjectObservation] {
+            return results
+
+          }
         } catch {
           print(error)
+          return []
         }
         t1 = CACurrentMediaTime() - t0  // inference dt
       }
@@ -328,73 +329,85 @@ class ViewController: UIViewController {
       currentBuffer = nil
     }
   }
-    
-    func classifyObservations(observations: [VNRecognizedObjectObservation], pixelBuffer: CVImageBuffer) {
-        
-        for observation in observations {
-            if observation.labels[0].identifier  == carColorfilter {
-                let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
-                let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
-                
-                let imageRect = self.normalizedRectToImageRect(normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight, modelWidth: 384, modelHeight: 640) // Hard coded values here
-                let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
-                let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
-                let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
-                do {
-                    try handler.perform([classificationRequest])
-                }catch {
-                    print("an error occurred")
-                }
-                guard let cObservations = classificationRequest.results as? [VNClassificationObservation] else {
-                    // Image classifiers, like MobileNet, only produce classification observations.
-                    // However, other Core ML model types can produce other observations.
-                    // For example, a style transfer model produces `VNPixelBufferObservation` instances.
-                    let res = classificationRequest.results
-                    print("VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
-                    return
-                }
-                var maxConfidence: VNConfidence = 0
-                var identifier: String = ""
-                for cObservation in cObservations {
-                    if maxConfidence < cObservation.confidence{
-                        identifier = cObservation.identifier
-                        maxConfidence = cObservation.confidence
-                    }
-                }
-                print(identifier, maxConfidence)
-                if ModelConstants.modelMapping[identifier] == carMakeModelfilter {
-//                if identifier == carMakeModelfilter {
-                    var presentFrames = 0 // Frames where the bounding box has an intersection
-                    for pastFrame in pastFrames {
-                        for obj in pastFrame { // For each detection in the old frame
-                            let iou = self.intersectionOverUnion(rect1: observation.boundingBox, rect2: obj.boundingBox)
-                            if (iou > 0.8) {
-                                presentFrames+=1
-                                break
-                            }
-                        }
-                    }
-                    
-                    if presentFrames > 4 {
-                        isFound = true
-                        ttsHelper.speak(text: "We have found the car!")
-                        print("We ahve found the one")
-                        let rectNew = CGRect(x: imageRect.origin.x/ogWidth, y: imageRect.origin.y/ogHeight, width: imageRect.size.width/ogWidth, height: imageRect.size.height/ogHeight)
-                        initializeTracker(with: rectNew, in: pixelBuffer)
-                        return
-                    }
-                    
-                }
-                if (!isFound) {
-                    let _ = pastFrames.popLast()
-                    pastFrames.insert(observations, at: 0)
-                    
-                }
-            }
-        }
-    }
+  // Classifying by color and making gpt request
+  func cropStableDetectionsFromBuffer(
+    observations: [VNRecognizedObjectObservation], pixelBuffer: CMSampleBuffer
+  ) -> [Car] {
+    let pixelBuffer = CMSampleBufferGetImageBuffer(pixelBuffer)!
+    var stableDetections: [Car] = []
+    for observation in observations {
+      // if observation.labels[0].identifier == carColorfilter {
+      let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
+      let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
 
-    func processObservations(for request: VNRequest, error: Error?) {
+      let imageRect = self.normalizedRectToImageRect(
+        normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
+        modelWidth: 384, modelHeight: 640)  // Hard coded values here
+      let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
+      let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+      var framesAppearedIn = 0  // Frames where the bounding box has an intersection
+      for pastFrame in pastFrames {
+        for obj in pastFrame {  // For each detection in the old frame
+          let iou = self.intersectionOverUnion(
+            rect1: observation.boundingBox, rect2: obj.boundingBox)
+          if iou > 0.8 {
+            framesAppearedIn += 1
+            break
+          }
+        }
+      }
+      if framesAppearedIn > 4 {
+        stableDetections.append(Car(image: cgImage, observation: observation))
+      }
+      // let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
+      // do {
+      //   try handler.perform([classificationRequest])
+      // } catch {
+      //   print("an error occurred")
+      // }
+      // guard let cObservations = classificationRequest.results as? [VNClassificationObservation]
+      // else {
+      //   // Image classifiers, like MobileNet, only produce classification observations.
+      //   // However, other Core ML model types can produce other observations.
+      //   // For example, a style transfer model produces `VNPixelBufferObservation` instances.
+      //   let res = classificationRequest.results
+      //   print(
+      //     "VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
+      //   return
+      // }
+      // var maxConfidence: VNConfidence = 0
+      // var identifier: String = ""
+      // for cObservation in cObservations {
+      //   if maxConfidence < cObservation.confidence {
+      //     identifier = cObservation.identifier
+      //     maxConfidence = cObservation.confidence
+      //   }
+      // }
+      // print(identifier, maxConfidence)
+      // if ModelConstants.modelMapping[identifier] == carMakeModelfilter {
+      //   //                if identifier == carMakeModelfilter {
+
+      // if framesAppearedIn > 4 {
+      //   isFound = true
+      //   ttsHelper.speak(text: "We have found the car!")
+      //   print("We ahve found the one")
+      //   let rectNew = CGRect(
+      //     x: imageRect.origin.x / ogWidth, y: imageRect.origin.y / ogHeight,
+      //     width: imageRect.size.width / ogWidth, height: imageRect.size.height / ogHeight)
+      //   initializeTracker(with: rectNew, in: pixelBuffer)
+      //   return
+      // }
+
+      // }
+      // if !isFound {
+
+      // }
+      // }
+    }
+    return stableDetections
+  }
+
+  func processObservations(for request: VNRequest, error: Error?) {
     DispatchQueue.main.async {
       if let results = request.results as? [VNRecognizedObjectObservation] {
         self.show(predictions: results)
@@ -412,66 +425,71 @@ class ViewController: UIViewController {
     }
   }
 
-    
-    func initializeTracker(with boundingBox: CGRect, in pixelBuffer: CVImageBuffer) {
-        let ciImage = CIImage(cvImageBuffer: pixelBuffer)
-        let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
-            // Create a VNDetectedObjectObservation
-        let initialObservation = VNDetectedObjectObservation(boundingBox: boundingBox)
+  func initializeTracker(with boundingBox: CGRect, in pixelBuffer: CVImageBuffer) {
+    let ciImage = CIImage(cvImageBuffer: pixelBuffer)
+    let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+    // Create a VNDetectedObjectObservation
+    let initialObservation = VNDetectedObjectObservation(boundingBox: boundingBox)
 
-            // Create a tracking request
-        trackingRequest = VNTrackObjectRequest(detectedObjectObservation: initialObservation)
-        currStreak = 0
-        // Perform the request on the first frame
-        do {
-            try sequenceRequestHandler.perform([trackingRequest!], on: cgImage)
-        } catch {
-            print("Error initializing tracker: \(error)")
-        }
+    // Create a tracking request
+    trackingRequest = VNTrackObjectRequest(detectedObjectObservation: initialObservation)
+    currStreak = 0
+    // Perform the request on the first frame
+    do {
+      try sequenceRequestHandler.perform([trackingRequest!], on: cgImage)
+    } catch {
+      print("Error initializing tracker: \(error)")
     }
-    
-    func trackObject(in sampleBuffer: CMSampleBuffer) -> CGRect? {
-            guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-                print("Failed to get image buffer")
-                return nil
-            }
-            
-            // Create a CIImage from the CVImageBuffer
-            let ciImage = CIImage(cvImageBuffer: imageBuffer)
-            
-            // Create a CIContext (reuse this for better performance in repeated calls)
-            let context = CIContext()
-            
-            // Render the CIImage into a CGImage
-            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
-                print("Failed to create CGImage")
-                return nil
-            }
-        
-            guard let trackingRequest = trackingRequest else {
-                print("Tracking request is nil")
-                return nil
-            }
-        
-            do {
-                try sequenceRequestHandler.perform([trackingRequest], on: cgImage)
+  }
 
-                // Retrieve the updated bounding box
-                if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation, trackingRequest.isLastFrame == false {
-                    trackingRequest.inputObservation = observation
-                    let rectNew = CGRect(x: observation.boundingBox.origin.x*videoPreview.bounds.width, y: observation.boundingBox.origin.y*videoPreview.bounds.height, width: observation.boundingBox.width*videoPreview.bounds.width, height: observation.boundingBox.height*videoPreview.bounds.height)
-                    DispatchQueue.main.async {
-                        self.boundingBoxViews[0].show(frame: rectNew, label: "box", color: .red, alpha: 0.5)
-                    }
-                    return observation.boundingBox
-                }
-            } catch {
-                print("Error tracking object: \(error)")
-            }
+  func trackObject(in sampleBuffer: CMSampleBuffer) -> CGRect? {
+    guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+      print("Failed to get image buffer")
+      return nil
+    }
 
-            return nil
+    // Create a CIImage from the CVImageBuffer
+    let ciImage = CIImage(cvImageBuffer: imageBuffer)
+
+    // Create a CIContext (reuse this for better performance in repeated calls)
+    let context = CIContext()
+
+    // Render the CIImage into a CGImage
+    guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+      print("Failed to create CGImage")
+      return nil
+    }
+
+    guard let trackingRequest = trackingRequest else {
+      print("Tracking request is nil")
+      return nil
+    }
+
+    do {
+      try sequenceRequestHandler.perform([trackingRequest], on: cgImage)
+
+      // Retrieve the updated bounding box
+      if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation,
+        trackingRequest.isLastFrame == false
+      {
+        trackingRequest.inputObservation = observation
+        let rectNew = CGRect(
+          x: observation.boundingBox.origin.x * videoPreview.bounds.width,
+          y: observation.boundingBox.origin.y * videoPreview.bounds.height,
+          width: observation.boundingBox.width * videoPreview.bounds.width,
+          height: observation.boundingBox.height * videoPreview.bounds.height)
+        DispatchQueue.main.async {
+          self.boundingBoxViews[0].show(frame: rectNew, label: "box", color: .red, alpha: 0.5)
         }
-    
+        return observation.boundingBox
+      }
+    } catch {
+      print("Error tracking object: \(error)")
+    }
+
+    return nil
+  }
+
   // Save text file
   func saveText(text: String, file: String = "saved.txt") {
     if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -534,52 +552,51 @@ class ViewController: UIViewController {
       return 0
     }
   }
-  
-    func normalizedRectToImageRect(
-        normalizedRect: CGRect,
-        originalWidth: CGFloat,
-        originalHeight: CGFloat,
-        modelWidth: CGFloat,
-        modelHeight: CGFloat
-    ) -> CGRect {
 
-        // Vision's scaleFill might have scaled and cropped the original image
-        // to fit modelWidth x modelHeight.
+  func normalizedRectToImageRect(
+    normalizedRect: CGRect,
+    originalWidth: CGFloat,
+    originalHeight: CGFloat,
+    modelWidth: CGFloat,
+    modelHeight: CGFloat
+  ) -> CGRect {
 
-        // Compute the scale factor Vision applied.
-        let scaleFactor = max(modelWidth / originalWidth, modelHeight / originalHeight)
+    // Vision's scaleFill might have scaled and cropped the original image
+    // to fit modelWidth x modelHeight.
 
-        // Compute the scaled image dimensions (after Vision’s scaling).
-        let scaledWidth = originalWidth * scaleFactor
-        let scaledHeight = originalHeight * scaleFactor
+    // Compute the scale factor Vision applied.
+    let scaleFactor = max(modelWidth / originalWidth, modelHeight / originalHeight)
 
-        // Vision center-crops the scaled image to fit model dimensions:
-        let dx = (scaledWidth - modelWidth) / 2.0
-        let dy = (scaledHeight - modelHeight) / 2.0
+    // Compute the scaled image dimensions (after Vision's scaling).
+    let scaledWidth = originalWidth * scaleFactor
+    let scaledHeight = originalHeight * scaleFactor
 
-        // Convert normalized coordinates [0.0,1.0] to model coordinates
-        var x = normalizedRect.origin.x * modelWidth
-        var y = normalizedRect.origin.y * modelHeight
-        var w = normalizedRect.size.width * modelWidth
-        var h = normalizedRect.size.height * modelHeight
+    // Vision center-crops the scaled image to fit model dimensions:
+    let dx = (scaledWidth - modelWidth) / 2.0
+    let dy = (scaledHeight - modelHeight) / 2.0
 
-        // Adjust for the cropping offset
-        x += dx
-        y += dy
+    // Convert normalized coordinates [0.0,1.0] to model coordinates
+    var x = normalizedRect.origin.x * modelWidth
+    var y = normalizedRect.origin.y * modelHeight
+    var w = normalizedRect.size.width * modelWidth
+    var h = normalizedRect.size.height * modelHeight
 
-        // Convert back to original image coordinates by dividing by scaleFactor
-        x /= scaleFactor
-        y /= scaleFactor
-        w /= scaleFactor
-        h /= scaleFactor
+    // Adjust for the cropping offset
+    x += dx
+    y += dy
 
-        // Vision’s bounding box (0,0) is bottom-left. Convert to a top-left origin system if needed.
-        // If your original image or CGImage coordinates start from top-left, invert the y-axis:
-        let topLeftY = originalHeight - y - h
+    // Convert back to original image coordinates by dividing by scaleFactor
+    x /= scaleFactor
+    y /= scaleFactor
+    w /= scaleFactor
+    h /= scaleFactor
 
-        return CGRect(x: x, y: topLeftY, width: w, height: h)
-    }
+    // Vision's bounding box (0,0) is bottom-left. Convert to a top-left origin system if needed.
+    // If your original image or CGImage coordinates start from top-left, invert the y-axis:
+    let topLeftY = originalHeight - y - h
 
+    return CGRect(x: x, y: topLeftY, width: w, height: h)
+  }
 
   func show(predictions: [VNRecognizedObjectObservation]) {
     var str = ""
@@ -788,34 +805,140 @@ class ViewController: UIViewController {
 
 extension ViewController: VideoCaptureDelegate {
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
-      if !isFound {
-          predict(sampleBuffer: sampleBuffer)
-      }
-    else {
-        
-        if let result = trackObject(in: sampleBuffer) {
-            if (framesSinceNav == 60) {
-                navigate()
+    if !isFound {
+      var results = detectCars(sampleBuffer: sampleBuffer)
+      results = results.filter { $0.confidence > 0.5 }
+      if results.count > 0 {
+        let stableDetections = self.cropStableDetectionsFromBuffer(
+          observations: results, pixelBuffer: sampleBuffer)
+        if stableDetections.count > 0 && !gptCallInProgress {
+          self.gptCallInProgress = true
+          self.carsCurrentlyInGPT = stableDetections
+          for car in self.carsCurrentlyInGPT {
+            // Create a VNDetectedObjectObservation from the car's bounding box
+            let detectedObjectObservation = VNDetectedObjectObservation(
+                boundingBox: car.detectionObservation.boundingBox)
+
+            // Create the tracking request with the observation
+            car.trackingRequest = VNTrackObjectRequest(
+              detectedObjectObservation: detectedObjectObservation)
+
+            // Configure the tracking request - unwrap the optional properly
+            if let trackingRequest = car.trackingRequest {
+              trackingRequest.trackingLevel = .accurate
+              trackingRequest.isLastFrame = false
+
+              // Set up a completion handler to process tracking results
+              trackingRequest.completionHandler = { [weak self] (request, error) in
+                guard let self = self else { return }
+
+                if let error = error {
+                  print("Tracking error: \(error)")
+                  return
+                }
+
+                // Get the observation from the request results
+                guard let observation = request.results?.first as? VNDetectedObjectObservation
+                else {
+                  print("Invalid tracking observation")
+                  return
+                }
+
+                // Update the car's bounding box with the new tracking data
+                DispatchQueue.main.async {
+                  car.boundingBox = observation.boundingBox
+                  car.trackingConfidence = observation.confidence
+
+                  // If confidence is too low, mark for potential removal
+                  if observation.confidence < 0.5 {
+                    car.isLostInTracking = true
+                  }
+                }
+              }
             }
-            else {
-                framesSinceNav+=1
+          }
+
+          // Use Task to handle the async work without blocking
+          Task {
+            // First, capture any values we need from self to avoid strong reference cycles
+            let carDescription = self.carMakeModelfilter
+            let currentBuffer = self.currentBuffer
+            let pixelBuffer = pixelBuffer
+
+            // Process the cars asynchronously
+            let results = await self.sendCarsToGPT(
+              cars: stableDetections, carDescription: carDescription)
+
+            // Switch to the main thread for UI updates
+            await MainActor.run {
+              // Process the structured results
+              var matchedCars: [Car] = []
+
+              for result in results {
+                if result.isMatch {
+                  // Add the matched car to our list
+                  matchedCars.append(result.car)
+                  print("Car matched with confidence: \(result.confidence)")
+                }
+              }
+
+              // Notify the user if we found a match
+              if matchedCars.count > 0 && !self.isFound {
+                self.ttsHelper.speak(text: "We have found the car!")
+                print("We have found the car!")
+                self.isFound = true
+
+                // If we want to track the first matched car
+                if let firstMatch = matchedCars.first, let currentBuffer = currentBuffer {
+                  let observation = firstMatch.detectionObservation
+                  let ogWidth = CGFloat(CVPixelBufferGetWidth(currentBuffer))
+                  let ogHeight = CGFloat(CVPixelBufferGetHeight(currentBuffer))
+
+                  self.ttsHelper.speak(text: "We have found the car!")
+                  print("We have found the one")
+                  let rectNew = CGRect(
+                    x: observation.boundingBox.origin.x * ogWidth,
+                    y: observation.boundingBox.origin.y * ogHeight,
+                    width: observation.boundingBox.size.width * ogWidth,
+                    height: observation.boundingBox.size.height * ogHeight)
+                  self.initializeTracker(with: rectNew, in: pixelBuffer)
+                }
+              }
+
+              // Reset the GPT call flag
+              self.gptCallInProgress = false
+
+              // If no matches were found, provide feedback
+              if matchedCars.isEmpty && !self.isFound {
+                self.carsCurrentlyInGPT = []
+                self.ttsHelper.speak(text: "No matching cars found in this batch")
+              }
             }
-            
-        } else { // Object went out of frame
-            // Checking to see if tracking loses the object for a frame and can find it again. Commented out because it would track random things
-//            if currStreak > 0{
-//                isFound = false
-//                print("Switching back")
-//                currStreak = 0
-//            }
-//            else{
-//               currStreak += 1
-//            }
-            isFound = false
-            lastNavigatedBox = CGRect.zero
-            framesSinceNav = 0
-            print("Switching back")
+          }
         }
+      } else {
+        if let result = trackObject(in: sampleBuffer) {
+          if framesSinceNav == 60 {
+            navigate()
+          } else {
+            framesSinceNav += 1
+          }
+        } else {  // Object went out of frame
+          // Checking to see if tracking loses the object for a frame and can find it again. Commented out because it would track random things
+          //            if currStreak > 0{
+          //                isFound = false
+          //                print("Switching back")
+          //                currStreak = 0
+          //            }
+          //            else{
+          //               currStreak += 1
+          //            }
+          isFound = false
+          lastNavigatedBox = CGRect.zero
+          framesSinceNav = 0
+          print("Switching back")
+        }
+      }
     }
   }
 }
@@ -873,32 +996,30 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
   }
 }
 
-
 extension ViewController {
-    
-    private func navigate() {
-        guard let trackingRequest = trackingRequest else {
-            print("Tracking request is nil")
-            return
-        } // Unwrap trackingrequest
-        
-        if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation, trackingRequest.isLastFrame == false {
-            
-            let area = observation.boundingBox.width*observation.boundingBox.height
-            let midPoint = (observation.boundingBox.midX, observation.boundingBox.midY)
-            
-            
-            if (midPoint.0 < 0.4) {
-                ttsHelper.speak(text: "Turn slightly left")
-            }
-            else if midPoint.0 > 0.6 {
-                ttsHelper.speak(text: "Turn slightly right")
-            }
-            else {
-                ttsHelper.speak(text:"Straight ahead")
-            }
-            lastNavigatedBox = observation.boundingBox
-            framesSinceNav = 0
-        }
-    }    
+
+  private func navigate() {
+    guard let trackingRequest = trackingRequest else {
+      print("Tracking request is nil")
+      return
+    }  // Unwrap trackingrequest
+
+    if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation,
+      trackingRequest.isLastFrame == false
+    {
+
+      let area = observation.boundingBox.width * observation.boundingBox.height
+      let midPoint = (observation.boundingBox.midX, observation.boundingBox.midY)
+
+      if midPoint.0 < 0.4 {
+        ttsHelper.speak(text: "Turn slightly left")
+      } else if midPoint.0 > 0.6 {
+        ttsHelper.speak(text: "Turn slightly right")
+      } else {
+        ttsHelper.speak(text: "Straight ahead")
+      }
+      lastNavigatedBox = observation.boundingBox
+      framesSinceNav = 0
+    }
+  }
 }

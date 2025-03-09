@@ -14,6 +14,7 @@
 		31CC563B2D06869D0037C289 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC563A2D06869D0037C289 /* yolo11n.mlpackage */; };
 		31CC563D2D068F1D0037C289 /* yolo11n-cls.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */; };
 		31CC56432D06936C0037C289 /* carClassifier.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC56422D06936C0037C289 /* carClassifier.mlpackage */; };
+		31DCAEF62D7E52BD000B0B24 /* Car.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31DCAEF52D7E52BD000B0B24 /* Car.swift */; };
 		633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 633BC6FA22EDE73D00821BCA /* Settings.bundle */; };
 		636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636166E9251443B20054FA7E /* ThresholdProvider.swift */; };
 		636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636EFC9C21E62DD300DE43BC /* ViewController.swift */; };
@@ -35,6 +36,7 @@
 		31CC563A2D06869D0037C289 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
 		31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo11n-cls.mlpackage"; sourceTree = "<group>"; };
 		31CC56422D06936C0037C289 /* carClassifier.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = carClassifier.mlpackage; sourceTree = "<group>"; };
+		31DCAEF52D7E52BD000B0B24 /* Car.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Car.swift; sourceTree = "<group>"; };
 		6323C44D22186177008AE681 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6323C44F22186177008AE681 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		632892DF22EB3DB100A12D9C /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; path = Info.plist; sourceTree = "<group>"; };
@@ -69,6 +71,7 @@
 				314CB55C2D05429A00EBA818 /* Helpers.swift */,
 				636166E9251443B20054FA7E /* ThresholdProvider.swift */,
 				8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */,
+				31DCAEF52D7E52BD000B0B24 /* Car.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -231,6 +234,7 @@
 				636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */,
 				31CC563B2D06869D0037C289 /* yolo11n.mlpackage in Sources */,
 				8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */,
+				31DCAEF62D7E52BD000B0B24 /* Car.swift in Sources */,
 				31CC56372D0684110037C289 /* carDetector.mlmodel in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
