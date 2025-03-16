@@ -491,8 +491,99 @@ class ViewController: UIViewController {
     return nil
   }
     
+    func checkOpenAI(cgImage: CGImage, carDescription: String)  -> Bool {
+        let uiImage = UIImage(cgImage: cgImage)
+        guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
+            print("Failed to convert CGImage to JPEG data.")
+            return false
+        }
+        
+        // Step 2: Encode Data to Base64 String
+        let base64ImageString = imageData.base64EncodedString()
+        
+        // Step 3: Create JSON Payload
+        let jsonPayload: [String: Any] = [
+            "model": "gpt-4o",
+            "messages": [
+                [
+                    "role": "system",
+                    "content": [
+                        ["type": "text", "text": "You are an AI assistant that determines if a car in an image matches the given description. Respond strictly in JSON format as per the provided schema."]
+                    ]
+                ],
+                [
+                    "role": "user",
+                    "content": [
+                        ["type": "text", "text": "Does this image contain a car that matches the following description? \(carDescription)"],
+                        ["type": "image_url", "image_url": "data:image/jpeg;base64,\(base64ImageString)"]
+                    ]
+                ]
+            ],
+            "functions": [
+                [
+                    "name": "check_car_match",
+                    "description": "Determines if the image contains the specified car.",
+                    "parameters": [
+                        "type": "object",
+                        "properties": [
+                            "match": [
+                                "type": "boolean",
+                                "description": "Indicates if the image contains the specified car."
+                            ]
+                        ],
+                        "required": ["match"]
+                    ]
+                ]
+            ],
+            "response_format": ["type": "json_object"],
+            "max_tokens": 50
+        ]
+        
+        // Step 4: Make HTTP POST Request
+        guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+            print("Invalid URL.")
+            return false
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer YOUR_OPENAI_API_KEY", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
+            request.httpBody = jsonData
+        } catch {
+            print("Failed to serialize JSON: \(error)")
+            return false
+        }
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Request error: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data received.")
+                return
+            }
+            
+            do {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                    print("Response JSON: \(jsonResponse)")
+                    // Handle the response as needed
+                }
+            } catch {
+                print("Failed to parse JSON response: \(error)")
+            }
+        }
+        
+        task.resume()
+        return true
+    }
     
-
+    
   // Save text file
   func saveText(text: String, file: String = "saved.txt") {
     if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
