@@ -447,7 +447,8 @@ class ViewController: UIViewController {
     return nil
   }
     
-    func checkOpenAI(cgImage: CGImage, carDescription: String)  -> Bool {
+    func sendCarsToGPT(cgImage: CGImage, carDescription: String) async -> Bool {
+        print("sendCarsToGPT called!")
         let uiImage = UIImage(cgImage: cgImage)
         guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
             print("Failed to convert CGImage to JPEG data.")
@@ -513,29 +514,49 @@ class ViewController: UIViewController {
             print("Failed to serialize JSON: \(error)")
             return false
         }
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Request error: \(error)")
-                return
+          
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // Ensure the response is valid
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else
+            {
+                print("Invalid response: \(response)")
+                return false
             }
             
-            guard let data = data else {
-                print("No data received.")
-                return
+            if httpResponse.statusCode != 200 {
+                print("❌ API request failed with status code: \(httpResponse.statusCode)")
+                return false
             }
             
+            // Parse JSON response
             do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    print("Response JSON: \(jsonResponse)")
-                    // Handle the response as needed
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as?
+                    [String: Any] {
+                    print("✅ Response JSON: \(jsonResponse)")
+                    
+                    // Extract match value from response
+                    if let choices = jsonResponse["choices"] as? [[String: Any]],
+                       let firstChoice = choices.first,
+                       let message = firstChoice["message"] as? [String: Any],
+                       let functionCall = message["function_call"] as? [String: Any],
+                       let arguments = functionCall["arguments"] as? [String: Any],
+                       let match = arguments["match"] as? Bool {
+                        return match
+                    } else {
+                        print("⚠️ Response does not contain expected data.")
+                        return false
+                    }
                 }
             } catch {
-                print("Failed to parse JSON response: \(error)")
+                print("❌ Failed to parse JSON response: \(error)")
+                return false
             }
         }
-        
-        task.resume()
+        catch {
+            print("Failed to parse JSON response: \(error)")
+        }
         return true
     }
     
@@ -867,113 +888,111 @@ extension ViewController: VideoCaptureDelegate {
         let stableDetections = self.cropStableDetectionsFromBuffer(
           observations: results, pixelBuffer: sampleBuffer)
         // Initialize tracking requests and make the GPT Call
-        if stableDetections.count > 0 && !gptCallInProgress {
-          self.gptCallInProgress = true
-          self.carsCurrentlyInGPT = stableDetections
-            
-          print("Creating tracking requests")
-            
-          // Make the tracking requests for all the cars that will be passed into GPT
-          for var car in self.carsCurrentlyInGPT {
-            // Create a VNDetectedObjectObservation from the car's bounding box
-            let detectedObjectObservation = VNDetectedObjectObservation(
-                boundingBox: car.detectionObservation.boundingBox)
-
-              // Create the tracking request with the observation and set the completion handler during initialization
-              car.trackingRequest = VNTrackObjectRequest(detectedObjectObservation: detectedObjectObservation) {
-                  request, error in
-
-                  if let error = error {
-                      print("Tracking error: \(error)")
-                      return
+          if stableDetections.count > 0 && !gptCallInProgress {
+              self.gptCallInProgress = true
+              self.carsCurrentlyInGPT = stableDetections
+                            
+              // Make the tracking requests for all the cars that will be passed into GPT
+              for var car in self.carsCurrentlyInGPT {
+                  // Create a VNDetectedObjectObservation from the car's bounding box
+                  let detectedObjectObservation = VNDetectedObjectObservation(
+                    boundingBox: car.detectionObservation.boundingBox)
+                  
+                  // Create the tracking request with the observation and set the completion handler during initialization
+                  car.trackingRequest = VNTrackObjectRequest(detectedObjectObservation: detectedObjectObservation) {
+                      request, error in
+                      
+                      if let error = error {
+                          print("Tracking error: \(error)")
+                          return
+                      }
+                      
+                      // Get the observation from the request results
+                      guard let observation = request.results?.first as? VNDetectedObjectObservation else {
+                          print("Invalid tracking observation")
+                          return
+                      }
+                      
+                      // Update the car's bounding box with the new tracking data
+                      DispatchQueue.main.async {
+                          car.boundingBox = observation.boundingBox
+                          car.trackingConfidence = observation.confidence
+                          
+                          // If confidence is too low, mark for potential removal
+                          if observation.confidence < 0.5 {
+                              car.isLostInTracking = true
+                          }
+                      }
                   }
-
-                  // Get the observation from the request results
-                  guard let observation = request.results?.first as? VNDetectedObjectObservation else {
-                      print("Invalid tracking observation")
-                      return
-                  }
-
-                  // Update the car's bounding box with the new tracking data
-                  DispatchQueue.main.async {
-                      car.boundingBox = observation.boundingBox
-                      car.trackingConfidence = observation.confidence
-
-                      // If confidence is too low, mark for potential removal
-                      if observation.confidence < 0.5 {
-                          car.isLostInTracking = true
+                  
+                  // Configure the tracking request (optional settings)
+                  car.trackingRequest?.trackingLevel = .accurate
+                  car.trackingRequest?.isLastFrame = false
+              }
+              
+              print("Done creating tracking requests!")
+              
+              // After creating tracking requests, make call to GPT
+              // Use Task to handle the async work without blocking
+              Task {
+                  // First, capture any values we need from self to avoid strong reference cycles
+                  let carDescription = self.carMakeModelfilter
+                  let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
+                  
+                  // Process the cars asynchronously
+                  // TODO: Create the sendCarsToGPT function
+                  print("About to make the GPT Call!")
+                  let results = await self.sendCarsToGPT(
+                    cars: stableDetections, carDescription: carDescription)
+                  print(results)
+                  // Switch to the main thread for UI updates
+                  await MainActor.run {
+                      // Process the structured results
+                      var matchedCars: [Car] = []
+                      
+                      for result in results {
+                          if result.isMatch {
+                              // Add the matched car to our list
+                              matchedCars.append(result.car)
+                              print("Car matched with confidence: \(result.confidence)")
+                          }
+                      }
+                      
+                      // Notify the user if we found a match
+                      if matchedCars.count > 0 && !self.isFound {
+                          self.ttsHelper.speak(text: "We have found the car!")
+                          print("We have found the car!")
+                          self.isFound = true
+                          
+                          // If we want to track the first matched car
+                          if let firstMatch = matchedCars.first, let currentBuffer = currentBuffer {
+                              let observation = firstMatch.detectionObservation
+                              let ogWidth = CGFloat(CVPixelBufferGetWidth(currentBuffer))
+                              let ogHeight = CGFloat(CVPixelBufferGetHeight(currentBuffer))
+                              
+                              self.ttsHelper.speak(text: "We have found the car!")
+                              print("We have found the one")
+                              let rectNew = CGRect(
+                                x: observation.boundingBox.origin.x * ogWidth,
+                                y: observation.boundingBox.origin.y * ogHeight,
+                                width: observation.boundingBox.size.width * ogWidth,
+                                height: observation.boundingBox.size.height * ogHeight)
+                              self.initializeTracker(with: rectNew, in: pixelBuffer) // Takes in CVImageBuffer
+                          }
+                      }
+                      
+                      // Reset the GPT call flag
+                      self.gptCallInProgress = false
+                      
+                      // If no matches were found, provide feedback
+                      if matchedCars.isEmpty && !self.isFound {
+                          self.carsCurrentlyInGPT = []
+                          self.ttsHelper.speak(text: "No matching cars found in this batch")
                       }
                   }
               }
-
-              // Configure the tracking request (optional settings)
-              car.trackingRequest?.trackingLevel = .accurate
-              car.trackingRequest?.isLastFrame = false
-            }
+              print("Done making gpt calls")
           }
-          
-          print("Done creating tracking requests!")
-          
-          // After creating tracking requests, make call to GPT
-          // Use Task to handle the async work without blocking
-          Task {
-            // First, capture any values we need from self to avoid strong reference cycles
-            let carDescription = self.carMakeModelfilter
-            let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
-
-            // Process the cars asynchronously
-            // TODO: Create the sendCarsToGPT function
-            let results = await self.sendCarsToGPT(
-              cars: stableDetections, carDescription: carDescription)
-
-            // Switch to the main thread for UI updates
-            await MainActor.run {
-              // Process the structured results
-              var matchedCars: [Car] = []
-
-              for result in results {
-                if result.isMatch {
-                  // Add the matched car to our list
-                  matchedCars.append(result.car)
-                  print("Car matched with confidence: \(result.confidence)")
-                }
-              }
-
-              // Notify the user if we found a match
-              if matchedCars.count > 0 && !self.isFound {
-                self.ttsHelper.speak(text: "We have found the car!")
-                print("We have found the car!")
-                self.isFound = true
-
-                // If we want to track the first matched car
-                if let firstMatch = matchedCars.first, let currentBuffer = currentBuffer {
-                  let observation = firstMatch.detectionObservation
-                  let ogWidth = CGFloat(CVPixelBufferGetWidth(currentBuffer))
-                  let ogHeight = CGFloat(CVPixelBufferGetHeight(currentBuffer))
-
-                  self.ttsHelper.speak(text: "We have found the car!")
-                  print("We have found the one")
-                  let rectNew = CGRect(
-                    x: observation.boundingBox.origin.x * ogWidth,
-                    y: observation.boundingBox.origin.y * ogHeight,
-                    width: observation.boundingBox.size.width * ogWidth,
-                    height: observation.boundingBox.size.height * ogHeight)
-                  self.initializeTracker(with: rectNew, in: pixelBuffer) // Takes in CVImageBuffer
-                }
-              }
-
-              // Reset the GPT call flag
-              self.gptCallInProgress = false
-
-              // If no matches were found, provide feedback
-              if matchedCars.isEmpty && !self.isFound {
-                self.carsCurrentlyInGPT = []
-                self.ttsHelper.speak(text: "No matching cars found in this batch")
-              }
-            }
-          }
-          print("Done making gpt calls")
-
         }
 
         // Update the past frames for the stable detections thing
