@@ -805,16 +805,25 @@ class ViewController: UIViewController {
 
 extension ViewController: VideoCaptureDelegate {
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
+      
+    // Run the loop if the car has not been found yet
     if !isFound {
+      // Call car detection to update list of cars that will be passed into GPT
       var results = detectCars(sampleBuffer: sampleBuffer)
+        
+      // Only care about the results that have a confidence above 50%
       results = results.filter { $0.confidence > 0.5 }
       if results.count > 0 {
         let stableDetections = self.cropStableDetectionsFromBuffer(
           observations: results, pixelBuffer: sampleBuffer)
+          
+        // Initialize tracking requests and make the GPT Call
         if stableDetections.count > 0 && !gptCallInProgress {
           self.gptCallInProgress = true
           self.carsCurrentlyInGPT = stableDetections
-          for car in self.carsCurrentlyInGPT {
+            
+          // Make the tracking requests for all the cars that will be passed into GPT
+          for var car in self.carsCurrentlyInGPT {
             // Create a VNDetectedObjectObservation from the car's bounding box
             let detectedObjectObservation = VNDetectedObjectObservation(
                 boundingBox: car.detectionObservation.boundingBox)
@@ -827,7 +836,7 @@ extension ViewController: VideoCaptureDelegate {
             if let trackingRequest = car.trackingRequest {
               trackingRequest.trackingLevel = .accurate
               trackingRequest.isLastFrame = false
-
+                
               // Set up a completion handler to process tracking results
               trackingRequest.completionHandler = { [weak self] (request, error) in
                 guard let self = self else { return }
@@ -858,14 +867,16 @@ extension ViewController: VideoCaptureDelegate {
             }
           }
 
+          // After creating tracking requests, make call to GPT
           // Use Task to handle the async work without blocking
           Task {
             // First, capture any values we need from self to avoid strong reference cycles
             let carDescription = self.carMakeModelfilter
             let currentBuffer = self.currentBuffer
-            let pixelBuffer = pixelBuffer
+            let pixelBuffer = sampleBuffer
 
             // Process the cars asynchronously
+            // TODO: Create the sendCarsToGPT function
             let results = await self.sendCarsToGPT(
               cars: stableDetections, carDescription: carDescription)
 
@@ -916,23 +927,22 @@ extension ViewController: VideoCaptureDelegate {
             }
           }
         }
-      } else {
+      }
+      
+      // Car has been found and now we need to track the car
+      else {
+        // Track the object every frame
         if let result = trackObject(in: sampleBuffer) {
+          // Navigate once every 60 frames
           if framesSinceNav == 60 {
             navigate()
           } else {
             framesSinceNav += 1
           }
-        } else {  // Object went out of frame
-          // Checking to see if tracking loses the object for a frame and can find it again. Commented out because it would track random things
-          //            if currStreak > 0{
-          //                isFound = false
-          //                print("Switching back")
-          //                currStreak = 0
-          //            }
-          //            else{
-          //               currStreak += 1
-          //            }
+        }
+        
+        // Object went out of frame, go back to detection mode
+        else {
           isFound = false
           lastNavigatedBox = CGRect.zero
           framesSinceNav = 0

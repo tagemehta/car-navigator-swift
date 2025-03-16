@@ -5,6 +5,8 @@ struct Car {
   var image: CGImage
   var detectionObservation: VNRecognizedObjectObservation
   var trackingRequest: VNTrackObjectRequest?
+    var trackingConfidence: Float
+    var isLostInTracking: Bool
   var id: String
   var boundingBox: CGRect
 
@@ -13,6 +15,8 @@ struct Car {
     self.detectionObservation = observation
     self.id = UUID().uuidString
     self.boundingBox = CGRect()
+      self.isLostInTracking = false
+      self.trackingConfidence = 0
   }
 
 }
