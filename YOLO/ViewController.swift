@@ -328,6 +328,7 @@ class ViewController: UIViewController {
 
       currentBuffer = nil
     }
+    return []
   }
   // Classifying by color and making gpt request
   func cropStableDetectionsFromBuffer(
@@ -489,6 +490,8 @@ class ViewController: UIViewController {
 
     return nil
   }
+    
+    
 
   // Save text file
   func saveText(text: String, file: String = "saved.txt") {
@@ -809,10 +812,12 @@ extension ViewController: VideoCaptureDelegate {
     // Run the loop if the car has not been found yet
     if !isFound {
       // Call car detection to update list of cars that will be passed into GPT
+        print("Start detecting cars")
       var results = detectCars(sampleBuffer: sampleBuffer)
-        
+        print("Has detected cars")
       // Only care about the results that have a confidence above 50%
       results = results.filter { $0.confidence > 0.5 }
+        print(results.count)
       if results.count > 0 {
         let stableDetections = self.cropStableDetectionsFromBuffer(
           observations: results, pixelBuffer: sampleBuffer)
@@ -828,42 +833,36 @@ extension ViewController: VideoCaptureDelegate {
             let detectedObjectObservation = VNDetectedObjectObservation(
                 boundingBox: car.detectionObservation.boundingBox)
 
-            // Create the tracking request with the observation
-            car.trackingRequest = VNTrackObjectRequest(
-              detectedObjectObservation: detectedObjectObservation)
+              // Create the tracking request with the observation and set the completion handler during initialization
+              car.trackingRequest = VNTrackObjectRequest(detectedObjectObservation: detectedObjectObservation) {
+                  request, error in
 
-            // Configure the tracking request - unwrap the optional properly
-            if let trackingRequest = car.trackingRequest {
-              trackingRequest.trackingLevel = .accurate
-              trackingRequest.isLastFrame = false
-                
-              // Set up a completion handler to process tracking results
-              trackingRequest.completionHandler = { [weak self] (request, error) in
-                guard let self = self else { return }
-
-                if let error = error {
-                  print("Tracking error: \(error)")
-                  return
-                }
-
-                // Get the observation from the request results
-                guard let observation = request.results?.first as? VNDetectedObjectObservation
-                else {
-                  print("Invalid tracking observation")
-                  return
-                }
-
-                // Update the car's bounding box with the new tracking data
-                DispatchQueue.main.async {
-                  car.boundingBox = observation.boundingBox
-                  car.trackingConfidence = observation.confidence
-
-                  // If confidence is too low, mark for potential removal
-                  if observation.confidence < 0.5 {
-                    car.isLostInTracking = true
+                  if let error = error {
+                      print("Tracking error: \(error)")
+                      return
                   }
-                }
+
+                  // Get the observation from the request results
+                  guard let observation = request.results?.first as? VNDetectedObjectObservation else {
+                      print("Invalid tracking observation")
+                      return
+                  }
+
+                  // Update the car's bounding box with the new tracking data
+                  DispatchQueue.main.async {
+                      car.boundingBox = observation.boundingBox
+                      car.trackingConfidence = observation.confidence
+
+                      // If confidence is too low, mark for potential removal
+                      if observation.confidence < 0.5 {
+                          car.isLostInTracking = true
+                      }
+                  }
               }
+
+              // Configure the tracking request (optional settings)
+              car.trackingRequest?.trackingLevel = .accurate
+              car.trackingRequest?.isLastFrame = false
             }
           }
 
@@ -873,7 +872,7 @@ extension ViewController: VideoCaptureDelegate {
             // First, capture any values we need from self to avoid strong reference cycles
             let carDescription = self.carMakeModelfilter
             let currentBuffer = self.currentBuffer
-            let pixelBuffer = sampleBuffer
+            let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
 
             // Process the cars asynchronously
             // TODO: Create the sendCarsToGPT function
@@ -912,7 +911,7 @@ extension ViewController: VideoCaptureDelegate {
                     y: observation.boundingBox.origin.y * ogHeight,
                     width: observation.boundingBox.size.width * ogWidth,
                     height: observation.boundingBox.size.height * ogHeight)
-                  self.initializeTracker(with: rectNew, in: pixelBuffer)
+                  self.initializeTracker(with: rectNew, in: pixelBuffer) // Takes in CVImageBuffer
                 }
               }
 
@@ -947,8 +946,7 @@ extension ViewController: VideoCaptureDelegate {
           lastNavigatedBox = CGRect.zero
           framesSinceNav = 0
           print("Switching back")
-        }
-      }
+       }
     }
   }
 }
