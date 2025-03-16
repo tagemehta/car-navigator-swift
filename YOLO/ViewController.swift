@@ -360,50 +360,6 @@ class ViewController: UIViewController {
       if framesAppearedIn > 4 {
         stableDetections.append(Car(image: cgImage, observation: observation))
       }
-      // let handler = VNImageRequestHandler(cgImage: cgImage as CGImage, orientation: .up)
-      // do {
-      //   try handler.perform([classificationRequest])
-      // } catch {
-      //   print("an error occurred")
-      // }
-      // guard let cObservations = classificationRequest.results as? [VNClassificationObservation]
-      // else {
-      //   // Image classifiers, like MobileNet, only produce classification observations.
-      //   // However, other Core ML model types can produce other observations.
-      //   // For example, a style transfer model produces `VNPixelBufferObservation` instances.
-      //   let res = classificationRequest.results
-      //   print(
-      //     "VNRequest produced the wrong result type: \(type(of: classificationRequest.results)).")
-      //   return
-      // }
-      // var maxConfidence: VNConfidence = 0
-      // var identifier: String = ""
-      // for cObservation in cObservations {
-      //   if maxConfidence < cObservation.confidence {
-      //     identifier = cObservation.identifier
-      //     maxConfidence = cObservation.confidence
-      //   }
-      // }
-      // print(identifier, maxConfidence)
-      // if ModelConstants.modelMapping[identifier] == carMakeModelfilter {
-      //   //                if identifier == carMakeModelfilter {
-
-      // if framesAppearedIn > 4 {
-      //   isFound = true
-      //   ttsHelper.speak(text: "We have found the car!")
-      //   print("We ahve found the one")
-      //   let rectNew = CGRect(
-      //     x: imageRect.origin.x / ogWidth, y: imageRect.origin.y / ogHeight,
-      //     width: imageRect.size.width / ogWidth, height: imageRect.size.height / ogHeight)
-      //   initializeTracker(with: rectNew, in: pixelBuffer)
-      //   return
-      // }
-
-      // }
-      // if !isFound {
-
-      // }
-      // }
     }
     return stableDetections
   }
@@ -548,7 +504,7 @@ class ViewController: UIViewController {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer YOUR_OPENAI_API_KEY", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer ", forHTTPHeaderField: "Authorization")
         
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
@@ -901,22 +857,21 @@ extension ViewController: VideoCaptureDelegate {
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
       
     // Run the loop if the car has not been found yet
+      
     if !isFound {
       // Call car detection to update list of cars that will be passed into GPT
-        print("Start detecting cars")
       var results = detectCars(sampleBuffer: sampleBuffer)
-        print("Has detected cars")
       // Only care about the results that have a confidence above 50%
       results = results.filter { $0.confidence > 0.5 }
-        print(results.count)
       if results.count > 0 {
         let stableDetections = self.cropStableDetectionsFromBuffer(
           observations: results, pixelBuffer: sampleBuffer)
-          
         // Initialize tracking requests and make the GPT Call
         if stableDetections.count > 0 && !gptCallInProgress {
           self.gptCallInProgress = true
           self.carsCurrentlyInGPT = stableDetections
+            
+          print("Creating tracking requests")
             
           // Make the tracking requests for all the cars that will be passed into GPT
           for var car in self.carsCurrentlyInGPT {
@@ -956,13 +911,14 @@ extension ViewController: VideoCaptureDelegate {
               car.trackingRequest?.isLastFrame = false
             }
           }
-
+          
+          print("Done creating tracking requests!")
+          
           // After creating tracking requests, make call to GPT
           // Use Task to handle the async work without blocking
           Task {
             // First, capture any values we need from self to avoid strong reference cycles
             let carDescription = self.carMakeModelfilter
-            let currentBuffer = self.currentBuffer
             let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
 
             // Process the cars asynchronously
@@ -1016,7 +972,14 @@ extension ViewController: VideoCaptureDelegate {
               }
             }
           }
+          print("Done making gpt calls")
+
         }
+
+        // Update the past frames for the stable detections thing
+        let _ = pastFrames.popLast()
+        pastFrames.insert(results, at: 0)
+        currentBuffer = nil
       }
       
       // Car has been found and now we need to track the car
