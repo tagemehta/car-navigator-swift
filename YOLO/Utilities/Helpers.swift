@@ -77,7 +77,7 @@ extension ViewController {
               "text":
                 "Does this image contain a car that matches the following description? \(carDescription)",
             ],
-            ["type": "image_url", "image_url": "data:image/jpeg;base64,\(base64ImageString)"],
+            ["type": "image_url", "image_url": ["url": "data:image/png;base64,\(base64ImageString)"]],
           ],
         ],
       ],
@@ -114,17 +114,17 @@ extension ViewController {
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("Bearer YOUR_OPENAI_API_KEY", forHTTPHeaderField: "Authorization")
+    request.setValue("Bearer ", forHTTPHeaderField: "Authorization")
 
     let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
     request.httpBody = jsonData
-
+      
     // Use URLSession with async/await
     let (data, _) = try await URLSession.shared.data(for: request)
-
+      
     // Parse the response
     let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-
+      
     // Extract the match result
     guard let choices = jsonResponse?["choices"] as? [[String: Any]],
       let firstChoice = choices.first,

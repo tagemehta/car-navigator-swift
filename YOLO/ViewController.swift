@@ -447,119 +447,6 @@ class ViewController: UIViewController {
     return nil
   }
     
-    func sendCarsToGPT(cgImage: CGImage, carDescription: String) async -> Bool {
-        print("sendCarsToGPT called!")
-        let uiImage = UIImage(cgImage: cgImage)
-        guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
-            print("Failed to convert CGImage to JPEG data.")
-            return false
-        }
-        
-        // Step 2: Encode Data to Base64 String
-        let base64ImageString = imageData.base64EncodedString()
-        
-        // Step 3: Create JSON Payload
-        let jsonPayload: [String: Any] = [
-            "model": "gpt-4o",
-            "messages": [
-                [
-                    "role": "system",
-                    "content": [
-                        ["type": "text", "text": "You are an AI assistant that determines if a car in an image matches the given description. Respond strictly in JSON format as per the provided schema."]
-                    ]
-                ],
-                [
-                    "role": "user",
-                    "content": [
-                        ["type": "text", "text": "Does this image contain a car that matches the following description? \(carDescription)"],
-                        ["type": "image_url", "image_url": "data:image/jpeg;base64,\(base64ImageString)"]
-                    ]
-                ]
-            ],
-            "functions": [
-                [
-                    "name": "check_car_match",
-                    "description": "Determines if the image contains the specified car.",
-                    "parameters": [
-                        "type": "object",
-                        "properties": [
-                            "match": [
-                                "type": "boolean",
-                                "description": "Indicates if the image contains the specified car."
-                            ]
-                        ],
-                        "required": ["match"]
-                    ]
-                ]
-            ],
-            "response_format": ["type": "json_object"],
-            "max_tokens": 50
-        ]
-        
-        // Step 4: Make HTTP POST Request
-        guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-            print("Invalid URL.")
-            return false
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer ", forHTTPHeaderField: "Authorization")
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
-            request.httpBody = jsonData
-        } catch {
-            print("Failed to serialize JSON: \(error)")
-            return false
-        }
-          
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            // Ensure the response is valid
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else
-            {
-                print("Invalid response: \(response)")
-                return false
-            }
-            
-            if httpResponse.statusCode != 200 {
-                print("❌ API request failed with status code: \(httpResponse.statusCode)")
-                return false
-            }
-            
-            // Parse JSON response
-            do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as?
-                    [String: Any] {
-                    print("✅ Response JSON: \(jsonResponse)")
-                    
-                    // Extract match value from response
-                    if let choices = jsonResponse["choices"] as? [[String: Any]],
-                       let firstChoice = choices.first,
-                       let message = firstChoice["message"] as? [String: Any],
-                       let functionCall = message["function_call"] as? [String: Any],
-                       let arguments = functionCall["arguments"] as? [String: Any],
-                       let match = arguments["match"] as? Bool {
-                        return match
-                    } else {
-                        print("⚠️ Response does not contain expected data.")
-                        return false
-                    }
-                }
-            } catch {
-                print("❌ Failed to parse JSON response: \(error)")
-                return false
-            }
-        }
-        catch {
-            print("Failed to parse JSON response: \(error)")
-        }
-        return true
-    }
-    
     
   // Save text file
   func saveText(text: String, file: String = "saved.txt") {
@@ -940,7 +827,6 @@ extension ViewController: VideoCaptureDelegate {
                   let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
                   
                   // Process the cars asynchronously
-                  // TODO: Create the sendCarsToGPT function
                   print("About to make the GPT Call!")
                   let results = await self.sendCarsToGPT(
                     cars: stableDetections, carDescription: carDescription)
