@@ -802,12 +802,16 @@ extension ViewController: VideoCaptureDelegate {
                       
                       // Update the car's bounding box with the new tracking data
                       DispatchQueue.main.async {
-                          car.boundingBox = observation.boundingBox
                           car.trackingConfidence = observation.confidence
                           
                           // If confidence is too low, mark for potential removal
                           if observation.confidence < 0.5 {
                               car.isLostInTracking = true
+                          }
+                          
+                          // Only update bounding box if car isn't lost
+                          if !car.isLostInTracking{
+                              car.boundingBox = observation.boundingBox
                           }
                       }
                   }
@@ -830,17 +834,27 @@ extension ViewController: VideoCaptureDelegate {
                   print("About to make the GPT Call!")
                   let results = await self.sendCarsToGPT(
                     cars: stableDetections, carDescription: carDescription)
-                  print(results)
                   // Switch to the main thread for UI updates
                   await MainActor.run {
                       // Process the structured results
                       var matchedCars: [Car] = []
                       
                       for result in results {
-                          if result.isMatch {
+                          if result.isMatch && !result.car.isLostInTracking{
                               // Add the matched car to our list
                               matchedCars.append(result.car)
                               print("Car matched with confidence: \(result.confidence)")
+                          }
+                          else{
+                              let boundingBox = result.car.boundingBox
+                              let midPoint = (boundingBox.midX, boundingBox.midY)
+                              if midPoint.0 < 0.4 {
+                                ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the left side of your screen.")
+                              } else if midPoint.0 > 0.6 {
+                                ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the right side of your screen.")
+                              } else {
+                                ttsHelper.speak(text: "Car was found but lost in tracking.")
+                              }
                           }
                       }
                       
@@ -989,4 +1003,29 @@ extension ViewController {
       framesSinceNav = 0
     }
   }
+    
+    private func checkLocationForGPT() {
+      guard let trackingRequest = trackingRequest else {
+        print("Tracking request is nil")
+        return
+      }  // Unwrap trackingrequest
+
+      if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation,
+        trackingRequest.isLastFrame == false
+      {
+
+        let area = observation.boundingBox.width * observation.boundingBox.height
+        let midPoint = (observation.boundingBox.midX, observation.boundingBox.midY)
+
+        if midPoint.0 < 0.4 {
+          ttsHelper.speak(text: "Turn slightly left")
+        } else if midPoint.0 > 0.6 {
+          ttsHelper.speak(text: "Turn slightly right")
+        } else {
+          ttsHelper.speak(text: "Straight ahead")
+        }
+        lastNavigatedBox = observation.boundingBox
+        framesSinceNav = 0
+      }
+    }
 }
