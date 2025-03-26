@@ -239,4 +239,4 @@ crashlytics-build.properties
 fabric.properties
 
 # API KEY
-.xcconfig
+Secrets.xcconfig
