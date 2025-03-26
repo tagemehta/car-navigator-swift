@@ -87,11 +87,7 @@ class InputViewController: UIViewController {
     let colorLocal = String(words[0])
     let modelLocal = words[1...].joined(separator: " ").lowercased()
     if let color = colorMapping[colorLocal.lowercased()] {
-      if ModelConstants.modelValues.contains(modelLocal) {
-        return (color: color, model: modelLocal, error: nil)
-      } else {
-        return (color: nil, model: nil, error: "We can't find that model of car")
-      }
+      return (color: color, model: modelLocal, error: nil)
     } else {
       return (color: nil, model: nil, error: "We don't know that color")
     }

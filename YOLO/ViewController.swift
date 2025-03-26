@@ -17,7 +17,7 @@ import CoreMedia
 import UIKit
 import Vision
 
-var mlModel = try! carDetector(configuration: .init()).model
+var mlModel = try! pureDetectCars(configuration: .init()).model
 var classificationModel = try! carClassifier(configuration: .init()).model
 
 class ViewController: UIViewController {
