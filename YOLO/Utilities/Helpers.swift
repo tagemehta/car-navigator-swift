@@ -114,7 +114,11 @@ extension ViewController {
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("Bearer ", forHTTPHeaderField: "Authorization")
+      
+    let token = Bundle.main.infoDictionary?["GPT_APIKEY_BEARER"] as? String ?? ""
+      
+    print(token)
+    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
     let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
     request.httpBody = jsonData

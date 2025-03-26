@@ -23,6 +23,7 @@
 		63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44D22186177008AE681 /* LaunchScreen.storyboard */; };
 		63CF37202514455300E2DEA1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44F22186177008AE681 /* Main.storyboard */; };
 		8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */; };
+		CE454B022D94BE73008659A9 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = CE454B012D94BE73008659A9 /* Secrets.xcconfig */; };
 		CE7D850B2D0630E40084DC9F /* carfinder.png in Resources */ = {isa = PBXBuildFile; fileRef = CE7D850A2D0630E40084DC9F /* carfinder.png */; };
 		CEE513382D056EA900F24921 /* TextToSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE513372D056EA500F24921 /* TextToSpeech.swift */; };
 /* End PBXBuildFile section */
@@ -48,6 +49,7 @@
 		7BCB411721C3096100BFC4D0 /* YOLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YOLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoundingBoxView.swift; sourceTree = "<group>"; };
 		8EDAAA4507D2D23D7FAB827F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		CE454B012D94BE73008659A9 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		CE7D850A2D0630E40084DC9F /* carfinder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = carfinder.png; sourceTree = "<group>"; };
 		CEE513372D056EA500F24921 /* TextToSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextToSpeech.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -109,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				8EDAAA4507D2D23D7FAB827F /* README.md */,
+				CE454B012D94BE73008659A9 /* Secrets.xcconfig */,
 				636EFC9B21E62DD300DE43BC /* YOLO */,
 				63B8B0A821E62A890026FBC3 /* .gitignore */,
 				7BCB411821C3096100BFC4D0 /* Products */,
@@ -185,6 +188,7 @@
 			files = (
 				636EFCB921E62E3900DE43BC /* Assets.xcassets in Resources */,
 				63CF37202514455300E2DEA1 /* Main.storyboard in Resources */,
+				CE454B022D94BE73008659A9 /* Secrets.xcconfig in Resources */,
 				CE7D850B2D0630E40084DC9F /* carfinder.png in Resources */,
 				63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */,
 				633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */,
@@ -358,6 +362,7 @@
 		};
 		7BCB412A21C3096200BFC4D0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CE454B012D94BE73008659A9 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -386,6 +391,7 @@
 		};
 		7BCB412B21C3096200BFC4D0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CE454B012D94BE73008659A9 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
