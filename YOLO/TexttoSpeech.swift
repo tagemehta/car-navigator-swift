@@ -12,6 +12,10 @@ class TextToSpeechHelper {
     private let synthesizer = AVSpeechSynthesizer()
     
     func speak(text: String) {
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)  // Interrupt immediately
+        }
+        
         // Create an utterance with the text
         let utterance = AVSpeechUtterance(string: text)
         

@@ -831,6 +831,7 @@ extension ViewController: VideoCaptureDelegate {
               }
               
               print("Done creating tracking requests!")
+//              self.ttsHelper.speak(text: "Hold still")
               
               // After creating tracking requests, make call to GPT
               // Use Task to handle the async work without blocking
@@ -850,19 +851,20 @@ extension ViewController: VideoCaptureDelegate {
                       
                       for result in results {
                           if result.isMatch && !result.car.isLostInTracking{
-                              // Add the matched car to our list
-                              matchedCars.append(result.car)
-                              print("Car matched with confidence: \(result.confidence)")
-                          }
-                          else{
-                              let boundingBox = result.car.boundingBox // include confidence
-                              let midPoint = (boundingBox.midX, boundingBox.midY)
-                              if midPoint.0 < 0.4 {
-                                  ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the left side of your screen.")
-                              } else if midPoint.0 > 0.6 {
-                                  ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the right side of your screen.")
+                              if !result.car.isLostInTracking{
+                                  // Add the matched car to our list
+                                  matchedCars.append(result.car)
+                                  print("Car matched with confidence: \(result.confidence)")
                               } else {
-                                  ttsHelper.speak(text: "Car was found but lost in tracking.")
+                                  let boundingBox = result.car.boundingBox // include confidence
+                                  let midPoint = (boundingBox.midX, boundingBox.midY)
+                                  if midPoint.0 < 0.4 {
+                                      ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the left side of your screen.")
+                                  } else if midPoint.0 > 0.6 {
+                                      ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the right side of your screen.")
+                                  } else {
+                                      ttsHelper.speak(text: "Car was found but lost in tracking.")
+                                  }
                               }
                           }
                       }
@@ -876,16 +878,18 @@ extension ViewController: VideoCaptureDelegate {
                               let ogHeight = CGFloat(CVPixelBufferGetHeight(currentBuffer))
                               
                               print("We have found the car!")
-                              self.ttsHelper.speak(text: "We have found the car!")
+//                              self.ttsHelper.speak(text: "We have found the car!")
                               self.isFound = true
                               
-                              let rectNew = CGRect(
+                              var rectNew = CGRect(
                                 x: observation.boundingBox.origin.x * ogWidth,
                                 y: observation.boundingBox.origin.y * ogHeight,
                                 width: observation.boundingBox.size.width * ogWidth,
                                 height: observation.boundingBox.size.height * ogHeight)
                               detectedCar = firstMatch
                           }
+                      } else if matchedCars.isEmpty && !self.isFound{
+                          self.ttsHelper.speak(text: "No matching cars found in this batch")
                       }
                       
                       // Reset the GPT call flag
@@ -902,9 +906,9 @@ extension ViewController: VideoCaptureDelegate {
                       self.carsCurrentlyInGPT = []
                       
                       // If no matches were found, provide feedback
-                      if matchedCars.isEmpty && !self.isFound {
-                          self.ttsHelper.speak(text: "No matching cars found in this batch")
-                      }
+//                      if matchedCars.isEmpty && !self.isFound {
+//                          self.ttsHelper.speak(text: "No matching cars found in this batch")
+//                      }
                       
                   } // End of mainactor.run
                   
@@ -924,7 +928,7 @@ extension ViewController: VideoCaptureDelegate {
         // Track the object every frame
         if let result = trackObject(in: sampleBuffer) {
           // Navigate once every 60 frames
-          if framesSinceNav == 60 {
+          if framesSinceNav == 60 || framesSinceNav == 0 { // starts at 0 for first call, resets to 1 for calls after
               navigate(boundingBox: result)
           } else {
             framesSinceNav += 1
@@ -937,6 +941,7 @@ extension ViewController: VideoCaptureDelegate {
           detectedCar = nil
           lastNavigatedBox = CGRect.zero
           framesSinceNav = 0
+            self.ttsHelper.speak(text: "Lost car tracking, switching back to detection mode")
           print("Switching back")
        }
     }
@@ -999,22 +1004,26 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
 extension ViewController {
 
     private func navigate(boundingBox: CGRect) {
-      print(detectedCar)
+//      print(detectedCar)
         
       detectedCar?.boundingBox = boundingBox
       let area = boundingBox.width * boundingBox.height
       let midPoint = (boundingBox.midX, boundingBox.midY)
 
     // Include midpoint calculation to see if bounding box is off the screen
+        var pre = ""
+        if framesSinceNav == 0 {
+            pre = "We have found the car!. "
+        }
         
       if midPoint.0 < 0.4 {
-        ttsHelper.speak(text: "Turn slightly left")
+        ttsHelper.speak(text: "\(pre) Turn slightly left")
       } else if midPoint.0 > 0.6 {
-        ttsHelper.speak(text: "Turn slightly right")
+        ttsHelper.speak(text: "\(pre) Turn slightly right")
       } else {
-        ttsHelper.speak(text: "Straight ahead")
+        ttsHelper.speak(text: "\(pre) Straight ahead")
       }
       lastNavigatedBox = boundingBox
-      framesSinceNav = 0
+      framesSinceNav = 1
   }
 }
