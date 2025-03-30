@@ -425,20 +425,22 @@ class ViewController: UIViewController {
 
       // Retrieve the updated bounding box
       if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation,
-        trackingRequest.isLastFrame == false
-      {
+        trackingRequest.isLastFrame == false{
+          
           // If confidence of the tracking is too small, then just set tracking request to nil and stop
           if observation.confidence < 0.5{
               detectedCar?.trackingRequest = nil
               return nil
           }
+          
         trackingRequest.inputObservation = observation
-        let rectNew = CGRect(
-          x: observation.boundingBox.origin.x * videoPreview.bounds.width,
-          y: (1 - observation.boundingBox.origin.y - observation.boundingBox.height) * videoPreview.bounds.height,
-          width: observation.boundingBox.width * videoPreview.bounds.width,
-          height: observation.boundingBox.height * videoPreview.bounds.height)
+        
         DispatchQueue.main.async {
+            let rectNew = CGRect(
+                x: observation.boundingBox.origin.x * self.videoPreview.bounds.width,
+                y: (1 - observation.boundingBox.origin.y - observation.boundingBox.height) * self.videoPreview.bounds.height,
+                width: observation.boundingBox.width * self.videoPreview.bounds.width,
+                height: observation.boundingBox.height * self.videoPreview.bounds.height)
           self.boundingBoxViews[0].show(frame: rectNew, label: "Detected Car", color: .red, alpha: 0.5)
         }
         return observation.boundingBox
@@ -836,7 +838,6 @@ extension ViewController: VideoCaptureDelegate {
               Task {
                   // First, capture any values we need from self to avoid strong reference cycles
                   let carDescription = self.carMakeModelfilter
-                  let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
                   
                   // Process the cars asynchronously
                   print("About to make the GPT Call!")
@@ -871,10 +872,6 @@ extension ViewController: VideoCaptureDelegate {
                       if matchedCars.count > 0 && !self.isFound {
                           // If we want to track the first matched car
                           if let firstMatch = matchedCars.first, let currentBuffer = currentBuffer {
-                              let observation = firstMatch.detectionObservation
-                              let ogWidth = CGFloat(CVPixelBufferGetWidth(currentBuffer))
-                              let ogHeight = CGFloat(CVPixelBufferGetHeight(currentBuffer))
-                              
                               print("We have found the car!")
                               self.isFound = true
 
