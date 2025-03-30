@@ -428,7 +428,7 @@
 				7BCB412821C3096200BFC4D0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		7BCB412921C3096200BFC4D0 /* Build configuration list for PBXNativeTarget "YOLO" */ = {
 			isa = XCConfigurationList;
@@ -437,7 +437,7 @@
 				7BCB412B21C3096200BFC4D0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

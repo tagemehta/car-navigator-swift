@@ -1,7 +1,7 @@
 import CoreMedia
 import Vision
 
-struct Car {
+class Car {
   var image: CGImage
   var detectionObservation: VNRecognizedObjectObservation
   var trackingRequest: VNTrackObjectRequest?
