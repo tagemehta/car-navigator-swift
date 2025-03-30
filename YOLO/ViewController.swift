@@ -382,11 +382,9 @@ class ViewController: UIViewController {
     }
   }
 
-  func initializeTracker(with boundingBox: CGRect, in pixelBuffer: CVImageBuffer) {
+  func startNavigation(in pixelBuffer: CVImageBuffer) {
     let ciImage = CIImage(cvImageBuffer: pixelBuffer)
     let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
-    // Create a VNDetectedObjectObservation
-    let initialObservation = VNDetectedObjectObservation(boundingBox: boundingBox)
 
     // Create a tracking request
       let trackingRequest = detectedCar?.trackingRequest
@@ -437,7 +435,7 @@ class ViewController: UIViewController {
         trackingRequest.inputObservation = observation
         let rectNew = CGRect(
           x: observation.boundingBox.origin.x * videoPreview.bounds.width,
-          y: observation.boundingBox.origin.y * videoPreview.bounds.height,
+          y: (1 - observation.boundingBox.origin.y - observation.boundingBox.height) * videoPreview.bounds.height,
           width: observation.boundingBox.width * videoPreview.bounds.width,
           height: observation.boundingBox.height * videoPreview.bounds.height)
         DispatchQueue.main.async {
@@ -850,7 +848,7 @@ extension ViewController: VideoCaptureDelegate {
                       var matchedCars: [Car] = []
                       
                       for result in results {
-                          if result.isMatch && !result.car.isLostInTracking{
+                          if result.isMatch{
                               if !result.car.isLostInTracking{
                                   // Add the matched car to our list
                                   matchedCars.append(result.car)
@@ -878,15 +876,10 @@ extension ViewController: VideoCaptureDelegate {
                               let ogHeight = CGFloat(CVPixelBufferGetHeight(currentBuffer))
                               
                               print("We have found the car!")
-//                              self.ttsHelper.speak(text: "We have found the car!")
                               self.isFound = true
-                              
-                              var rectNew = CGRect(
-                                x: observation.boundingBox.origin.x * ogWidth,
-                                y: observation.boundingBox.origin.y * ogHeight,
-                                width: observation.boundingBox.size.width * ogWidth,
-                                height: observation.boundingBox.size.height * ogHeight)
+
                               detectedCar = firstMatch
+                              self.startNavigation(in: currentBuffer)
                           }
                       } else if matchedCars.isEmpty && !self.isFound{
                           self.ttsHelper.speak(text: "No matching cars found in this batch")
@@ -1004,10 +997,8 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
 extension ViewController {
 
     private func navigate(boundingBox: CGRect) {
-//      print(detectedCar)
-        
       detectedCar?.boundingBox = boundingBox
-      let area = boundingBox.width * boundingBox.height
+    // let area = boundingBox.width * boundingBox.height
       let midPoint = (boundingBox.midX, boundingBox.midY)
 
     // Include midpoint calculation to see if bounding box is off the screen
