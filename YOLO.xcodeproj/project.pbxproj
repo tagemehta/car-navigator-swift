@@ -26,7 +26,7 @@
 		CE454B022D94BE73008659A9 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = CE454B012D94BE73008659A9 /* Secrets.xcconfig */; };
 		CE7D850B2D0630E40084DC9F /* carfinder.png in Resources */ = {isa = PBXBuildFile; fileRef = CE7D850A2D0630E40084DC9F /* carfinder.png */; };
 		CEE513382D056EA900F24921 /* TextToSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE513372D056EA500F24921 /* TextToSpeech.swift */; };
-		E7B835C02DA1EEC800736685 /* yolo11n 3.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = E7B835BF2DA1EEC800736685 /* yolo11n 3.mlpackage */; };
+		E7B835C42DA1F04E00736685 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = E7B835C32DA1F04E00736685 /* yolo11n.mlpackage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,7 +53,7 @@
 		CE454B012D94BE73008659A9 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		CE7D850A2D0630E40084DC9F /* carfinder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = carfinder.png; sourceTree = "<group>"; };
 		CEE513372D056EA500F24921 /* TextToSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextToSpeech.swift; sourceTree = "<group>"; };
-		E7B835BF2DA1EEC800736685 /* yolo11n 3.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo11n 3.mlpackage"; sourceTree = "<group>"; };
+		E7B835C32DA1F04E00736685 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,7 +105,7 @@
 				31CC56422D06936C0037C289 /* carClassifier.mlpackage */,
 				31CC56362D0684110037C289 /* carDetector.mlmodel */,
 				31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */,
-				E7B835BF2DA1EEC800736685 /* yolo11n 3.mlpackage */,
+				E7B835C32DA1F04E00736685 /* yolo11n.mlpackage */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -232,12 +232,12 @@
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
 				314CB55D2D05429C00EBA818 /* Helpers.swift in Sources */,
-				E7B835C02DA1EEC800736685 /* yolo11n 3.mlpackage in Sources */,
 				31A82AA12D08C04F0092CBE5 /* pureDetectCars.mlmodel in Sources */,
 				636EFCB321E62DD300DE43BC /* AppDelegate.swift in Sources */,
 				314CB5572D04E6E000EBA818 /* InputViewController.swift in Sources */,
 				636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */,
 				8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */,
+				E7B835C42DA1F04E00736685 /* yolo11n.mlpackage in Sources */,
 				31DCAEF62D7E52BD000B0B24 /* Car.swift in Sources */,
 				31CC56372D0684110037C289 /* carDetector.mlmodel in Sources */,
 			);
