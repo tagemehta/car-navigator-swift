@@ -18,7 +18,6 @@ import UIKit
 import Vision
 
 var mlModel = try! pureDetectCars(configuration: .init()).model
-var classificationModel = try! carClassifier(configuration: .init()).model
 
 class ViewController: UIViewController {
   @IBOutlet var videoPreview: UIView!
@@ -54,7 +53,6 @@ class ViewController: UIViewController {
 
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
-  var classifier = try! VNCoreMLModel(for: classificationModel)
   var session: AVCaptureSession!
   var videoCapture: VideoCapture!
   var currentBuffer: CVPixelBuffer?
@@ -74,7 +72,10 @@ class ViewController: UIViewController {
   let save_detections = false  // write every detection to detections.txt
   let save_frames = false  // write every frame to frames.txt
 
-  // Text to Speech Helper
+    @IBAction func cancel(_ sender: Any) {
+        self.dismiss(animated: true, completion: nil)
+    }
+    // Text to Speech Helper
   let ttsHelper = TextToSpeechHelper()
 
   lazy var visionRequest: VNCoreMLRequest = {
@@ -86,12 +87,6 @@ class ViewController: UIViewController {
       })
     // NOTE: BoundingBoxView object scaling depends on request.imageCropAndScaleOption https://developer.apple.com/documentation/vision/vnimagecropandscaleoption
     request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
-    return request
-  }()
-  lazy var classificationRequest: VNRequest = {
-    let request = VNCoreMLRequest(model: classifier)
-    request.imageCropAndScaleOption = .centerCrop
-
     return request
   }()
 

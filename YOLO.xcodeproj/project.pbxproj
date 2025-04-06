@@ -11,9 +11,8 @@
 		314CB55D2D05429C00EBA818 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314CB55C2D05429A00EBA818 /* Helpers.swift */; };
 		31A82AA12D08C04F0092CBE5 /* pureDetectCars.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */; };
 		31CC56372D0684110037C289 /* carDetector.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 31CC56362D0684110037C289 /* carDetector.mlmodel */; };
-		31CC563D2D068F1D0037C289 /* yolo11n-cls.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */; };
-		31CC56432D06936C0037C289 /* carClassifier.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 31CC56422D06936C0037C289 /* carClassifier.mlpackage */; };
 		31DCAEF62D7E52BD000B0B24 /* Car.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31DCAEF52D7E52BD000B0B24 /* Car.swift */; };
+		3C1064322DA3383800E3E842 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3C1064312DA3383800E3E842 /* Secrets.xcconfig */; };
 		633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 633BC6FA22EDE73D00821BCA /* Settings.bundle */; };
 		636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636166E9251443B20054FA7E /* ThresholdProvider.swift */; };
 		636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636EFC9C21E62DD300DE43BC /* ViewController.swift */; };
@@ -23,7 +22,6 @@
 		63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44D22186177008AE681 /* LaunchScreen.storyboard */; };
 		63CF37202514455300E2DEA1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44F22186177008AE681 /* Main.storyboard */; };
 		8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */; };
-		CE454B022D94BE73008659A9 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = CE454B012D94BE73008659A9 /* Secrets.xcconfig */; };
 		CE7D850B2D0630E40084DC9F /* carfinder.png in Resources */ = {isa = PBXBuildFile; fileRef = CE7D850A2D0630E40084DC9F /* carfinder.png */; };
 		CEE513382D056EA900F24921 /* TextToSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE513372D056EA500F24921 /* TextToSpeech.swift */; };
 /* End PBXBuildFile section */
@@ -33,9 +31,8 @@
 		314CB55C2D05429A00EBA818 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = pureDetectCars.mlmodel; sourceTree = "<group>"; };
 		31CC56362D0684110037C289 /* carDetector.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = carDetector.mlmodel; sourceTree = "<group>"; };
-		31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "yolo11n-cls.mlpackage"; sourceTree = "<group>"; };
-		31CC56422D06936C0037C289 /* carClassifier.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = carClassifier.mlpackage; sourceTree = "<group>"; };
 		31DCAEF52D7E52BD000B0B24 /* Car.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Car.swift; sourceTree = "<group>"; };
+		3C1064312DA3383800E3E842 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		6323C44D22186177008AE681 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6323C44F22186177008AE681 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		632892DF22EB3DB100A12D9C /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; path = Info.plist; sourceTree = "<group>"; };
@@ -49,7 +46,6 @@
 		7BCB411721C3096100BFC4D0 /* YOLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YOLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoundingBoxView.swift; sourceTree = "<group>"; };
 		8EDAAA4507D2D23D7FAB827F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		CE454B012D94BE73008659A9 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		CE7D850A2D0630E40084DC9F /* carfinder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = carfinder.png; sourceTree = "<group>"; };
 		CEE513372D056EA500F24921 /* TextToSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextToSpeech.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -100,9 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */,
-				31CC56422D06936C0037C289 /* carClassifier.mlpackage */,
 				31CC56362D0684110037C289 /* carDetector.mlmodel */,
-				31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -111,7 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				8EDAAA4507D2D23D7FAB827F /* README.md */,
-				CE454B012D94BE73008659A9 /* Secrets.xcconfig */,
+				3C1064312DA3383800E3E842 /* Secrets.xcconfig */,
 				636EFC9B21E62DD300DE43BC /* YOLO */,
 				63B8B0A821E62A890026FBC3 /* .gitignore */,
 				7BCB411821C3096100BFC4D0 /* Products */,
@@ -188,7 +182,7 @@
 			files = (
 				636EFCB921E62E3900DE43BC /* Assets.xcassets in Resources */,
 				63CF37202514455300E2DEA1 /* Main.storyboard in Resources */,
-				CE454B022D94BE73008659A9 /* Secrets.xcconfig in Resources */,
+				3C1064322DA3383800E3E842 /* Secrets.xcconfig in Resources */,
 				CE7D850B2D0630E40084DC9F /* carfinder.png in Resources */,
 				63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */,
 				633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */,
@@ -223,8 +217,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				31CC56432D06936C0037C289 /* carClassifier.mlpackage in Sources */,
-				31CC563D2D068F1D0037C289 /* yolo11n-cls.mlpackage in Sources */,
 				CEE513382D056EA900F24921 /* TextToSpeech.swift in Sources */,
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
@@ -362,13 +354,12 @@
 		};
 		7BCB412A21C3096200BFC4D0 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CE454B012D94BE73008659A9 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0;
-				DEVELOPMENT_TEAM = U4724ACD4N;
+				DEVELOPMENT_TEAM = G9YGLVF559;
 				INFOPLIST_FILE = YOLO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ultralytics YOLO";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -378,7 +369,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinders;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFindershdohwao;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -391,13 +382,12 @@
 		};
 		7BCB412B21C3096200BFC4D0 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CE454B012D94BE73008659A9 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0;
-				DEVELOPMENT_TEAM = U4724ACD4N;
+				DEVELOPMENT_TEAM = G9YGLVF559;
 				INFOPLIST_FILE = YOLO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ultralytics YOLO";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -407,7 +397,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinders;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFindershdohwao;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
