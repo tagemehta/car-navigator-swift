@@ -190,3 +190,117 @@ extension ViewController {
     }
   }
 }
+
+extension InputViewController{
+    // Async function to send a single car to GPT and get a structured result
+    func sendImgToGPT(img: UIImage) async throws -> String {
+      guard let imageData = img.jpegData(compressionQuality: 0.8) else {
+        throw NSError(
+          domain: "ImageConversionError", code: 1,
+          userInfo: [NSLocalizedDescriptionKey: "Failed to convert CGImage to JPEG data"])
+      }
+
+      // Encode Data to Base64 String
+      let base64ImageString = imageData.base64EncodedString()
+
+      // Create JSON Payload
+      let jsonPayload: [String: Any] = [
+        "model": "gpt-4o",
+        "messages": [
+          [
+            "role": "system",
+            "content": [
+              [
+                "type": "text",
+                "text":
+                  "You are an AI assistant that determines the type of car that fills a majority of the image. Respond strictly in JSON format as per the provided schema.",
+              ]
+            ],
+          ],
+          [
+            "role": "user",
+            "content": [
+              [
+                "type": "text",
+                "text":
+                  "What is the make, model, and color of the car most prominent in the input image?",
+              ],
+              ["type": "image_url", "image_url": ["url": "data:image/png;base64,\(base64ImageString)"]],
+            ],
+          ],
+        ],
+        "functions": [
+            [
+              "name": "detect_car_details",
+              "description": "Determines the make, model, and color of the car from the image.",
+              "parameters": [
+                "type": "object",
+                "properties": [
+                  "make": [
+                    "type": "string",
+                    "description": "The make of the car, e.g., Toyota."
+                  ],
+                  "model": [
+                    "type": "string",
+                    "description": "The model of the car, e.g., Camry."
+                  ],
+                  "color": [
+                    "type": "string",
+                    "description": "The color of the car, e.g., Black."
+                  ]
+                ],
+                "required": ["make", "model", "color"]
+              ]
+            ]
+          ],
+        "response_format": ["type": "json_object"],
+        "max_tokens": 50,
+      ]
+
+      // Make HTTP POST Request
+      guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+        throw NSError(
+          domain: "URLError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+      }
+
+      var request = URLRequest(url: url)
+      request.httpMethod = "POST"
+      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+      let token = Bundle.main.infoDictionary?["GPT_APIKEY_BEARER"] as? String ?? ""
+        
+      request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+      let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
+      request.httpBody = jsonData
+        
+      // Use URLSession with async/await
+      let (data, _) = try await URLSession.shared.data(for: request)
+        
+      // Parse the response
+      let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+        
+      // Extract the match result
+      guard let choices = jsonResponse?["choices"] as? [[String: Any]],
+        let firstChoice = choices.first,
+        let message = firstChoice["message"] as? [String: Any],
+        let functionCall = message["function_call"] as? [String: Any],
+        let arguments = functionCall["arguments"] as? String,
+        let argumentsData = arguments.data(using: .utf8),
+        let parsedArguments = try? JSONSerialization.jsonObject(with: argumentsData, options: [])
+          as? [String: Any],
+        let make = parsedArguments["make"] as? String,
+        let model = parsedArguments["model"] as? String,
+        let color = parsedArguments["color"] as? String else {
+
+        throw NSError(
+          domain: "ResponseParsingError", code: 3,
+          userInfo: [NSLocalizedDescriptionKey: "Failed to parse match result from response"])
+      }
+
+      // Extract confidence with a default value if not present
+      let confidence = parsedArguments["confidence"] as? Double ?? 0.5
+
+      return "We have detected a \(color), \(make) \(model)"
+    }
+}

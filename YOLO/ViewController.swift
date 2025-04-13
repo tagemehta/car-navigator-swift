@@ -64,7 +64,6 @@ class ViewController: UIViewController {
   var t2 = 0.0  // inference dt smoothed
   var t3 = CACurrentMediaTime()  // FPS start
   var t4 = 0.0  // FPS dt smoothed
-  // var cameraOutput: AVCapturePhotoOutput!
   var longSide: CGFloat = 3
   var shortSide: CGFloat = 4
   var frameSizeCaptured = false
@@ -127,22 +126,9 @@ class ViewController: UIViewController {
 
   @IBAction func takePhoto(_ sender: Any?) {
     let t0 = DispatchTime.now().uptimeNanoseconds
-
-    // 1. captureSession and cameraOutput
-    // session = videoCapture.captureSession  // session = AVCaptureSession()
-    // session.sessionPreset = AVCaptureSession.Preset.photo
-    // cameraOutput = AVCapturePhotoOutput()
-    // cameraOutput.isHighResolutionCaptureEnabled = true
-    // cameraOutput.isDualCameraDualPhotoDeliveryEnabled = true
-    // print("1 Done: ", Double(DispatchTime.now().uptimeNanoseconds - t0) / 1E9)
-
-    // 2. Settings
     let settings = AVCapturePhotoSettings()
-    // settings.flashMode = .off
-    // settings.isHighResolutionPhotoEnabled = cameraOutput.isHighResolutionCaptureEnabled
-    // settings.isDualCameraDualPhotoDeliveryEnabled = self.videoCapture.cameraOutput.isDualCameraDualPhotoDeliveryEnabled
 
-    // 3. Capture Photo
+    // Capture Photo
     usleep(20_000)  // short 10 ms delay to allow camera to focus
     self.videoCapture.cameraOutput.capturePhoto(
       with: settings, delegate: self as AVCapturePhotoCaptureDelegate)
@@ -1005,9 +991,9 @@ extension ViewController {
         }
         
       if midPoint.0 < 0.4 {
-        ttsHelper.speak(text: "\(pre) Turn slightly left")
+        ttsHelper.speak(text: "\(pre) Car is on your left")
       } else if midPoint.0 > 0.6 {
-        ttsHelper.speak(text: "\(pre) Turn slightly right")
+        ttsHelper.speak(text: "\(pre) Car is on your right")
       } else {
         ttsHelper.speak(text: "\(pre) Straight ahead")
       }

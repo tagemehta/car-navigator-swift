@@ -6,9 +6,12 @@
 //  Copyright © 2024 Ultralytics. All rights reserved.
 //
 import UIKit
+import AVFoundation
 
 class InputViewController: UIViewController {
   @IBOutlet weak var textField: UITextField!
+  var videoCapture: VideoCapture!
+
   private let feedBackGenerator = UINotificationFeedbackGenerator()
   private var args: (color: String?, model: String?, error: String?) = (
     color: nil, model: nil, error: nil
@@ -44,6 +47,13 @@ class InputViewController: UIViewController {
     textField.delegate = self
   }
 
+    @IBAction func confirmCar(_ sender: Any){
+        usleep(20_000)  // short 10 ms delay to allow camera to focus
+        let settings = AVCapturePhotoSettings()
+
+        videoCapture.cameraOutput.capturePhoto(with: settings, delegate: self)
+    }
+    
   override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
     var errorMsg = ""
     if let text = textField.text, !text.isEmpty {
@@ -98,5 +108,32 @@ extension InputViewController: UITextFieldDelegate {
   func textFieldShouldReturn(_ textField: UITextField) -> Bool {
     textField.resignFirstResponder()
     return true
+  }
+}
+
+extension InputViewController: AVCapturePhotoCaptureDelegate {
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   didFinishProcessingPhoto photo: AVCapturePhoto,
+                   error: Error?) {
+    if let error = error {
+      print("Error capturing photo: \(error.localizedDescription)")
+      return
+    }
+    
+    guard let imageData = photo.fileDataRepresentation(),
+          let image = UIImage(data: imageData) else {
+      print("Failed to process photo data.")
+      return
+    }
+    
+      Task{
+          do{
+              let result = try await self.sendImgToGPT(img: image)
+              ttsHelper.speak(text: result)
+          }
+          catch{
+              print("Error received when passing image into GPT")
+          }
+      }
   }
 }

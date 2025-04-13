@@ -378,7 +378,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinders;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinder2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -407,7 +407,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinders;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinder2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
