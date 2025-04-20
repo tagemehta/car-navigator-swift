@@ -63,8 +63,7 @@
                                     <constraint firstAttribute="width" constant="233.66999999999999" id="rU5-5l-1PZ"/>
                                 </constraints>
                             </stackView>
-
-                          <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WnR-UP-7FR">
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WnR-UP-7FR">
                                 <rect key="frame" x="231" y="59" width="116" height="58"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <state key="normal" title="Button"/>
@@ -75,7 +74,6 @@
                                     <action selector="confirmCar:" destination="mLa-FU-RYk" eventType="touchDown" id="sFY-Yt-S7i"/>
                                 </connections>
                             </button>
-
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="uIB-kD-N2o">
                                 <rect key="frame" x="133" y="796" width="126" height="35"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -235,6 +233,16 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" insetsLayoutMarginsFromSafeArea="NO" text="GPT State" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gWp-8n-7VO" userLabel="zoom">
+                                <rect key="frame" x="255" y="731" width="110" height="21"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <accessibility key="accessibilityConfiguration">
+                                    <accessibilityTraits key="traits" staticText="YES" updatesFrequently="YES"/>
+                                </accessibility>
+                                <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
+                                <color key="textColor" systemColor="groupTableViewBackgroundColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -266,8 +274,8 @@
                     <connections>
                         <outlet property="View0" destination="8bC-Xf-vdC" id="Nwc-r7-Csg"/>
                         <outlet property="activityIndicator" destination="lOR-xu-27i" id="RHs-yl-MIU"/>
+                        <outlet property="gptStateLabel" destination="gWp-8n-7VO" id="RS9-B7-FY1"/>
                         <outlet property="info2" destination="H8b-RX-T3K" id="qcG-qO-Vvu"/>
-                        <outlet property="gptStateLabel" destination="cb5-vP-Rnf" id="4XR-fN-JXR"/>
                         <outlet property="labelFPS" destination="BZf-Ft-ERG" id="beX-1M-6KR"/>
                         <outlet property="labelName" destination="Hif-Vv-5nn" id="BQr-fg-dFd"/>
                         <outlet property="labelVersion" destination="OCe-bb-RWv" id="MoL-rU-F2n"/>
