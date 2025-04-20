@@ -240,6 +240,7 @@
 /* Begin XCBuildConfiguration section */
 		7BCB412721C3096200BFC4D0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3C1064312DA3383800E3E842 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -302,6 +303,7 @@
 		};
 		7BCB412821C3096200BFC4D0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3C1064312DA3383800E3E842 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;

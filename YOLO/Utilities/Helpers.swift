@@ -3,7 +3,7 @@
 //  YOLO
 //
 //  Created by Sam Mehta on 12/7/24.
-//  Copyright © 2024 Ultralytics. All rights reserved.
+//  Copyright 2024 Ultralytics. All rights reserved.
 //
 import CoreGraphics
 import CoreMedia
@@ -19,6 +19,7 @@ struct CarMatchResult {
   let car: Car  // This references the Car struct defined elsewhere in the project
   let isMatch: Bool
   let confidence: Double
+  let error: String?  // Optional error message field
 }
 
 extension ViewController {
@@ -44,12 +45,15 @@ extension ViewController {
   }
 
   // Async function to send a single car to GPT and get a structured result
-  func sendCarToGPT(car: Car, carDescription: String) async throws -> CarMatchResult {
+  func sendCarToGPT(car: Car, carDescription: String) async -> CarMatchResult {
     let uiImage = UIImage(cgImage: car.image)
     guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
-      throw NSError(
-        domain: "ImageConversionError", code: 1,
-        userInfo: [NSLocalizedDescriptionKey: "Failed to convert CGImage to JPEG data"])
+      return CarMatchResult(
+        car: car,
+        isMatch: false,
+        confidence: 0.0,
+        error: "Failed to convert CGImage to JPEG data"
+      )
     }
 
     // Encode Data to Base64 String
@@ -77,7 +81,10 @@ extension ViewController {
               "text":
                 "Does this image contain a car that matches the following description? \(carDescription)",
             ],
-            ["type": "image_url", "image_url": ["url": "data:image/png;base64,\(base64ImageString)"]],
+            [
+              "type": "image_url",
+              "image_url": ["url": "data:image/png;base64,\(base64ImageString)"],
+            ],
           ],
         ],
       ],
@@ -107,71 +114,79 @@ extension ViewController {
 
     // Make HTTP POST Request
     guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-      throw NSError(
-        domain: "URLError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+      return CarMatchResult(
+        car: car,
+        isMatch: false,
+        confidence: 0.0,
+        error: "Invalid URL"
+      )
     }
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      
+
     let token = Bundle.main.infoDictionary?["GPT_APIKEY_BEARER"] as? String ?? ""
-      
+
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-    let jsonData = try JSONSerialization.data(withJSONObject: jsonPayload, options: [])
+    let jsonData = try? JSONSerialization.data(withJSONObject: jsonPayload, options: [])
     request.httpBody = jsonData
-      
+
     // Use URLSession with async/await
-    let (data, _) = try await URLSession.shared.data(for: request)
-      
-    // Parse the response
-    let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-      
-    // Extract the match result
-    guard let choices = jsonResponse?["choices"] as? [[String: Any]],
-      let firstChoice = choices.first,
-      let message = firstChoice["message"] as? [String: Any],
-      let functionCall = message["function_call"] as? [String: Any],
-      let arguments = functionCall["arguments"] as? String,
-      let argumentsData = arguments.data(using: .utf8),
-      let parsedArguments = try? JSONSerialization.jsonObject(with: argumentsData, options: [])
-        as? [String: Any],
-      let match = parsedArguments["match"] as? Bool
-    else {
+    do {
+      let (data, _) = try await URLSession.shared.data(for: request)
 
-      throw NSError(
-        domain: "ResponseParsingError", code: 3,
-        userInfo: [NSLocalizedDescriptionKey: "Failed to parse match result from response"])
+      // Parse the response
+      let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+
+      // Extract the match result
+      guard let choices = jsonResponse?["choices"] as? [[String: Any]],
+        let firstChoice = choices.first,
+        let message = firstChoice["message"] as? [String: Any],
+        let functionCall = message["function_call"] as? [String: Any],
+        let arguments = functionCall["arguments"] as? String,
+        let argumentsData = arguments.data(using: .utf8),
+        let parsedArguments = try? JSONSerialization.jsonObject(with: argumentsData, options: [])
+          as? [String: Any],
+        let match = parsedArguments["match"] as? Bool
+      else {
+        return CarMatchResult(
+          car: car,
+          isMatch: false,
+          confidence: 0.0,
+          error: "Failed to parse match result from response"
+        )
+      }
+
+      // Extract confidence with a default value if not present
+      let confidence = parsedArguments["confidence"] as? Double ?? 0.5
+
+      return CarMatchResult(car: car, isMatch: match, confidence: confidence, error: nil)
+    } catch {
+      return CarMatchResult(
+        car: car,
+        isMatch: false,
+        confidence: 0.0,
+        error: "Network error: \(error.localizedDescription)"
+      )
     }
-
-    // Extract confidence with a default value if not present
-    let confidence = parsedArguments["confidence"] as? Double ?? 0.5
-
-    return CarMatchResult(car: car, isMatch: match, confidence: confidence)
   }
 
   // Function to process multiple cars in parallel and return structured results
   func sendCarsToGPT(cars: [Car], carDescription: String) async -> [CarMatchResult] {
     // Use Task group to handle multiple concurrent requests
-    return await withTaskGroup(of: CarMatchResult?.self) { group in
+    return await withTaskGroup(of: CarMatchResult.self) { group in
       for car in cars {
         group.addTask {
-          do {
-            return try await self.sendCarToGPT(car: car, carDescription: carDescription)
-          } catch {
-            print("Error processing car \(car.id): \(error.localizedDescription)")
-            return nil
-          }
+          return await self.sendCarToGPT(car: car, carDescription: carDescription)
         }
       }
 
       // Collect results
       var results: [CarMatchResult] = []
       for await result in group {
-        if let result = result {
-          results.append(result)
-        }
+        results.append(result)
       }
 
       return results

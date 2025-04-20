@@ -20,8 +20,9 @@ import Vision
 var mlModel = try! yolo11n(configuration: .init()).model
 //var classificationModel = try! carClassifier(configuration: .init()).model
 
-class ViewController: UIViewController {
-    @IBOutlet weak var info2: UILabel!
+class ViewController: UIViewController, VideoCaptureDelegate {
+  @IBOutlet weak var info2: UILabel!
+  @IBOutlet weak var gptStateLabel: UILabel!
   @IBOutlet var videoPreview: UIView!
   @IBOutlet var View0: UIView!
   @IBOutlet var playButtonOutlet: UIBarButtonItem!
@@ -45,15 +46,34 @@ class ViewController: UIViewController {
 
   private var lastNavigatedBox: CGRect = CGRect.zero
   private var framesSinceNav = 0
+  enum GPTState {
+    case idle
+    case waiting
+    case success
+    case failure(String)
+  }
+
+  private let gptCallInterval: TimeInterval = 5.0
+  private var lastGPTCallTime: TimeInterval = 0
+
+  private(set) var gptState: GPTState = .idle {
+    didSet { handleGPTStateChange() }
+  }
+
+  // Replaces your old `gptCallInProgress` flag
+  private var gptCallInProgress: Bool {
+    switch gptState {
+    case .waiting: return true
+    default: return false
+    }
+  }
 
   var filter: String?
   var carColorfilter: String = ""
   var carMakeModelfilter: String = ""
   private var currStreak: Int = 0
-  private var gptCallInProgress: Bool = false
   private var carsCurrentlyInGPT: [Car] = []
   private let validCOCOObjects = ["bicycle", "car", "motorcycle", "bus", "truck"]
-
 
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
@@ -74,17 +94,17 @@ class ViewController: UIViewController {
   let developerMode = UserDefaults.standard.bool(forKey: "developer_mode")  // developer mode selected in settings
   let save_detections = false  // write every detection to detections.txt
   let save_frames = false  // write every frame to frames.txt
+  @IBAction func cancel(_ sender: Any) {
+    self.dismiss(animated: true, completion: nil)
+  }
 
-    @IBAction func cancel(_ sender: Any) {
-        self.dismiss(animated: true, completion: nil)
-    }
-    
-    @IBAction func information2(_ sender: Any) {
-        info2.text = "As you slowly scan your surroundings, we are checking each of the cars. Sometimes, the detections may take longer than others. You may hear, 'No cars found in this batch', which means that we don't think your Uber is on the screen."
-        info2.isHidden.toggle()
-    }
-    
-    // Text to Speech Helper
+  @IBAction func information2(_ sender: Any) {
+    info2.text =
+      "As you slowly scan your surroundings, we are checking each of the cars. Sometimes, the detections may take longer than others. You may hear, 'No cars found in this batch', which means that we don't think your Uber is on the screen."
+    info2.isHidden.toggle()
+  }
+
+  // Text to Speech Helper
   let ttsHelper = TextToSpeechHelper()
 
   lazy var visionRequest: VNCoreMLRequest = {
@@ -327,31 +347,31 @@ class ViewController: UIViewController {
   ) -> [Car] {
     let pixelBuffer = CMSampleBufferGetImageBuffer(pixelBuffer)!
     var stableDetections: [Car] = []
-      for observation in observations {
-          let observation_class = observation.labels[0].identifier
-          if validCOCOObjects.contains(observation_class) {
-              let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
-              let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
-              
-              let imageRect = self.normalizedRectToImageRect(
-                normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
-                modelWidth: 384, modelHeight: 640)  // Hard coded values here
-              let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
-              let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
-              var framesAppearedIn = 0  // Frames where the bounding box has an intersection
-              for pastFrame in pastFrames {
-                  for obj in pastFrame {  // For each detection in the old frame
-                      let iou = self.intersectionOverUnion(
-                        rect1: observation.boundingBox, rect2: obj.boundingBox)
-                      if iou > 0.8 {
-                          framesAppearedIn += 1
-                          break
-                      }
-                  }
-              }
-              if framesAppearedIn > 4 {
-                  stableDetections.append(Car(image: cgImage, observation: observation))
-              }
+    for observation in observations {
+      let observation_class = observation.labels[0].identifier
+      if validCOCOObjects.contains(observation_class) {
+        let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
+        let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
+
+        let imageRect = self.normalizedRectToImageRect(
+          normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
+          modelWidth: 384, modelHeight: 640)  // Hard coded values here
+        let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
+        let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+        var framesAppearedIn = 0  // Frames where the bounding box has an intersection
+        for pastFrame in pastFrames {
+          for obj in pastFrame {  // For each detection in the old frame
+            let iou = self.intersectionOverUnion(
+              rect1: observation.boundingBox, rect2: obj.boundingBox)
+            if iou > 0.8 {
+              framesAppearedIn += 1
+              break
+            }
+          }
+        }
+        if framesAppearedIn > 4 {
+          stableDetections.append(Car(image: cgImage, observation: observation))
+        }
       }
     }
     return stableDetections
@@ -360,7 +380,9 @@ class ViewController: UIViewController {
   func processObservations(for request: VNRequest, error: Error?) {
     DispatchQueue.main.async {
       if let results = request.results as? [VNRecognizedObjectObservation] {
-          let filtered_results = results.filter {self.validCOCOObjects.contains($0.labels[0].identifier)}
+        let filtered_results = results.filter {
+          self.validCOCOObjects.contains($0.labels[0].identifier)
+        }
         self.show(predictions: filtered_results)
       } else {
         self.show(predictions: [])
@@ -381,7 +403,7 @@ class ViewController: UIViewController {
     let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
 
     // Create a tracking request
-      let trackingRequest = detectedCar?.trackingRequest
+    let trackingRequest = detectedCar?.trackingRequest
     currStreak = 0
     // Perform the request on the first frame
     do {
@@ -408,8 +430,8 @@ class ViewController: UIViewController {
       print("Failed to create CGImage")
       return nil
     }
-      
-      guard let trackingRequest = detectedCar?.trackingRequest else {
+
+    guard let trackingRequest = detectedCar?.trackingRequest else {
       print("Tracking request is nil")
       return nil
     }
@@ -419,23 +441,26 @@ class ViewController: UIViewController {
 
       // Retrieve the updated bounding box
       if let observation = trackingRequest.results?.first as? VNDetectedObjectObservation,
-        trackingRequest.isLastFrame == false{
-          
-          // If confidence of the tracking is too small, then just set tracking request to nil and stop
-          if observation.confidence < 0.5{
-              detectedCar?.trackingRequest = nil
-              return nil
-          }
-          
+        trackingRequest.isLastFrame == false
+      {
+
+        // If confidence of the tracking is too small, then just set tracking request to nil and stop
+        if observation.confidence < 0.5 {
+          detectedCar?.trackingRequest = nil
+          return nil
+        }
+
         trackingRequest.inputObservation = observation
-        
+
         DispatchQueue.main.async {
-            let rectNew = CGRect(
-                x: observation.boundingBox.origin.x * self.videoPreview.bounds.width,
-                y: (1 - observation.boundingBox.origin.y - observation.boundingBox.height) * self.videoPreview.bounds.height,
-                width: observation.boundingBox.width * self.videoPreview.bounds.width,
-                height: observation.boundingBox.height * self.videoPreview.bounds.height)
-          self.boundingBoxViews[0].show(frame: rectNew, label: "Detected Car", color: .red, alpha: 0.5)
+          let rectNew = CGRect(
+            x: observation.boundingBox.origin.x * self.videoPreview.bounds.width,
+            y: (1 - observation.boundingBox.origin.y - observation.boundingBox.height)
+              * self.videoPreview.bounds.height,
+            width: observation.boundingBox.width * self.videoPreview.bounds.width,
+            height: observation.boundingBox.height * self.videoPreview.bounds.height)
+          self.boundingBoxViews[0].show(
+            frame: rectNew, label: "Detected Car", color: .red, alpha: 0.5)
         }
         return observation.boundingBox
       }
@@ -445,8 +470,7 @@ class ViewController: UIViewController {
 
     return nil
   }
-    
-    
+
   // Save text file
   func saveText(text: String, file: String = "saved.txt") {
     if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -581,11 +605,9 @@ class ViewController: UIViewController {
       }
 
       for i in 0..<boundingBoxViews.count {
-          if isFound{
-            boundingBoxViews[i].hide()
-          }
-          
-        else if i < predictions.count && i < Int(maxPred) {
+        if isFound {
+          boundingBoxViews[i].hide()
+        } else if i < predictions.count && i < Int(maxPred) {
           let prediction = predictions[i]
 
           var rect = prediction.boundingBox  // normalized xywh, origin lower left
@@ -762,178 +784,220 @@ class ViewController: UIViewController {
     default: break
     }
   }  // Pinch to Zoom End --------------------------------------------------------------------------------------------
-}  // ViewController class End
+}  // ViewController End
 
-extension ViewController: VideoCaptureDelegate {
-  func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
-      
-    // Run the loop if the car has not been found yet
-      
-    if !isFound {
-      // Call car detection to update list of cars that will be passed into GPT
-      var results = detectCars(sampleBuffer: sampleBuffer)
-      // Only care about the results that have a confidence above 50%
-      results = results.filter { $0.confidence > 0.5 }
-      if results.count > 0 {
-        let stableDetections = self.cropStableDetectionsFromBuffer(
-          observations: results, pixelBuffer: sampleBuffer)
-        // Initialize tracking requests and make the GPT Call
-          if stableDetections.count > 0 && !gptCallInProgress {
-              self.gptCallInProgress = true
-              self.carsCurrentlyInGPT = stableDetections
-                            
-              print("Creating tracking requests")
-              
-              // Make the tracking requests for all the cars that will be passed into GPT
-              for car in self.carsCurrentlyInGPT {
-                  // Create a VNDetectedObjectObservation from the car's bounding box
-                  let detectedObjectObservation = VNDetectedObjectObservation(
-                    boundingBox: car.detectionObservation.boundingBox)
-                  
-                  print("about to create the tracking request for " + car.id)
-                  
-                  // Create the tracking request with the observation and set the completion handler during initialization
-                  car.trackingRequest = VNTrackObjectRequest(detectedObjectObservation: detectedObjectObservation) {
-                      request, error in
-                      
-                      if let error = error {
-                          print("Tracking error: \(error)")
-                          return
-                      }
-                      
-                      // Get the observation from the request results
-                      guard let observation = request.results?.first as? VNDetectedObjectObservation else {
-                          print("Invalid tracking observation")
-                          return
-                      }
-                      
-                      // Update the car's bounding box with the new tracking data
-                      DispatchQueue.main.async {
-                          car.trackingConfidence = observation.confidence
-                          
-                          // If confidence is too low, mark for potential removal
-                          if observation.confidence < 0.3 {
-                              car.isLostInTracking = true
-                          }
-                          
-                          // Only update bounding box if car isn't lost
-                          if !car.isLostInTracking{
-                              car.boundingBox = observation.boundingBox
-                          }
-                      }
-                  }
-                  
-                  // Configure the tracking request (optional settings)
-                  car.trackingRequest?.trackingLevel = .accurate
-                  car.trackingRequest?.isLastFrame = false
-              }
-              
-              print("Done creating tracking requests!")
-//              self.ttsHelper.speak(text: "Hold still")
-              
-              // After creating tracking requests, make call to GPT
-              // Use Task to handle the async work without blocking
-              Task {
-                  // First, capture any values we need from self to avoid strong reference cycles
-                  let carDescription = self.carMakeModelfilter
-                  
-                  // Process the cars asynchronously
-                  print("About to make the GPT Call!")
-                  let results = await self.sendCarsToGPT(
-                    cars: stableDetections, carDescription: carDescription)
-                  // Switch to the main thread for UI updates
-                  await MainActor.run {
-                      // Process the structured results
-                      var matchedCars: [Car] = []
-                      
-                      for result in results {
-                          if result.isMatch{
-                              if !result.car.isLostInTracking{
-                                  // Add the matched car to our list
-                                  matchedCars.append(result.car)
-                                  print("Car matched with confidence: \(result.confidence)")
-                              } else {
-                                  let boundingBox = result.car.boundingBox // include confidence
-                                  let midPoint = (boundingBox.midX, boundingBox.midY)
-                                  if midPoint.0 < 0.4 {
-                                      ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the left side of your screen.")
-                                  } else if midPoint.0 > 0.6 {
-                                      ttsHelper.speak(text: "Car was found but lost in tracking. It was last seen on the right side of your screen.")
-                                  } else {
-                                      ttsHelper.speak(text: "Car was found but lost in tracking.")
-                                  }
-                              }
-                          }
-                      }
-                      
-                      // Notify the user if we found a match
-                      if matchedCars.count > 0 && !self.isFound {
-                          // If we want to track the first matched car
-                          if let firstMatch = matchedCars.first, let currentBuffer = currentBuffer {
-                              print("We have found the car!")
-                              self.isFound = true
+extension ViewController {
 
-                              detectedCar = firstMatch
-                              self.startNavigation(in: currentBuffer)
-                          }
-                      } else if matchedCars.isEmpty && !self.isFound{
-                          self.ttsHelper.speak(text: "No matching cars found in this batch")
-                      }
-                      
-                      // Reset the GPT call flag
-                      self.gptCallInProgress = false
-                      
-                      // Get rid of all of the trackers for the cars currently in gpt
-                      for car in self.carsCurrentlyInGPT{
-                          if car.id != detectedCar?.id{
-                              car.trackingRequest = nil
-                              car.isLostInTracking = false
-                              car.boundingBox = CGRect()
-                          }
-                      }
-                      self.carsCurrentlyInGPT = []
-                      
-                      // If no matches were found, provide feedback
-//                      if matchedCars.isEmpty && !self.isFound {
-//                          self.ttsHelper.speak(text: "No matching cars found in this batch")
-//                      }
-                      
-                  } // End of mainactor.run
-                  
-                  print("GPT response received")
-              } // End of Task bracket
-          }
-        }
+  // MARK: — Helpers
 
-        // Update the past frames for the stable detections thing
-        let _ = pastFrames.popLast()
-        pastFrames.insert(results, at: 0)
-        currentBuffer = nil
+  private func handleGPTStateChange() {
+    DispatchQueue.main.async {
+      switch self.gptState {
+      case .idle:
+        self.gptStateLabel.text = "Searching..."
+      case .waiting:
+        self.gptStateLabel.text = "Querying GPT…"
+      case .success:
+        self.gptStateLabel.text = "GPT OK"
+      case .failure(let err):
+        self.gptStateLabel.text = "Error: \(err)"
       }
-      
-      // Car has been found and now we need to track the car
-      else {
-        // Track the object every frame
-        if let result = trackObject(in: sampleBuffer) {
-          // Navigate once every 60 frames
-          if framesSinceNav == 60 || framesSinceNav == 0 { // starts at 0 for first call, resets to 1 for calls after
-              navigate(boundingBox: result)
-          } else {
-            framesSinceNav += 1
-          }
-        }
-        
-        // Object went out of frame, go back to detection mode
-        else {
-          isFound = false
-          detectedCar = nil
-          lastNavigatedBox = CGRect.zero
-          framesSinceNav = 0
-            self.ttsHelper.speak(text: "Lost car tracking, switching back to detection mode")
-          print("Switching back")
-       }
+      print("→ GPTState is now \(self.gptState)")
     }
   }
+
+  /// Centralized entry-point for any GPT calls.
+  private func attemptGPTCall(with cars: [Car]) {
+    let now = CACurrentMediaTime()
+    guard now - lastGPTCallTime >= gptCallInterval else {
+      // print("🔕 Rate‑limit: only \(now - lastGPTCallTime)s since last call.")
+      return
+    }
+    print("\(now - lastGPTCallTime)s since last call.")
+    lastGPTCallTime = now
+    gptState = .waiting
+
+    // 1. Assign cars and build tracking requests immediately
+    self.carsCurrentlyInGPT = cars
+    for car in self.carsCurrentlyInGPT {
+      // Create a VNDetectedObjectObservation from the car's bounding box
+      let detectedObjectObservation = VNDetectedObjectObservation(
+        boundingBox: car.detectionObservation.boundingBox)
+
+      print("about to create the tracking request for " + car.id)
+
+      // Create the tracking request with the observation and set the completion handler during initialization
+      car.trackingRequest = VNTrackObjectRequest(
+        detectedObjectObservation: detectedObjectObservation
+      ) {
+        request, error in
+
+        if let error = error {
+          print("Tracking error: \(error)")
+          return
+        }
+
+        // Get the observation from the request results
+        guard let observation = request.results?.first as? VNDetectedObjectObservation else {
+          print("Invalid tracking observation")
+          return
+        }
+
+        // Update the car's bounding box with the new tracking data
+        DispatchQueue.main.async {
+          car.trackingConfidence = observation.confidence
+
+          // If confidence is too low, mark for potential removal
+          if observation.confidence < 0.3 {
+            car.isLostInTracking = true
+          }
+
+          // Only update bounding box if car isn't lost
+          if !car.isLostInTracking {
+            car.boundingBox = observation.boundingBox
+          }
+        }
+      }
+
+      // Configure the tracking request (optional settings)
+      car.trackingRequest?.trackingLevel = .accurate
+      car.trackingRequest?.isLastFrame = false
+    }
+
+    // 2. Fire off GPT
+    Task {
+      do {
+        let results = await self.sendCarsToGPT(
+          cars: cars,
+          carDescription: self.carMakeModelfilter
+        )
+
+        await MainActor.run {
+          self.processGPTResults(results)
+          self.gptState = .success
+        }
+      } catch {
+        await MainActor.run {
+          self.gptState = .failure(error.localizedDescription)
+        }
+      }
+    }
+  }
+
+  /// Whatever you had in your MainActor.run block, pulled out for clarity
+  private func processGPTResults(_ results: [CarMatchResult]) {
+    // Process the structured results
+    var matchedCars: [Car] = []
+    var errorsFound = false
+    var allResultsHaveErrors = !results.isEmpty  // Start with true if we have results
+
+    for result in results {
+      // Check if this result has an error
+      if let error = result.error {
+        errorsFound = true
+        print("Error processing car: \(error)")
+      } else {
+        // At least one result doesn't have an error
+        allResultsHaveErrors = false
+      }
+
+      if result.isMatch {
+        if !result.car.isLostInTracking {
+          // Add the matched car to our list
+          matchedCars.append(result.car)
+          print("Car matched with confidence: \(result.confidence)")
+        } else {
+          let boundingBox = result.car.boundingBox  // include confidence
+          let midPoint = (boundingBox.midX, boundingBox.midY)
+          if midPoint.0 < 0.4 {
+            ttsHelper.speak(
+              text:
+                "Car was found but lost in tracking. It was last seen on the left side of your screen."
+            )
+          } else if midPoint.0 > 0.6 {
+            ttsHelper.speak(
+              text:
+                "Car was found but lost in tracking. It was last seen on the right side of your screen."
+            )
+          } else {
+            ttsHelper.speak(text: "Car was found but lost in tracking.")
+          }
+        }
+      }
+    }
+
+    // Handle the case where all results have errors
+    if allResultsHaveErrors && results.count > 0 {
+      self.ttsHelper.speak(text: "Unable to process car images due to errors")
+      return
+    }
+
+    // Notify the user if we found a match
+    if matchedCars.count > 0 && !self.isFound {
+      // If we want to track the first matched car
+      if let firstMatch = matchedCars.first, let currentBuffer = currentBuffer {
+        print("We have found the car!")
+        self.isFound = true
+
+        detectedCar = firstMatch
+        self.startNavigation(in: currentBuffer)
+      }
+    } else if matchedCars.isEmpty && !self.isFound {
+      self.ttsHelper.speak(text: "No matches")
+    }
+
+    // Get rid of all of the trackers for the cars currently in gpt
+    for car in self.carsCurrentlyInGPT {
+      if car.id != detectedCar?.id {
+        car.trackingRequest = nil
+        car.isLostInTracking = false
+        car.boundingBox = CGRect()
+      }
+    }
+    self.carsCurrentlyInGPT = []
+  }
+  // MARK: — videoCapture delegate
+
+  func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
+    guard !isFound else {
+      // Track the object every frame
+      if let result = trackObject(in: sampleBuffer) {
+        // Navigate once every 60 frames
+        if framesSinceNav == 60 || framesSinceNav == 0 {  // starts at 0 for first call, resets to 1 for calls after
+          navigate(boundingBox: result)
+        } else {
+          framesSinceNav += 1
+        }
+      }
+
+      // Object went out of frame, go back to detection mode
+      else {
+        isFound = false
+        detectedCar = nil
+        lastNavigatedBox = CGRect.zero
+        framesSinceNav = 0
+        self.ttsHelper.speak(text: "Lost car tracking, switching back to detection mode")
+        print("Switching back")
+      }
+      return
+    }
+
+    // detection mode
+    var detections = detectCars(sampleBuffer: sampleBuffer)
+    detections = detections.filter { $0.confidence > 0.5 }
+    let stable = cropStableDetectionsFromBuffer(
+      observations: detections, pixelBuffer: sampleBuffer)
+
+    if stable.count > 0 && !gptCallInProgress {
+      attemptGPTCall(with: stable)
+    }
+
+    // update your past‑frames buffer…
+    let _ = pastFrames.popLast()
+    pastFrames.insert(detections, at: 0)
+    currentBuffer = nil
+  }
+
 }
 
 // Programmatically save image
@@ -991,25 +1055,25 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
 
 extension ViewController {
 
-    private func navigate(boundingBox: CGRect) {
-      detectedCar?.boundingBox = boundingBox
+  private func navigate(boundingBox: CGRect) {
+    detectedCar?.boundingBox = boundingBox
     // let area = boundingBox.width * boundingBox.height
-      let midPoint = (boundingBox.midX, boundingBox.midY)
+    let midPoint = (boundingBox.midX, boundingBox.midY)
 
     // Include midpoint calculation to see if bounding box is off the screen
-        var pre = ""
-        if framesSinceNav == 0 {
-            pre = "We have found the car!. "
-        }
-        
-      if midPoint.0 < 0.4 {
-        ttsHelper.speak(text: "\(pre) Car is on your left")
-      } else if midPoint.0 > 0.6 {
-        ttsHelper.speak(text: "\(pre) Car is on your right")
-      } else {
-        ttsHelper.speak(text: "\(pre) Straight ahead")
-      }
-      lastNavigatedBox = boundingBox
-      framesSinceNav = 1
+    var pre = ""
+    if framesSinceNav == 0 {
+      pre = "We have found the car!. "
+    }
+
+    if midPoint.0 < 0.4 {
+      ttsHelper.speak(text: "\(pre) Car is on your left")
+    } else if midPoint.0 > 0.6 {
+      ttsHelper.speak(text: "\(pre) Car is on your right")
+    } else {
+      ttsHelper.speak(text: "\(pre) Straight ahead")
+    }
+    lastNavigatedBox = boundingBox
+    framesSinceNav = 1
   }
 }
