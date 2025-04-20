@@ -41,12 +41,12 @@ DerivedData/
 !targets*.mat
 
 # Neural Network weights -----------------------------------------------------------------------------------------------
-*.weights
-*.pt
-*.onnx
-*.mlmodel
-*.mlarchive
-*.mlprogram
+# *.weights
+# *.pt
+# *.onnx
+# *.mlmodel
+# *.mlarchive
+# *.mlprogram
 
 # GitHub Python GitIgnore ----------------------------------------------------------------------------------------------
 # Byte-compiled / optimized / DLL files
