@@ -256,6 +256,7 @@ extension InputViewController{
         "response_format": ["type": "json_object"],
         "max_tokens": 50,
       ]
+        
 
       // Make HTTP POST Request
       guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
@@ -279,7 +280,7 @@ extension InputViewController{
         
       // Parse the response
       let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-        
+                
       // Extract the match result
       guard let choices = jsonResponse?["choices"] as? [[String: Any]],
         let firstChoice = choices.first,
@@ -293,9 +294,7 @@ extension InputViewController{
         let model = parsedArguments["model"] as? String,
         let color = parsedArguments["color"] as? String else {
 
-        throw NSError(
-          domain: "ResponseParsingError", code: 3,
-          userInfo: [NSLocalizedDescriptionKey: "Failed to parse match result from response"])
+        return "No car detected in the image."
       }
 
       // Extract confidence with a default value if not present

@@ -41,17 +41,33 @@ class InputViewController: UIViewController {
     textField.delegate = self
     feedBackGenerator.prepare()
     warningText.isHidden = true
+      
+      videoCapture = VideoCapture()
+      // start camera session once
+              videoCapture.setUp(sessionPreset: .photo) { [weak self] success in
+                  guard let self = self, success else {
+                      print("❌ Camera setup failed")
+                      return
+                  }
+                  self.videoCapture.start()
+              }
   }
 
+    override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            // stop the camera when leaving this screen
+            videoCapture.stop()
+        }
+    
   override func viewDidAppear(_ animated: Bool) {
     textField.delegate = self
   }
 
     @IBAction func confirmCar(_ sender: Any){
         usleep(20_000)  // short 10 ms delay to allow camera to focus
-        let settings = AVCapturePhotoSettings()
+        warningText.isHidden = true
 
-        videoCapture.cameraOutput.capturePhoto(with: settings, delegate: self)
+        self.videoCapture.capturePhoto(delegate: self)
     }
     
   override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
@@ -76,6 +92,7 @@ class InputViewController: UIViewController {
     feedBackGenerator.notificationOccurred(.error)
     return false
   }
+    
   override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
     if let destination = segue.destination as? ViewController {
       destination.carColorfilter = args.color!
@@ -129,6 +146,7 @@ extension InputViewController: AVCapturePhotoCaptureDelegate {
       Task{
           do{
               let result = try await self.sendImgToGPT(img: image)
+              print(result)
               ttsHelper.speak(text: result)
           }
           catch{

@@ -153,6 +153,17 @@ public class VideoCapture: NSObject {
     }
     self.previewLayer?.connection?.videoOrientation = connection.videoOrientation
   }
+    
+    public func capturePhoto(delegate: AVCapturePhotoCaptureDelegate) {
+        let settings = AVCapturePhotoSettings()
+        if #available(iOS 16.0, *) {
+          let dims = captureDevice.activeFormat.supportedMaxPhotoDimensions
+          settings.maxPhotoDimensions = dims[0]
+        } else {
+          settings.isHighResolutionPhotoEnabled = true
+        }
+        cameraOutput.capturePhoto(with: settings, delegate: delegate)
+      }
 }
 
 // Extension to handle AVCaptureVideoDataOutputSampleBufferDelegate events.
