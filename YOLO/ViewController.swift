@@ -21,7 +21,7 @@ var mlModel = try! yolo11n(configuration: .init()).model
 //var classificationModel = try! carClassifier(configuration: .init()).model
 
 class ViewController: UIViewController {
-  @IBOutlet weak var info: UILabel!
+    @IBOutlet weak var info2: UILabel!
   @IBOutlet var videoPreview: UIView!
   @IBOutlet var View0: UIView!
   @IBOutlet var playButtonOutlet: UIBarButtonItem!
@@ -78,9 +78,9 @@ class ViewController: UIViewController {
         self.dismiss(animated: true, completion: nil)
     }
     
-    @IBAction func information(_ sender: Any) {
-        info.text = "As you slowly scan your surroundings, we are checking each of the cars. Sometimes, the detections may take longer than others. You may hear, 'No cars found in this batch', which means that we don't think your Uber is on the screen."
-        info.isHidden.toggle()
+    @IBAction func information2(_ sender: Any) {
+        info2.text = "As you slowly scan your surroundings, we are checking each of the cars. Sometimes, the detections may take longer than others. You may hear, 'No cars found in this batch', which means that we don't think your Uber is on the screen."
+        info2.isHidden.toggle()
     }
     
     // Text to Speech Helper
