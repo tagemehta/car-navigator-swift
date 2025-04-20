@@ -66,7 +66,7 @@ class InputViewController: UIViewController {
     @IBAction func confirmCar(_ sender: Any){
         usleep(20_000)  // short 10 ms delay to allow camera to focus
         warningText.isHidden = true
-
+        ttsHelper.speak(text: "Identifying the car in front of you.")
         self.videoCapture.capturePhoto(delegate: self)
     }
     
