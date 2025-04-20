@@ -99,7 +99,6 @@
 			children = (
 				31A82AA02D08C04F0092CBE5 /* pureDetectCars.mlmodel */,
 				31CC56362D0684110037C289 /* carDetector.mlmodel */,
-				31CC563C2D068F1D0037C289 /* yolo11n-cls.mlpackage */,
 				E7B835C32DA1F04E00736685 /* yolo11n.mlpackage */,
 			);
 			path = Models;
@@ -364,7 +363,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0;
-				DEVELOPMENT_TEAM = RGF57YVQ46;
+				DEVELOPMENT_TEAM = G9YGLVF559;
 				INFOPLIST_FILE = YOLO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ultralytics YOLO";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -374,7 +373,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFindershdohwao;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFindershdohwaoh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -392,7 +391,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0;
-				DEVELOPMENT_TEAM = RGF57YVQ46;
+				DEVELOPMENT_TEAM = G9YGLVF559;
 				INFOPLIST_FILE = YOLO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ultralytics YOLO";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -402,7 +401,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 8.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFindershdohwao;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFindershdohwaoh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
