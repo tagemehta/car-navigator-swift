@@ -21,7 +21,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>271</string>
+	<string>273</string>
 	<key>GPT_APIKEY_BEARER</key>
 	<string>$(GPT_APIKEY)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

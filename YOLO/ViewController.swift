@@ -18,7 +18,7 @@ import UIKit
 import Vision
 
 var mlModel = try! yolo11n(configuration: .init()).model
-var classificationModel = try! carClassifier(configuration: .init()).model
+//var classificationModel = try! carClassifier(configuration: .init()).model
 
 class ViewController: UIViewController {
   @IBOutlet var videoPreview: UIView!
