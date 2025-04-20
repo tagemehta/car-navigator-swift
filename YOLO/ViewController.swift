@@ -17,10 +17,11 @@ import CoreMedia
 import UIKit
 import Vision
 
-var mlModel = try! pureDetectCars(configuration: .init()).model
-var classificationModel = try! carClassifier(configuration: .init()).model
+var mlModel = try! yolo11n(configuration: .init()).model
+//var classificationModel = try! carClassifier(configuration: .init()).model
 
 class ViewController: UIViewController {
+    @IBOutlet weak var info2: UILabel!
   @IBOutlet var videoPreview: UIView!
   @IBOutlet var View0: UIView!
   @IBOutlet var playButtonOutlet: UIBarButtonItem!
@@ -54,7 +55,6 @@ class ViewController: UIViewController {
 
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
-  var classifier = try! VNCoreMLModel(for: classificationModel)
   var session: AVCaptureSession!
   var videoCapture: VideoCapture!
   var currentBuffer: CVPixelBuffer?
@@ -73,7 +73,16 @@ class ViewController: UIViewController {
   let save_detections = false  // write every detection to detections.txt
   let save_frames = false  // write every frame to frames.txt
 
-  // Text to Speech Helper
+    @IBAction func cancel(_ sender: Any) {
+        self.dismiss(animated: true, completion: nil)
+    }
+    
+    @IBAction func information2(_ sender: Any) {
+        info2.text = "As you slowly scan your surroundings, we are checking each of the cars. Sometimes, the detections may take longer than others. You may hear, 'No cars found in this batch', which means that we don't think your Uber is on the screen."
+        info2.isHidden.toggle()
+    }
+    
+    // Text to Speech Helper
   let ttsHelper = TextToSpeechHelper()
 
   lazy var visionRequest: VNCoreMLRequest = {
@@ -85,12 +94,6 @@ class ViewController: UIViewController {
       })
     // NOTE: BoundingBoxView object scaling depends on request.imageCropAndScaleOption https://developer.apple.com/documentation/vision/vnimagecropandscaleoption
     request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
-    return request
-  }()
-  lazy var classificationRequest: VNRequest = {
-    let request = VNCoreMLRequest(model: classifier)
-    request.imageCropAndScaleOption = .centerCrop
-
     return request
   }()
 
@@ -321,30 +324,33 @@ class ViewController: UIViewController {
     observations: [VNRecognizedObjectObservation], pixelBuffer: CMSampleBuffer
   ) -> [Car] {
     let pixelBuffer = CMSampleBufferGetImageBuffer(pixelBuffer)!
+    let validCOCOObjects = ["bicycle", "car", "motorcycle", "bus", "truck"]
     var stableDetections: [Car] = []
-    for observation in observations {
-      // if observation.labels[0].identifier == carColorfilter {
-      let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
-      let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
-
-      let imageRect = self.normalizedRectToImageRect(
-        normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
-        modelWidth: 384, modelHeight: 640)  // Hard coded values here
-      let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
-      let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
-      var framesAppearedIn = 0  // Frames where the bounding box has an intersection
-      for pastFrame in pastFrames {
-        for obj in pastFrame {  // For each detection in the old frame
-          let iou = self.intersectionOverUnion(
-            rect1: observation.boundingBox, rect2: obj.boundingBox)
-          if iou > 0.8 {
-            framesAppearedIn += 1
-            break
-          }
-        }
-      }
-      if framesAppearedIn > 4 {
-        stableDetections.append(Car(image: cgImage, observation: observation))
+      for observation in observations {
+          let observation_class = observation.labels[0].identifier
+          if validCOCOObjects.contains(observation_class) {
+              let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
+              let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
+              
+              let imageRect = self.normalizedRectToImageRect(
+                normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
+                modelWidth: 384, modelHeight: 640)  // Hard coded values here
+              let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
+              let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+              var framesAppearedIn = 0  // Frames where the bounding box has an intersection
+              for pastFrame in pastFrames {
+                  for obj in pastFrame {  // For each detection in the old frame
+                      let iou = self.intersectionOverUnion(
+                        rect1: observation.boundingBox, rect2: obj.boundingBox)
+                      if iou > 0.8 {
+                          framesAppearedIn += 1
+                          break
+                      }
+                  }
+              }
+              if framesAppearedIn > 4 {
+                  stableDetections.append(Car(image: cgImage, observation: observation))
+              }
       }
     }
     return stableDetections
@@ -573,7 +579,11 @@ class ViewController: UIViewController {
       }
 
       for i in 0..<boundingBoxViews.count {
-        if i < predictions.count && i < Int(maxPred) {
+          if isFound {
+            boundingBoxViews[i].hide()
+          }
+          
+        else if i < predictions.count && i < Int(maxPred) {
           let prediction = predictions[i]
 
           var rect = prediction.boundingBox  // normalized xywh, origin lower left

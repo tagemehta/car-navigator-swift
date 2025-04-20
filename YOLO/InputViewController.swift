@@ -11,7 +11,7 @@ import AVFoundation
 class InputViewController: UIViewController {
   @IBOutlet weak var textField: UITextField!
   var videoCapture: VideoCapture!
-
+  @IBOutlet weak var info1: UILabel!
   private let feedBackGenerator = UINotificationFeedbackGenerator()
   private var args: (color: String?, model: String?, error: String?) = (
     color: nil, model: nil, error: nil
@@ -101,7 +101,11 @@ class InputViewController: UIViewController {
     }
   }
 
-  func parseCarDetails(_ carDetails: String) -> (color: String?, model: String?, error: String?) {
+    @IBAction func information1(_ sender: Any) {
+        info1.text = "Copy and paste the color make model of your Uber and then click submit! Some buttons you will see on the next screen include 'Cancel' (on the top left), which will take you back to this screen, 'Confirm' (on the top right), which will send a picture of your current screen to ChatGPT to confirm that the car is correct, and another 'Information' button (on the bottom)."
+        info1.isHidden.toggle()
+    }
+    func parseCarDetails(_ carDetails: String) -> (color: String?, model: String?, error: String?) {
     // Split the input string into words
     let words = carDetails.split(separator: " ")
 
