@@ -52,6 +52,8 @@ class ViewController: UIViewController {
   private var currStreak: Int = 0
   private var gptCallInProgress: Bool = false
   private var carsCurrentlyInGPT: [Car] = []
+  private let validCOCOObjects = ["bicycle", "car", "motorcycle", "bus", "truck"]
+
 
   let selection = UISelectionFeedbackGenerator()
   var detector = try! VNCoreMLModel(for: mlModel)
@@ -324,7 +326,6 @@ class ViewController: UIViewController {
     observations: [VNRecognizedObjectObservation], pixelBuffer: CMSampleBuffer
   ) -> [Car] {
     let pixelBuffer = CMSampleBufferGetImageBuffer(pixelBuffer)!
-    let validCOCOObjects = ["bicycle", "car", "motorcycle", "bus", "truck"]
     var stableDetections: [Car] = []
       for observation in observations {
           let observation_class = observation.labels[0].identifier
@@ -359,7 +360,8 @@ class ViewController: UIViewController {
   func processObservations(for request: VNRequest, error: Error?) {
     DispatchQueue.main.async {
       if let results = request.results as? [VNRecognizedObjectObservation] {
-        self.show(predictions: results)
+          let filtered_results = results.filter {self.validCOCOObjects.contains($0.labels[0].identifier)}
+        self.show(predictions: filtered_results)
       } else {
         self.show(predictions: [])
       }
@@ -579,7 +581,7 @@ class ViewController: UIViewController {
       }
 
       for i in 0..<boundingBoxViews.count {
-          if isFound {
+          if isFound{
             boundingBoxViews[i].hide()
           }
           
