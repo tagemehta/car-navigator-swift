@@ -6,10 +6,12 @@
 //  Copyright © 2024 Ultralytics. All rights reserved.
 //
 import UIKit
+import AVFoundation
 
 class InputViewController: UIViewController {
-    @IBOutlet weak var info1: UILabel!
-    @IBOutlet weak var textField: UITextField!
+  @IBOutlet weak var textField: UITextField!
+  var videoCapture: VideoCapture!
+  @IBOutlet weak var info1: UILabel!
   private let feedBackGenerator = UINotificationFeedbackGenerator()
   private var args: (color: String?, model: String?, error: String?) = (
     color: nil, model: nil, error: nil
@@ -39,12 +41,35 @@ class InputViewController: UIViewController {
     textField.delegate = self
     feedBackGenerator.prepare()
     warningText.isHidden = true
+      
+      videoCapture = VideoCapture()
+      // start camera session once
+              videoCapture.setUp(sessionPreset: .photo) { [weak self] success in
+                  guard let self = self, success else {
+                      print("❌ Camera setup failed")
+                      return
+                  }
+                  self.videoCapture.start()
+              }
   }
 
+    override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            // stop the camera when leaving this screen
+            videoCapture.stop()
+        }
+    
   override func viewDidAppear(_ animated: Bool) {
     textField.delegate = self
   }
 
+    @IBAction func confirmCar(_ sender: Any){
+        usleep(20_000)  // short 10 ms delay to allow camera to focus
+        warningText.isHidden = true
+
+        self.videoCapture.capturePhoto(delegate: self)
+    }
+    
   override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
     var errorMsg = ""
     if let text = textField.text, !text.isEmpty {
@@ -67,6 +92,7 @@ class InputViewController: UIViewController {
     feedBackGenerator.notificationOccurred(.error)
     return false
   }
+    
   override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
     if let destination = segue.destination as? ViewController {
       destination.carColorfilter = args.color!
@@ -103,5 +129,33 @@ extension InputViewController: UITextFieldDelegate {
   func textFieldShouldReturn(_ textField: UITextField) -> Bool {
     textField.resignFirstResponder()
     return true
+  }
+}
+
+extension InputViewController: AVCapturePhotoCaptureDelegate {
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   didFinishProcessingPhoto photo: AVCapturePhoto,
+                   error: Error?) {
+    if let error = error {
+      print("Error capturing photo: \(error.localizedDescription)")
+      return
+    }
+    
+    guard let imageData = photo.fileDataRepresentation(),
+          let image = UIImage(data: imageData) else {
+      print("Failed to process photo data.")
+      return
+    }
+    
+      Task{
+          do{
+              let result = try await self.sendImgToGPT(img: image)
+              print(result)
+              ttsHelper.speak(text: result)
+          }
+          catch{
+              print("Error received when passing image into GPT")
+          }
+      }
   }
 }
