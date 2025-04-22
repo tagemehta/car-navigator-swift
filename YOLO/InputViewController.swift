@@ -102,7 +102,7 @@ class InputViewController: UIViewController {
   }
 
     @IBAction func information1(_ sender: Any) {
-        info1.text = "Copy and paste the color make model of your Uber and then click submit! Some buttons you will see on the next screen include 'Cancel' (on the top left), which will take you back to this screen, 'Confirm' (on the top right), which will send a picture of your current screen to ChatGPT to confirm that the car is correct, and another 'Information' button (on the bottom)."
+        info1.text = "Copy and paste the color make model of your Uber and then click 'Search.' Or, if you want to confirm a car you are looking at press 'Confirm Car.' This will send a picture of your current camera angle to ChatGPT to confirm that the car is correct. On the next screen there is a 'Cancel' button (on the top left), which will take you back to this screen and another 'Information' button (on the bottom)."
         info1.isHidden.toggle()
     }
     func parseCarDetails(_ carDetails: String) -> (color: String?, model: String?, error: String?) {

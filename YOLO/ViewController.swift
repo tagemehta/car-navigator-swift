@@ -52,8 +52,12 @@ class ViewController: UIViewController, VideoCaptureDelegate {
     case success
     case failure(String)
   }
-
-  private let gptCallInterval: TimeInterval = 5.0
+  
+  @IBOutlet weak var timeSlider: UISlider!
+  @IBAction func sliderValueChanged(_ sender: UISlider) {
+    gptCallInterval = TimeInterval(sender.value)
+  }
+  private var gptCallInterval: TimeInterval = 5.0
   private var lastGPTCallTime: TimeInterval = 0
 
   private(set) var gptState: GPTState = .idle {
