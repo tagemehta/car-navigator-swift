@@ -58,7 +58,8 @@ extension ViewController {
 
     // Encode Data to Base64 String
     let base64ImageString = imageData.base64EncodedString()
-
+    self.saveText(text: base64ImageString, file: "car_\(car.id).txt")
+    print("saved to file car_\(car.id).txt")
     // Create JSON Payload
     let jsonPayload: [String: Any] = [
       "model": "gpt-4o",

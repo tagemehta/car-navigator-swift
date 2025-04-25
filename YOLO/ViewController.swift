@@ -43,6 +43,7 @@ class ViewController: UIViewController, VideoCaptureDelegate {
   private var pastFrames: [[VNRecognizedObjectObservation]] = [[], [], [], [], []]
   private var sequenceRequestHandler = VNSequenceRequestHandler()
   private var detectedCar: Car?
+  private let ciContext = CIContext()
 
   private var lastNavigatedBox: CGRect = CGRect.zero
   private var framesSinceNav = 0
@@ -353,52 +354,17 @@ class ViewController: UIViewController, VideoCaptureDelegate {
   ) -> [Car] {
     let pixelBuffer = CMSampleBufferGetImageBuffer(pixelBuffer)!
     var stableDetections: [Car] = []
+    let ciFullImage = CIImage(cvImageBuffer: pixelBuffer)
+    guard let cgFullImage = ciContext.createCGImage(ciFullImage, from: ciFullImage.extent) else {
+      return []
+    }
+    let fullImageWidth = CGFloat(cgFullImage.width)
+    let fullImageHeight = CGFloat(cgFullImage.height)
+
     for observation in observations {
       let observation_class = observation.labels[0].identifier
       if validCOCOObjects.contains(observation_class) {
-        let ogWidth = CGFloat(CVPixelBufferGetWidth(self.currentBuffer!))
-        let ogHeight = CGFloat(CVPixelBufferGetHeight(self.currentBuffer!))
 
-        let imageRect = self.normalizedRectToImageRect(
-          normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
-          modelWidth: 384, modelHeight: 640)  // Hard coded values here
-
-        // Convert the full frame to UIImage
-        let ciFullImage = CIImage(cvImageBuffer: pixelBuffer)
-        let cgFullImage = CIContext().createCGImage(ciFullImage, from: ciFullImage.extent)!
-        let fullImage = UIImage(cgImage: cgFullImage)
-
-        // --- ROI plus buffer ---
-        // Define buffer as a percentage of bbox size (e.g., 20%)
-        let bufferPercent: CGFloat = 0.2
-        var roiRect = imageRect.insetBy(dx: -imageRect.width * bufferPercent, dy: -imageRect.height * bufferPercent)
-        // Clamp to image bounds
-        roiRect.origin.x = max(0, roiRect.origin.x)
-        roiRect.origin.y = max(0, roiRect.origin.y)
-        roiRect.size.width = min(fullImage.size.width - roiRect.origin.x, roiRect.size.width)
-        roiRect.size.height = min(fullImage.size.height - roiRect.origin.y, roiRect.size.height)
-
-        // Crop the full image to ROI
-        guard let cgRoi = cgFullImage.cropping(to: roiRect) else { continue }
-        let roiImage = UIImage(cgImage: cgRoi)
-
-        // Draw a red rectangle at the bbox position (relative to ROI)
-        let renderer = UIGraphicsImageRenderer(size: roiImage.size)
-        let renderedImage = renderer.image { rendererContext in
-          roiImage.draw(at: .zero)
-          UIColor.red.setStroke()
-          let lineWidth: CGFloat = 2.0
-          // Adjust bbox to ROI coordinates
-          let boxInRoi = CGRect(x: imageRect.origin.x - roiRect.origin.x,
-                                y: imageRect.origin.y - roiRect.origin.y,
-                                width: imageRect.size.width,
-                                height: imageRect.size.height)
-          let path = UIBezierPath(rect: boxInRoi)
-          path.lineWidth = lineWidth
-          path.stroke()
-        }
-        // Convert back to CGImage for Car
-        let cgImage = renderedImage.cgImage!
         var framesAppearedIn = 0  // Frames where the bounding box has an intersection
         for pastFrame in pastFrames {
           for obj in pastFrame {  // For each detection in the old frame
@@ -411,6 +377,46 @@ class ViewController: UIViewController, VideoCaptureDelegate {
           }
         }
         if framesAppearedIn > 4 {
+          let imageRect = self.normalizedRectToImageRect(
+            normalizedRect: observation.boundingBox, originalWidth: fullImageWidth,
+            originalHeight: fullImageHeight,
+            modelWidth: 384, modelHeight: 640)  // Hard coded values here
+
+          // --- ROI plus buffer ---
+          // Define buffer as a percentage of bbox size (e.g., 20%)
+          let bufferPercent: CGFloat = 0.2
+          var roiRect = imageRect.insetBy(
+            dx: -imageRect.width * bufferPercent, dy: -imageRect.height * bufferPercent)
+          // Clamp to image bounds
+          roiRect.origin.x = max(0, roiRect.origin.x)
+          roiRect.origin.y = max(0, roiRect.origin.y)
+          roiRect.size.width = min(fullImageWidth - roiRect.origin.x, roiRect.size.width)
+          roiRect.size.height = min(fullImageHeight - roiRect.origin.y, roiRect.size.height)
+
+          // Crop the full image to ROI
+          guard let cgRoi = cgFullImage.cropping(to: roiRect) else { continue }
+
+          // Draw rectangle using Core Graphics (CGContext) instead of UIImage/UIGraphicsImageRenderer
+          UIGraphicsBeginImageContextWithOptions(roiRect.size, false, 0)
+          let context = UIGraphicsGetCurrentContext()!
+          context.saveGState()
+          context.translateBy(x: 0, y: roiRect.size.height)
+          context.scaleBy(x: 1.0, y: -1.0)
+          context.draw(cgRoi, in: CGRect(origin: .zero, size: roiRect.size))
+          context.restoreGState()
+          context.setStrokeColor(UIColor.red.cgColor)
+          context.setLineWidth(2.0)
+          // Adjust bbox to ROI coordinates as before
+          let boxInRoi = CGRect(
+            x: imageRect.origin.x - roiRect.origin.x,
+            y: imageRect.origin.y - roiRect.origin.y,
+            width: imageRect.width,
+            height: imageRect.height
+          )
+          context.stroke(boxInRoi)
+          let renderedImage = UIGraphicsGetImageFromCurrentImageContext()
+          UIGraphicsEndImageContext()
+          guard let cgImage = renderedImage?.cgImage else { continue }
           stableDetections.append(Car(image: cgImage, observation: observation))
         }
       }
