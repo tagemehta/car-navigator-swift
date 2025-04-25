@@ -52,7 +52,7 @@ class ViewController: UIViewController, VideoCaptureDelegate {
     case success
     case failure(String)
   }
-  
+
   @IBOutlet weak var timeSlider: UISlider!
   @IBAction func sliderValueChanged(_ sender: UISlider) {
     gptCallInterval = TimeInterval(sender.value)
@@ -95,7 +95,9 @@ class ViewController: UIViewController, VideoCaptureDelegate {
   var frameSizeCaptured = false
 
   // Developer mode
-  let developerMode = UserDefaults.standard.bool(forKey: "developer_mode")  // developer mode selected in settings
+  // let developerMode = UserDefaults.standard.bool(forKey: "developer_mode")  // developer mode selected in settings
+  let developerMode = true
+
   let save_detections = false  // write every detection to detections.txt
   let save_frames = false  // write every frame to frames.txt
   @IBAction func cancel(_ sender: Any) {
@@ -360,8 +362,43 @@ class ViewController: UIViewController, VideoCaptureDelegate {
         let imageRect = self.normalizedRectToImageRect(
           normalizedRect: observation.boundingBox, originalWidth: ogWidth, originalHeight: ogHeight,
           modelWidth: 384, modelHeight: 640)  // Hard coded values here
-        let ciImage = CIImage(cvImageBuffer: pixelBuffer).cropped(to: imageRect)
-        let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent)!
+
+        // Convert the full frame to UIImage
+        let ciFullImage = CIImage(cvImageBuffer: pixelBuffer)
+        let cgFullImage = CIContext().createCGImage(ciFullImage, from: ciFullImage.extent)!
+        let fullImage = UIImage(cgImage: cgFullImage)
+
+        // --- ROI plus buffer ---
+        // Define buffer as a percentage of bbox size (e.g., 20%)
+        let bufferPercent: CGFloat = 0.2
+        var roiRect = imageRect.insetBy(dx: -imageRect.width * bufferPercent, dy: -imageRect.height * bufferPercent)
+        // Clamp to image bounds
+        roiRect.origin.x = max(0, roiRect.origin.x)
+        roiRect.origin.y = max(0, roiRect.origin.y)
+        roiRect.size.width = min(fullImage.size.width - roiRect.origin.x, roiRect.size.width)
+        roiRect.size.height = min(fullImage.size.height - roiRect.origin.y, roiRect.size.height)
+
+        // Crop the full image to ROI
+        guard let cgRoi = cgFullImage.cropping(to: roiRect) else { continue }
+        let roiImage = UIImage(cgImage: cgRoi)
+
+        // Draw a red rectangle at the bbox position (relative to ROI)
+        let renderer = UIGraphicsImageRenderer(size: roiImage.size)
+        let renderedImage = renderer.image { rendererContext in
+          roiImage.draw(at: .zero)
+          UIColor.red.setStroke()
+          let lineWidth: CGFloat = 2.0
+          // Adjust bbox to ROI coordinates
+          let boxInRoi = CGRect(x: imageRect.origin.x - roiRect.origin.x,
+                                y: imageRect.origin.y - roiRect.origin.y,
+                                width: imageRect.size.width,
+                                height: imageRect.size.height)
+          let path = UIBezierPath(rect: boxInRoi)
+          path.lineWidth = lineWidth
+          path.stroke()
+        }
+        // Convert back to CGImage for Car
+        let cgImage = renderedImage.cgImage!
         var framesAppearedIn = 0  // Frames where the bounding box has an intersection
         for pastFrame in pastFrames {
           for obj in pastFrame {  // For each detection in the old frame
