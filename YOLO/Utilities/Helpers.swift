@@ -162,7 +162,6 @@ extension ViewController {
 
       // Extract confidence with a default value if not present
       let confidence = parsedArguments["confidence"] as? Double ?? 0.5
-      print(jsonResponse)
       return CarMatchResult(car: car, isMatch: match, confidence: confidence, error: nil)
     } catch {
       return CarMatchResult(

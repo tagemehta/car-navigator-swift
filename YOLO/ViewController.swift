@@ -45,8 +45,17 @@ class ViewController: UIViewController, VideoCaptureDelegate {
   private var detectedCar: Car?
   private let ciContext = CIContext()
 
-  private var lastNavigatedBox: CGRect = CGRect.zero
+  private var lastTrackedBox: CGRect = CGRect.zero
   private var framesSinceNav = 0
+    
+    // varibles used by the speak funciton
+    private var  framesSinceSpeak = 0
+    private var lastSpeak = ""
+    
+    // varible used specificly for the no car in frame speach
+    private var framesSinceCar = 0
+
+    
   enum GPTState {
     case idle
     case waiting
@@ -506,6 +515,9 @@ class ViewController: UIViewController, VideoCaptureDelegate {
               * self.videoPreview.bounds.height,
             width: observation.boundingBox.width * self.videoPreview.bounds.width,
             height: observation.boundingBox.height * self.videoPreview.bounds.height)
+          self.boundingBoxViews.forEach { box in
+            box.hide()
+          }
           self.boundingBoxViews[0].show(
             frame: rectNew, label: "Detected Car", color: .red, alpha: 0.5)
         }
@@ -1006,11 +1018,14 @@ extension ViewController {
   // MARK: — videoCapture delegate
 
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
+      // update every frame to use with speaking
+      framesSinceSpeak += 1
     guard !isFound else {
       // Track the object every frame
       if let result = trackObject(in: sampleBuffer) {
-        // Navigate once every 60 frames
-        if framesSinceNav == 60 || framesSinceNav == 0 {  // starts at 0 for first call, resets to 1 for calls after
+        lastTrackedBox = result
+        // Navigate once every 20 frames (I lowered this because i rate limmited the specific tts calls instead)
+        if framesSinceNav == 20 || framesSinceNav == 0 {  // starts at 0 for first call, resets to 1 for calls after
           navigate(boundingBox: result)
         } else {
           framesSinceNav += 1
@@ -1021,10 +1036,24 @@ extension ViewController {
       else {
         isFound = false
         detectedCar = nil
-        lastNavigatedBox = CGRect.zero
+        let boundingBox = lastTrackedBox // include confidence
+        let midPoint = (boundingBox.midX, boundingBox.midY)
+        if midPoint.0 < 0.4 {
+          ttsHelper.speak(
+            text:
+              "Car lost, last seen on the left side of your screen."
+          )
+        } else if midPoint.0 > 0.6 {
+          ttsHelper.speak(
+            text:
+              "Car lost, last seen on the right side of your screen."
+          )
+        } else {
+          ttsHelper.speak(text: "Car lost, last seen in center of your screen")
+        }
+        lastTrackedBox = CGRect.zero
         framesSinceNav = 0
-        self.ttsHelper.speak(text: "Lost car tracking, switching back to detection mode")
-        print("Switching back")
+        self.ttsHelper.speak(text: "Switching back to detection mode")
       }
       return
     }
@@ -1036,8 +1065,15 @@ extension ViewController {
       observations: detections, pixelBuffer: sampleBuffer)
 
     if stable.count > 0 && !gptCallInProgress {
+        //reset counter on saying "no car in frame"
+        framesSinceCar = 0
       attemptGPTCall(with: stable)
     }
+      else {
+          // let the user know no car has been found in 100 frames
+          framesSinceCar += 1
+          if framesSinceCar > 150 {self.speak(message: "no car in frame", delay: 200)}
+      }
 
     // update your past‑frames buffer…
     let _ = pastFrames.popLast()
@@ -1099,6 +1135,15 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
     }
   }
 }
+extension ViewController {
+    private func speak(message: String, delay: Int, silent: Bool = false) {
+        if (message != lastSpeak) || (framesSinceSpeak > delay) || ((message == lastSpeak) && silent){
+            if !silent {self.ttsHelper.speak(text: message)}
+            framesSinceSpeak = 0
+            lastSpeak = message
+        }
+    }
+}
 
 extension ViewController {
 
@@ -1114,13 +1159,12 @@ extension ViewController {
     }
 
     if midPoint.0 < 0.4 {
-      ttsHelper.speak(text: "\(pre) Car is on your left")
+        self.speak(message: "Car is on your left", delay: 60)
     } else if midPoint.0 > 0.6 {
-      ttsHelper.speak(text: "\(pre) Car is on your right")
+        self.speak(message: "Car is on your right", delay: 60)
     } else {
-      ttsHelper.speak(text: "\(pre) Straight ahead")
+        self.speak(message: "Straight ahead", delay: 130)
     }
-    lastNavigatedBox = boundingBox
     framesSinceNav = 1
   }
 }
