@@ -44,7 +44,7 @@ class ViewController: UIViewController, VideoCaptureDelegate {
   private var sequenceRequestHandler = VNSequenceRequestHandler()
   private var detectedCar: Car?
 
-  private var lastNavigatedBox: CGRect = CGRect.zero
+  private var lastTrackedBox: CGRect = CGRect.zero
   private var framesSinceNav = 0
     
     // varibles used by the speak funciton
@@ -472,6 +472,9 @@ class ViewController: UIViewController, VideoCaptureDelegate {
               * self.videoPreview.bounds.height,
             width: observation.boundingBox.width * self.videoPreview.bounds.width,
             height: observation.boundingBox.height * self.videoPreview.bounds.height)
+          self.boundingBoxViews.forEach { box in
+            box.hide()
+          }
           self.boundingBoxViews[0].show(
             frame: rectNew, label: "Detected Car", color: .red, alpha: 0.5)
         }
@@ -977,6 +980,7 @@ extension ViewController {
     guard !isFound else {
       // Track the object every frame
       if let result = trackObject(in: sampleBuffer) {
+        lastTrackedBox = result
         // Navigate once every 20 frames (I lowered this because i rate limmited the specific tts calls instead)
         if framesSinceNav == 20 || framesSinceNav == 0 {  // starts at 0 for first call, resets to 1 for calls after
           navigate(boundingBox: result)
@@ -989,10 +993,24 @@ extension ViewController {
       else {
         isFound = false
         detectedCar = nil
-        lastNavigatedBox = CGRect.zero
+        let boundingBox = lastTrackedBox // include confidence
+        let midPoint = (boundingBox.midX, boundingBox.midY)
+        if midPoint.0 < 0.4 {
+          ttsHelper.speak(
+            text:
+              "Car lost, last seen on the left side of your screen."
+          )
+        } else if midPoint.0 > 0.6 {
+          ttsHelper.speak(
+            text:
+              "Car lost, last seen on the right side of your screen."
+          )
+        } else {
+          ttsHelper.speak(text: "Car lost, last seen in center of your screen")
+        }
+        lastTrackedBox = CGRect.zero
         framesSinceNav = 0
-        self.ttsHelper.speak(text: "Lost car tracking, switching back to detection mode")
-        print("Switching back")
+        self.ttsHelper.speak(text: "Switching back to detection mode")
       }
       return
     }
@@ -1104,7 +1122,6 @@ extension ViewController {
     } else {
         self.speak(message: "Straight ahead", delay: 130)
     }
-    lastNavigatedBox = boundingBox
     framesSinceNav = 1
   }
 }

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="mLa-FU-RYk">
-    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <device id="retina6_12" orientation="portrait" appearance="dark"/>
+    <accessibilityOverrides/>
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
-        <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -18,11 +18,28 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="47" translatesAutoresizingMaskIntoConstraints="NO" id="dYP-xL-Hmk">
-                                <rect key="frame" x="79.666666666666671" y="287.66666666666669" width="233.66666666666663" height="277.00000000000006"/>
+                            <stackView opaque="NO" contentMode="scaleToFill" misplaced="YES" axis="vertical" distribution="equalSpacing" spacing="47" translatesAutoresizingMaskIntoConstraints="NO" id="dYP-xL-Hmk">
+                                <rect key="frame" x="80" y="173" width="233.66666666666663" height="364.66666666666674"/>
                                 <subviews>
+                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" alignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="fY6-Rk-0FI">
+                                        <rect key="frame" x="0.0" y="0.0" width="233.66666666666666" height="40.666666666666664"/>
+                                        <subviews>
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Uber" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ggu-2u-ybD">
+                                                <rect key="frame" x="0.0" y="0.0" width="117" height="40.666666666666664"/>
+                                                <fontDescription key="fontDescription" style="UICTFontTextStyleTitle0"/>
+                                                <nil key="textColor"/>
+                                                <nil key="highlightedColor"/>
+                                            </label>
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Finder" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ekm-4V-F5q">
+                                                <rect key="frame" x="116.99999999999997" y="0.0" width="116.66666666666666" height="40.666666666666664"/>
+                                                <fontDescription key="fontDescription" style="UICTFontTextStyleTitle0"/>
+                                                <color key="textColor" systemColor="systemGreenColor"/>
+                                                <nil key="highlightedColor"/>
+                                            </label>
+                                        </subviews>
+                                    </stackView>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="26" translatesAutoresizingMaskIntoConstraints="NO" id="xq1-ZS-Rpg">
-                                        <rect key="frame" x="0.0" y="0.0" width="233.66666666666666" height="277"/>
+                                        <rect key="frame" x="0.0" y="87.666666666666657" width="233.66666666666666" height="277"/>
                                         <subviews>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter a description of your car:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nAK-zx-Dgz">
                                                 <rect key="frame" x="0.0" y="0.0" width="233.66666666666666" height="20.333333333333332"/>
@@ -31,12 +48,12 @@
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="center" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="White honda accord" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="3IW-3s-TX9">
-                                                <rect key="frame" x="0.0" y="46.333333333333314" width="233.66666666666666" height="34"/>
+                                                <rect key="frame" x="0.0" y="46.333333333333371" width="233.66666666666666" height="34"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                 <textInputTraits key="textInputTraits" returnKeyType="go" enablesReturnKeyAutomatically="YES"/>
                                             </textField>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Lb0-ne-m4q">
-                                                <rect key="frame" x="0.0" y="106.33333333333331" width="233.66666666666666" height="50"/>
+                                                <rect key="frame" x="0.0" y="106.33333333333337" width="233.66666666666666" height="50"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
@@ -51,14 +68,12 @@
                                                     <segue destination="BYZ-38-t0r" kind="show" id="YFG-qZ-tPL"/>
                                                 </connections>
                                             </button>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WnR-UP-7FR">
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HVv-Ya-9mO">
                                                 <rect key="frame" x="0.0" y="242.66666666666671" width="233.66666666666666" height="34.333333333333343"/>
                                                 <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="filled" title="Confirm Car">
-                                                    <color key="baseBackgroundColor" systemColor="linkColor"/>
-                                                </buttonConfiguration>
+                                                <buttonConfiguration key="configuration" style="plain" title="Confirm Car"/>
                                                 <connections>
-                                                    <action selector="confirmCar:" destination="mLa-FU-RYk" eventType="touchDown" id="sFY-Yt-S7i"/>
+                                                    <action selector="confirmCar:" destination="mLa-FU-RYk" eventType="touchUpInside" id="Ceb-pM-pb4"/>
                                                 </connections>
                                             </button>
                                         </subviews>
@@ -68,25 +83,22 @@
                                     <constraint firstAttribute="width" constant="233.66999999999999" id="rU5-5l-1PZ"/>
                                 </constraints>
                             </stackView>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="uIB-kD-N2o">
-                                <rect key="frame" x="133" y="796" width="126" height="35"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled" title="Help">
-                                    <color key="baseBackgroundColor" systemColor="systemBlueColor"/>
-                                </buttonConfiguration>
-                                <connections>
-                                    <action selector="information1:" destination="mLa-FU-RYk" eventType="touchDown" id="e7s-Zu-jGi"/>
-                                </connections>
-                            </button>
                             <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="CvJ-B3-Y9c">
-                                <rect key="frame" x="16" y="602" width="361" height="182"/>
+                                <rect key="frame" x="16" y="545" width="361" height="182"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <string key="text">Copy and paste the color make model of your Uber and then click submit! Some buttons you will see on the next screen include 'Cancel' (on the top left), which will take you back to this screen, 'Confirm' (on the top right), which will send a picture of your current screen to ChatGPT to confirm that the car is correct, and another 'Information' button (on the bottom).</string>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="infoLight" showsTouchWhenHighlighted="YES" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8xb-pU-Mhd">
+                                <rect key="frame" x="154" y="736" width="85" height="34.333333333333371"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <buttonConfiguration key="configuration" style="plain" title="Help"/>
+                                <connections>
+                                    <action selector="information1:" destination="mLa-FU-RYk" eventType="touchUpInside" id="hJx-ZH-aDR"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Uog-8x-e1P"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -237,16 +249,15 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="1" minValue="0.0" maxValue="5" maximumValueImage="tortoise.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="bls-YR-HcD">
+                            <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="1" minValue="0.0" maxValue="5" translatesAutoresizingMaskIntoConstraints="NO" id="bls-YR-HcD">
                                 <rect key="frame" x="251" y="80" width="118" height="30"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <imageReference key="minimumValueImage" image="hare.fill" catalog="system" symbolScale="small"/>
                                 <connections>
                                     <action selector="sliderValueChanged:" destination="BYZ-38-t0r" eventType="valueChanged" id="lOU-AC-Wpl"/>
                                 </connections>
                             </slider>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Rate Limit" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gCL-jC-gJ9">
-                                <rect key="frame" x="158" y="84" width="76" height="21"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Delay" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gCL-jC-gJ9">
+                                <rect key="frame" x="190" y="84" width="43" height="25"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <color key="textColor" red="0.94117647410000005" green="0.94509804249999996" blue="0.96470588450000005" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
@@ -308,19 +319,17 @@
     </scenes>
     <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
     <resources>
-        <image name="hare.fill" catalog="system" width="128" height="88"/>
-        <image name="tortoise.fill" catalog="system" width="128" height="64"/>
         <systemColor name="groupTableViewBackgroundColor">
             <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-        </systemColor>
-        <systemColor name="linkColor">
-            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
             <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="systemGreenColor">
+            <color red="0.20392156859999999" green="0.78039215689999997" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

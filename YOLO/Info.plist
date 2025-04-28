@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Ultralytics YOLO</string>
+	<string>UberFinder</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>322</string>
+	<string>333</string>
 	<key>GPT_APIKEY_BEARER</key>
 	<string>$(GPT_APIKEY)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
