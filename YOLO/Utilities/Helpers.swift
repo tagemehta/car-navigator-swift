@@ -1,3 +1,4 @@
+import AVFoundation
 //
 //  Helpers.swift
 //  YOLO
@@ -10,6 +11,109 @@ import CoreMedia
 import Foundation
 import UIKit
 import Vision
+
+extension CGRect {
+  /// Converts a normalized rect (0-1) to image buffer space
+  /// - Parameters:
+  ///   - normalizedRect: The normalized rectangle (0-1) from the model output
+  ///   - imageWidth: The actual width of the image/camera buffer
+  ///   - imageHeight: The actual height of the image/camera buffer
+  /// - Returns: A CGRect with coordinates in the image buffer's pixel space
+  static func convertNormalizedToImageSpace(
+    _ normalizedRect: CGRect,
+    imageWidth: CGFloat,
+    imageHeight: CGFloat
+  ) -> CGRect {
+    // Convert normalized coordinates to pixel coordinates
+    return CGRect(
+      x: normalizedRect.origin.x * imageWidth,
+      y: normalizedRect.origin.y * imageHeight,
+      width: normalizedRect.width * imageWidth,
+      height: normalizedRect.height * imageHeight
+    )
+  }
+
+  static func convertNormalizedBoundingBox(
+    _ normalizedBox: CGRect,
+    orientation: UIDeviceOrientation,
+    viewWidth: CGFloat,
+    viewHeight: CGFloat,
+    sessionPreset: AVCaptureSession.Preset
+  ) -> CGRect {
+    var rect = normalizedBox
+    let height = viewHeight
+    let width = viewWidth
+
+    if orientation == .portrait {
+      // ratio = videoPreview AR divided by sessionPreset AR
+      var ratio: CGFloat = 1.0
+      if sessionPreset == .photo {
+        ratio = (height / width) / (4.0 / 3.0)  // .photo
+      } else {
+        ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
+      }
+
+      // Handle different orientations
+      switch orientation {
+      case .portraitUpsideDown:
+        rect = CGRect(
+          x: 1.0 - rect.origin.x - rect.width,
+          y: 1.0 - rect.origin.y - rect.height,
+          width: rect.width,
+          height: rect.height)
+      case .landscapeLeft, .landscapeRight:
+        // No changes needed for landscape orientations
+        break
+      default: break
+      }
+
+      if ratio >= 1 {  // iPhone ratio = 1.218
+        let offset = (1 - ratio) * (0.5 - rect.minX)
+        let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
+        rect = rect.applying(transform)
+        rect.size.width *= ratio
+      } else {  // iPad ratio = 0.75
+        let offset = (ratio - 1) * (0.5 - rect.maxY)
+        let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
+        rect = rect.applying(transform)
+        ratio = (height / width) / (3.0 / 4.0)
+        rect.size.height /= ratio
+      }
+
+      // Scale normalized to pixels
+      return VNImageRectForNormalizedRect(rect, Int(width), Int(height))
+
+    } else {  // Landscape orientation
+      let longSide = max(width, height)
+      let shortSide = min(width, height)
+      let frameAspectRatio = longSide / shortSide
+      let viewAspectRatio = width / height
+      var scaleX: CGFloat = 1.0
+      var scaleY: CGFloat = 1.0
+      var offsetX: CGFloat = 0.0
+      var offsetY: CGFloat = 0.0
+
+      if frameAspectRatio > viewAspectRatio {
+        scaleY = height / shortSide
+        scaleX = scaleY
+        offsetX = (longSide * scaleX - width) / 2
+      } else {
+        scaleX = width / longSide
+        scaleY = scaleX
+        offsetY = (shortSide * scaleY - height) / 2
+      }
+
+      rect.origin.x = rect.origin.x * longSide * scaleX - offsetX
+      rect.origin.y =
+        height
+        - (rect.origin.y * shortSide * scaleY - offsetY + rect.size.height * shortSide * scaleY)
+      rect.size.width *= longSide * scaleX
+      rect.size.height *= shortSide * scaleY
+
+      return rect
+    }
+  }
+}
 
 // Import Car struct if it's in a different file
 // If Car is defined in another file, make sure it's properly imported
@@ -58,7 +162,7 @@ extension ViewController {
 
     // Encode Data to Base64 String
     let base64ImageString = imageData.base64EncodedString()
-    self.saveText(text: base64ImageString, file: "car_\(car.id).txt")
+    // self.saveText(text: base64ImageString, file: "car_\(car.id).txt")
     print("saved to file car_\(car.id).txt")
     // Create JSON Payload
     let jsonPayload: [String: Any] = [
