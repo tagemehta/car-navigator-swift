@@ -72,9 +72,7 @@
                                                 <rect key="frame" x="0.0" y="242.66666666666671" width="233.66666666666666" height="34.333333333333343"/>
                                                 <color key="backgroundColor" systemColor="systemPurpleColor"/>
                                                 <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="plain" title="Confirm Car">
-                                                    <color key="baseForegroundColor" systemColor="labelColor"/>
-                                                </buttonConfiguration>
+                                                <buttonConfiguration key="configuration" style="plain" title="Confirm Car"/>
                                                 <connections>
                                                     <action selector="confirmCar:" destination="mLa-FU-RYk" eventType="touchUpInside" id="Ceb-pM-pb4"/>
                                                 </connections>
