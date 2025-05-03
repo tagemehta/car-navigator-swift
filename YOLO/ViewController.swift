@@ -47,14 +47,15 @@ class ViewController: UIViewController, VideoCaptureDelegate {
 
   private var lastTrackedBox: CGRect = CGRect.zero
   private var framesSinceNav = 0
+    
+    // varibles used by the speak funciton
+    private var  framesSinceSpeak = 0
+    private var lastSpeak = ""
+    
+    // varible used specificly for the no car in frame speach
+    private var framesSinceCar = 0
 
-  // varibles used by the speak funciton
-  private var framesSinceSpeak = 0
-  private var lastSpeak = ""
-
-  // varible used specificly for the no car in frame speach
-  private var framesSinceCar = 0
-
+    
   enum GPTState {
     case idle
     case waiting
@@ -385,13 +386,14 @@ class ViewController: UIViewController, VideoCaptureDelegate {
           }
         }
         if framesAppearedIn > 4 {
-          let imageRect = CGRect.convertNormalizedToImageSpace(
-            observation.boundingBox,
-            imageWidth: fullImageWidth,
-            imageHeight: fullImageHeight)
+          let imageRect = self.normalizedRectToImageRect(
+            normalizedRect: observation.boundingBox, originalWidth: fullImageWidth,
+            originalHeight: fullImageHeight,
+            modelWidth: 384, modelHeight: 640)  // Hard coded values here
+
           // --- ROI plus buffer ---
           // Define buffer as a percentage of bbox size (e.g., 20%)
-          let bufferPercent: CGFloat = 0.1
+          let bufferPercent: CGFloat = 0.2
           var roiRect = imageRect.insetBy(
             dx: -imageRect.width * bufferPercent, dy: -imageRect.height * bufferPercent)
           // Clamp to image bounds
@@ -402,28 +404,29 @@ class ViewController: UIViewController, VideoCaptureDelegate {
 
           // Crop the full image to ROI
           guard let cgRoi = cgFullImage.cropping(to: roiRect) else { continue }
-          //          // Draw rectangle using Core Graphics (CGContext) instead of UIImage/UIGraphicsImageRenderer
-          //          UIGraphicsBeginImageContextWithOptions(roiRect.size, false, 0)
-          //          let context = UIGraphicsGetCurrentContext()!
-          //          context.saveGState()
-          //          context.translateBy(x: 0, y: roiRect.size.height)
-          //          context.scaleBy(x: 1.0, y: -1.0)
-          //          context.draw(cgRoi, in: CGRect(origin: .zero, size: roiRect.size))
-          //          context.restoreGState()
-          //          context.setStrokeColor(UIColor.red.cgColor)
-          //          context.setLineWidth(2.0)
-          //          // Adjust bbox to ROI coordinates as before
-          //          let boxInRoi = CGRect(
-          //            x: imageRect.origin.x - roiRect.origin.x,
-          //            y: imageRect.origin.y - roiRect.origin.y,
-          //            width: imageRect.width,
-          //            height: imageRect.height
-          //          )
-          //          context.stroke(boxInRoi)
-          //          let renderedImage = UIGraphicsGetImageFromCurrentImageContext()
-          //          UIGraphicsEndImageContext()
-          //          guard let cgImage = renderedImage?.cgImage else { continue }
-          stableDetections.append(Car(image: cgRoi, observation: observation))
+
+          // Draw rectangle using Core Graphics (CGContext) instead of UIImage/UIGraphicsImageRenderer
+          UIGraphicsBeginImageContextWithOptions(roiRect.size, false, 0)
+          let context = UIGraphicsGetCurrentContext()!
+          context.saveGState()
+          context.translateBy(x: 0, y: roiRect.size.height)
+          context.scaleBy(x: 1.0, y: -1.0)
+          context.draw(cgRoi, in: CGRect(origin: .zero, size: roiRect.size))
+          context.restoreGState()
+          context.setStrokeColor(UIColor.red.cgColor)
+          context.setLineWidth(2.0)
+          // Adjust bbox to ROI coordinates as before
+          let boxInRoi = CGRect(
+            x: imageRect.origin.x - roiRect.origin.x,
+            y: imageRect.origin.y - roiRect.origin.y,
+            width: imageRect.width,
+            height: imageRect.height
+          )
+          context.stroke(boxInRoi)
+          let renderedImage = UIGraphicsGetImageFromCurrentImageContext()
+          UIGraphicsEndImageContext()
+          guard let cgImage = renderedImage?.cgImage else { continue }
+          stableDetections.append(Car(image: cgImage, observation: observation))
         }
       }
     }
@@ -506,12 +509,12 @@ class ViewController: UIViewController, VideoCaptureDelegate {
         trackingRequest.inputObservation = observation
 
         DispatchQueue.main.async {
-          let rectNew = CGRect.convertNormalizedBoundingBox(
-            observation.boundingBox,
-            orientation: UIDevice.current.orientation,
-            viewWidth: self.videoPreview.bounds.width,
-            viewHeight: self.videoPreview.bounds.height,
-            sessionPreset: self.videoCapture.captureSession.sessionPreset)
+          let rectNew = CGRect(
+            x: observation.boundingBox.origin.x * self.videoPreview.bounds.width,
+            y: (1 - observation.boundingBox.origin.y - observation.boundingBox.height)
+              * self.videoPreview.bounds.height,
+            width: observation.boundingBox.width * self.videoPreview.bounds.width,
+            height: observation.boundingBox.height * self.videoPreview.bounds.height)
           self.boundingBoxViews.forEach { box in
             box.hide()
           }
@@ -650,42 +653,136 @@ class ViewController: UIViewController, VideoCaptureDelegate {
     let width = videoPreview.bounds.width  // 375 pix
     let height = videoPreview.bounds.height  // 812 pix
 
-    for i in 0..<boundingBoxViews.count {
-      if isFound {
-        boundingBoxViews[i].hide()
-      } else if i < predictions.count && i < Int(maxPred) {
-        let prediction = predictions[i]
+    if UIDevice.current.orientation == .portrait {
 
-        // Convert normalized bounding box to display coordinates
-        let rect = CGRect.convertNormalizedBoundingBox(
-          prediction.boundingBox,
-          orientation: UIDevice.current.orientation,
-          viewWidth: width,
-          viewHeight: height,
-          sessionPreset: videoCapture.captureSession.sessionPreset)
-
-        // The labels array is a list of VNClassificationObservation objects,
-        // with the highest scoring class first in the list.
-        let bestClass = prediction.labels[0].identifier
-        let confidence = prediction.labels[0].confidence
-        let label = String(format: "%@ %.1f", bestClass, confidence * 100)
-        let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
-
-        // Show the bounding box.
-        boundingBoxViews[i].show(
-          frame: rect,
-          label: label,
-          color: colors[bestClass] ?? UIColor.white,
-          alpha: alpha)  // alpha 0 (transparent) to 1 (opaque) for conf threshold 0.2 to 1.0)
-
-        if developerMode && save_detections {
-          str += String(
-            format: "%.3f %.3f %.3f %@ %.2f %.1f %.1f %.1f %.1f\n",
-            sec_day, freeSpace(), UIDevice.current.batteryLevel, bestClass, confidence,
-            rect.origin.x, rect.origin.y, rect.size.width, rect.size.height)
-        }
+      // ratio = videoPreview AR divided by sessionPreset AR
+      var ratio: CGFloat = 1.0
+      if videoCapture.captureSession.sessionPreset == .photo {
+        ratio = (height / width) / (4.0 / 3.0)  // .photo
       } else {
-        boundingBoxViews[i].hide()
+        ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
+      }
+
+      for i in 0..<boundingBoxViews.count {
+        if isFound {
+          boundingBoxViews[i].hide()
+        } else if i < predictions.count && i < Int(maxPred) {
+          let prediction = predictions[i]
+
+          var rect = prediction.boundingBox  // normalized xywh, origin lower left
+          switch UIDevice.current.orientation {
+          case .portraitUpsideDown:
+            rect = CGRect(
+              x: 1.0 - rect.origin.x - rect.width,
+              y: 1.0 - rect.origin.y - rect.height,
+              width: rect.width,
+              height: rect.height)
+          case .landscapeLeft:
+            rect = CGRect(
+              x: rect.origin.x,
+              y: rect.origin.y,
+              width: rect.width,
+              height: rect.height)
+          case .landscapeRight:
+            rect = CGRect(
+              x: rect.origin.x,
+              y: rect.origin.y,
+              width: rect.width,
+              height: rect.height)
+          case .unknown:
+            print("The device orientation is unknown, the predictions may be affected")
+            fallthrough
+          default: break
+          }
+
+          if ratio >= 1 {  // iPhone ratio = 1.218
+            let offset = (1 - ratio) * (0.5 - rect.minX)
+            let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
+            rect = rect.applying(transform)
+            rect.size.width *= ratio
+          } else {  // iPad ratio = 0.75
+            let offset = (ratio - 1) * (0.5 - rect.maxY)
+            let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
+            rect = rect.applying(transform)
+            ratio = (height / width) / (3.0 / 4.0)
+            rect.size.height /= ratio
+          }
+
+          // Scale normalized to pixels [375, 812] [width, height]
+          rect = VNImageRectForNormalizedRect(rect, Int(width), Int(height))
+
+          // The labels array is a list of VNClassificationObservation objects,
+          // with the highest scoring class first in the list.
+          let bestClass = prediction.labels[0].identifier
+          let confidence = prediction.labels[0].confidence
+          // print(confidence, rect)  // debug (confidence, xywh) with xywh origin top left (pixels)
+          let label = String(format: "%@ %.1f", bestClass, confidence * 100)
+          let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
+          // Show the bounding box.
+          boundingBoxViews[i].show(
+            frame: rect,
+            label: label,
+            color: colors[bestClass] ?? UIColor.white,
+            alpha: alpha)  // alpha 0 (transparent) to 1 (opaque) for conf threshold 0.2 to 1.0)
+
+          if developerMode {
+            // Write
+            if save_detections {
+              str += String(
+                format: "%.3f %.3f %.3f %@ %.2f %.1f %.1f %.1f %.1f\n",
+                sec_day, freeSpace(), UIDevice.current.batteryLevel, bestClass, confidence,
+                rect.origin.x, rect.origin.y, rect.size.width, rect.size.height)
+            }
+          }
+        } else {
+          boundingBoxViews[i].hide()
+        }
+      }
+    } else {
+      let frameAspectRatio = longSide / shortSide
+      let viewAspectRatio = width / height
+      var scaleX: CGFloat = 1.0
+      var scaleY: CGFloat = 1.0
+      var offsetX: CGFloat = 0.0
+      var offsetY: CGFloat = 0.0
+
+      if frameAspectRatio > viewAspectRatio {
+        scaleY = height / shortSide
+        scaleX = scaleY
+        offsetX = (longSide * scaleX - width) / 2
+      } else {
+        scaleX = width / longSide
+        scaleY = scaleX
+        offsetY = (shortSide * scaleY - height) / 2
+      }
+
+      for i in 0..<boundingBoxViews.count {
+        if i < predictions.count {
+          let prediction = predictions[i]
+
+          var rect = prediction.boundingBox
+
+          rect.origin.x = rect.origin.x * longSide * scaleX - offsetX
+          rect.origin.y =
+            height
+            - (rect.origin.y * shortSide * scaleY - offsetY + rect.size.height * shortSide * scaleY)
+          rect.size.width *= longSide * scaleX
+          rect.size.height *= shortSide * scaleY
+
+          let bestClass = prediction.labels[0].identifier
+          let confidence = prediction.labels[0].confidence
+
+          let label = String(format: "%@ %.1f", bestClass, confidence * 100)
+          let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
+          // Show the bounding box.
+          boundingBoxViews[i].show(
+            frame: rect,
+            label: label,
+            color: colors[bestClass] ?? UIColor.white,
+            alpha: alpha)  // alpha 0 (transparent) to 1 (opaque) for conf threshold 0.2 to 1.0)
+        } else {
+          boundingBoxViews[i].hide()
+        }
       }
     }
     // Write
@@ -921,8 +1018,8 @@ extension ViewController {
   // MARK: — videoCapture delegate
 
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
-    // update every frame to use with speaking
-    framesSinceSpeak += 1
+      // update every frame to use with speaking
+      framesSinceSpeak += 1
     guard !isFound else {
       // Track the object every frame
       if let result = trackObject(in: sampleBuffer) {
@@ -934,11 +1031,12 @@ extension ViewController {
           framesSinceNav += 1
         }
       }
+
       // Object went out of frame, go back to detection mode
       else {
         isFound = false
         detectedCar = nil
-        let boundingBox = lastTrackedBox  // include confidence
+        let boundingBox = lastTrackedBox // include confidence
         let midPoint = (boundingBox.midX, boundingBox.midY)
         if midPoint.0 < 0.4 {
           ttsHelper.speak(
@@ -967,14 +1065,15 @@ extension ViewController {
       observations: detections, pixelBuffer: sampleBuffer)
 
     if stable.count > 0 && !gptCallInProgress {
-      //reset counter on saying "no car in frame"
-      framesSinceCar = 0
+        //reset counter on saying "no car in frame"
+        framesSinceCar = 0
       attemptGPTCall(with: stable)
-    } else {
-      // let the user know no car has been found in 100 frames
-      framesSinceCar += 1
-      if framesSinceCar > 150 { self.speak(message: "no car in frame", delay: 200) }
     }
+      else {
+          // let the user know no car has been found in 100 frames
+          framesSinceCar += 1
+          if framesSinceCar > 150 {self.speak(message: "no car in frame", delay: 200)}
+      }
 
     // update your past‑frames buffer…
     let _ = pastFrames.popLast()
@@ -1037,13 +1136,13 @@ extension ViewController: AVCapturePhotoCaptureDelegate {
   }
 }
 extension ViewController {
-  private func speak(message: String, delay: Int, silent: Bool = false) {
-    if (message != lastSpeak) || (framesSinceSpeak > delay) || ((message == lastSpeak) && silent) {
-      if !silent { self.ttsHelper.speak(text: message) }
-      framesSinceSpeak = 0
-      lastSpeak = message
+    private func speak(message: String, delay: Int, silent: Bool = false) {
+        if (message != lastSpeak) || (framesSinceSpeak > delay) || ((message == lastSpeak) && silent){
+            if !silent {self.ttsHelper.speak(text: message)}
+            framesSinceSpeak = 0
+            lastSpeak = message
+        }
     }
-  }
 }
 
 extension ViewController {
@@ -1060,11 +1159,11 @@ extension ViewController {
     }
 
     if midPoint.0 < 0.4 {
-      self.speak(message: "Car is on your left", delay: 60)
+        self.speak(message: "Car is on your left", delay: 60)
     } else if midPoint.0 > 0.6 {
-      self.speak(message: "Car is on your right", delay: 60)
+        self.speak(message: "Car is on your right", delay: 60)
     } else {
-      self.speak(message: "Straight ahead", delay: 130)
+        self.speak(message: "Straight ahead", delay: 130)
     }
     framesSinceNav = 1
   }
