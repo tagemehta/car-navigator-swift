@@ -1,4 +1,4 @@
-import Combine
+/*import Combine
 import Foundation
 import Vision
 
@@ -161,7 +161,10 @@ class DefaultStateController: StateController, ObservableObject {
     clearTracking: @escaping () -> Void,
     clearTrackingExcept: @escaping (VNTrackObjectRequest) -> Void
   ) -> DetectionState {
-    if matched {
+    // Only promote to .found when LLM matched AND candidate already has an ARKit anchor
+    let hasAnchor = candidate.anchorId != nil
+
+    if matched && hasAnchor {
       // If matched, keep only this candidate's tracking request
       clearTrackingExcept(candidate.trackingRequest)
       detectionState = .found(target: candidate)
@@ -173,6 +176,12 @@ class DefaultStateController: StateController, ObservableObject {
       clearTracking()
     }
     return detectionState
+  }
+
+  /// Resets detection state to searching (used when anchor lost)
+  func resetToSearching() {
+    detectionState = .searching
+    navigationManager.handle(.lost)
   }
 
   /// Determines if a target has drifted from its expected position
@@ -242,3 +251,5 @@ class DefaultStateController: StateController, ObservableObject {
     }
   }
 }
+
+*/

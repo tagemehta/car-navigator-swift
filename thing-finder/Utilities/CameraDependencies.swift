@@ -13,33 +13,6 @@ struct CameraDependencies {
     let targetClasses: [String]
     let targetTextDescription: String
     let settings: Settings
-    let detectionManager: DetectionManager
-    let navigationManager: NavigationManager
     let imageUtils: ImageUtilities
 }
 
-// MARK: - Factory
-
-extension CameraDependencies {
-    /// Creates a default set of dependencies
-    static func makeDefault(
-        targetClasses: [String],
-        targetTextDescription: String,
-        settings: Settings = Settings()
-    ) -> CameraDependencies {
-        let model = try! VNCoreMLModel(for: yolo11n(configuration: .init()).model)
-      model.featureProvider = ThresholdProvider(iouThreshold: 0.45, confidenceThreshold: 0.25)
-        let detectionManager = DetectionManager(
-            model: model
-        )
-        
-        return CameraDependencies(
-            targetClasses: targetClasses,
-            targetTextDescription: targetTextDescription,
-            settings: settings,
-            detectionManager: detectionManager,
-            navigationManager: NavigationManager(settings: settings),
-            imageUtils: ImageUtilities()
-        )
-    }
-}

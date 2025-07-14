@@ -20,9 +20,7 @@ struct ContentView: View {
     self.settings = settings
     _detectionModel = StateObject(
       wrappedValue: CameraViewModel(
-        targetClasses: targetClasses,
-        targetTextDescription: description,
-        settings: settings
+        dependencies: CameraDependencies(targetClasses: targetClasses, targetTextDescription: description, settings: settings, imageUtils: ImageUtilities())
       )
     )
   }
@@ -36,7 +34,7 @@ struct ContentView: View {
       ZStack {
         CameraPreviewView(
           isRunning: $isCameraRunning,
-          delegate: detectionModel, source: settings.useARMode ? .arkit : .avfoundation
+          delegate: detectionModel
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
 

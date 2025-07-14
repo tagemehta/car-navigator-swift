@@ -6,6 +6,7 @@
 //
 
 import CoreMedia
+import ARKit
 import SwiftUI
 import Vision
 
@@ -253,3 +254,35 @@ extension UIInterfaceOrientation {
 }
 
 // Removed ScalingOptions enum in favor of direct orientation parameter
+
+// MARK: - AR Utilities
+extension ImageUtilities {
+  /// Projects a world-space anchor into 2D view coordinates.
+  /// Returns `nil` if the anchor is behind the camera.
+  /// For phase-1 we draw a fixed 40×40 rect centred on the projection point.
+  func project(anchor: ARAnchor, frame: ARFrame, viewBounds: CGRect) -> CGRect? {
+    // World position of anchor
+    let posWorld = SIMD4<Float>(anchor.transform.columns.3.x,
+                                anchor.transform.columns.3.y,
+                                anchor.transform.columns.3.z,
+                                1)
+    // Transform to camera space
+    let cameraToWorld = frame.camera.transform
+    let worldToCamera = cameraToWorld.inverse
+    let posCamera = simd_mul(worldToCamera, posWorld)
+    // Positive z in camera space is behind the camera; we want negative z (in front)
+    if posCamera.z >= 0 { return nil }
+
+    // 2-D projection
+    let projected2D = frame.camera.projectPoint(SIMD3<Float>(posWorld.x, posWorld.y, posWorld.z),
+                                               orientation: .portrait,
+                                               viewportSize: viewBounds.size)
+
+    let size: CGFloat = 40
+    let rect = CGRect(x: CGFloat(projected2D.x) - size/2,
+                      y: CGFloat(projected2D.y) - size/2,
+                      width: size,
+                      height: size)
+    return rect
+  }
+}

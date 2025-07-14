@@ -52,8 +52,8 @@ class Settings: ObservableObject {
 
   // MARK: - Camera Settings
 
-  /// Whether to use AR mode (false = Default/AVFoundation, true = ARKit)
-  @AppStorage("use_ar_mode") var useARMode: Bool = false
+  /// Camera capture now always uses ARKit. This flag is retained for preference migration but has no effect.
+  @AppStorage("use_ar_mode") var useARMode: Bool = true
 
   /// Whether the device has LiDAR for distance estimation
   var hasLiDAR: Bool {
@@ -62,7 +62,7 @@ class Settings: ObservableObject {
 
   /// Recommended camera mode based on device capabilities
   var recommendedMode: CaptureSourceType {
-    return hasLiDAR ? .avfoundation : .arkit
+    return .arkit
   }
 
   // MARK: - Detection Settings

@@ -2,7 +2,7 @@ import ARKit
 import RealityKit
 //
 //  CameraPreviewView.swift
-//  SwiftUI wrapper for ARVideoCapture to preview ARView and deliver frames + depth lookup
+//  SwiftUI wrapper for ARView and deliver frames + depth lookup
 //
 import SwiftUI
 import UIKit
@@ -11,29 +11,27 @@ import UIKit
 struct CameraPreviewWrapper: View {
   @Binding var isRunning: Bool
   weak var delegate: FrameProviderDelegate?
-  var source: CaptureSourceType
   var body: some View {
     #if DEBUG
       if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
         Color.black
           .overlay(Text("Camera Preview").foregroundColor(.white))
       } else {
-        CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
+        CameraPreviewView(isRunning: $isRunning, delegate: delegate)
       }
     #else
-    CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
+    CameraPreviewView(isRunning: $isRunning, delegate: delegate)
     #endif
   }
 }
 struct CameraPreviewView: UIViewControllerRepresentable {
   @Binding var isRunning: Bool
   weak var delegate: FrameProviderDelegate?
-  var source: CaptureSourceType
-  // 1️⃣ Remove your arCapture from here entirely
+  
 
   /// 2️⃣ Create a coordinator that WILL hold it
   func makeCoordinator() -> Coordinator {
-    Coordinator(delegate: delegate, source: source)
+    Coordinator(delegate: delegate)
   }
 
   func makeUIViewController(context: Context) -> UIViewController {
@@ -98,13 +96,13 @@ struct CameraPreviewView: UIViewControllerRepresentable {
 
   // 4️⃣ Define the Coordinator
   class Coordinator: ObservableObject {
-    let videoCapture: FrameProvider
+    let videoCapture: ARVideoCapture
     weak var delegate: FrameProviderDelegate?
     private var hasSetUpSession = false
 
-    init(delegate: FrameProviderDelegate?, source: CaptureSourceType) {
+    init(delegate: FrameProviderDelegate?) {
       self.delegate = delegate
-      self.videoCapture = source == .arkit ? ARVideoCapture() : VideoCapture()
+      self.videoCapture = ARVideoCapture()
       self.videoCapture.delegate = delegate
     }
     

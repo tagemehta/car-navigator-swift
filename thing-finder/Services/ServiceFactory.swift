@@ -1,4 +1,4 @@
-import Combine
+/*import Combine
 import Foundation
 import SwiftUI
 import Vision
@@ -29,6 +29,12 @@ class ServiceFactory {
     // Use DetectionManager directly as the ObjectDetector implementation
     let objectDetector: ObjectDetector = detectionManager
 
+    // Create anchor tracking manager (ARKit)
+    let anchorManager = AnchorTrackingManager(imgUtils: imgUtils)
+    
+    // Vision tracking fallback coordinator
+    let visionTracker = VisionTrackingCoordinator()
+
     // Create bounding box creator
     let boundingBoxCreator = BoundingBoxManager(imgUtils: imgUtils)
 
@@ -43,7 +49,10 @@ class ServiceFactory {
       objectDetector: objectDetector,
       boundingBoxCreator: boundingBoxCreator,
       stateController: stateController,
-      imgUtils: imgUtils
+      imgUtils: imgUtils,
+      anchorManager: anchorManager,
+      visionTracker: visionTracker
     )
   }
 }
+*/

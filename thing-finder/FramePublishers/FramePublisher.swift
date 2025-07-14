@@ -6,21 +6,24 @@
 //
 
 import AVFoundation
+import ARKit
 import UIKit
 
 protocol FrameProviderDelegate: AnyObject {
-  /// - buffer: BGRA pixel buffer of the live camera frame
-  /// - depthAt: closure returning depth (metres) for a point in view-coords, or `nil`
+
+  /// Preferred callback for ARKit sources – gives full ARFrame
   func processFrame(
     _ provider: any FrameProvider,
-    buffer: CVPixelBuffer,
-    depthAt: @escaping (CGPoint) -> Float?
+    frame: ARFrame,
+    buffer: CVPixelBuffer
   )
 }
 
 protocol FrameProvider: AnyObject {
   // Ready-made preview view to add to your hierarchy
   var previewView: UIView { get }
+  /// Underlying ARSession if available (nil for non-ARKit providers)
+  var session: ARSession? { get }
 
   var delegate: FrameProviderDelegate? { get set }
 
@@ -39,5 +42,10 @@ protocol FrameProvider: AnyObject {
 
 enum CaptureSourceType {
   case arkit
-  case avfoundation
 }
+
+// Default for providers that are not ARKit-based
+extension FrameProvider {
+  public var session: ARSession? { nil }
+}
+

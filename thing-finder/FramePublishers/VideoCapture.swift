@@ -1,3 +1,4 @@
+/*
 //  Ultralytics YOLO 🚀 - AGPL-3.0 License
 //
 //  Video Capture for Ultralytics YOLOv8 Preview on iOS
@@ -44,7 +45,7 @@ class VideoCapture: NSObject, FrameProvider {
   // MARK: - FrameProvider Protocol Properties
   public var previewView: UIView { _previewView as UIView }
   private var _previewView: AVPreviewView
-  public var sourceType: CaptureSourceType = .avfoundation
+  public var sourceType: CaptureSourceType = .arkit
 
   // Rotation handling
   private(set) var videoRotationAngle: CGFloat = 0 {
@@ -330,3 +331,4 @@ class AVPreviewView: UIView {
     }
   }
 }
+*/
