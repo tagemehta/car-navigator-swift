@@ -40,21 +40,21 @@ struct InputView: View {
   var body: some View {
     NavigationStack {
       Form {
-        Section(header: Text("Search Mode")) {
-          Picker("Mode", selection: $searchMode) {
-            ForEach(SearchMode.allCases, id: \.id) { mode in
-              VStack(alignment: .leading) {
-                Text(mode.rawValue)
-                  .font(.headline)
-                Text(mode.description)
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              }
-              .tag(mode)
-            }
-          }
-          .pickerStyle(.inline)
-        }
+        // Section(header: Text("Search Mode")) {
+        //   Picker("Mode", selection: $searchMode) {
+        //     ForEach(SearchMode.allCases, id: \.id) { mode in
+        //       VStack(alignment: .leading) {
+        //         Text(mode.rawValue)
+        //           .font(.headline)
+        //         Text(mode.description)
+        //           .font(.caption)
+        //           .foregroundColor(.secondary)
+        //       }
+        //       .tag(mode)
+        //     }
+        //   }
+        //   .pickerStyle(.inline)
+        // }
 
         Section(
           header: Text(
@@ -92,7 +92,7 @@ struct InputView: View {
               : false)
         }
       }
-      .navigationTitle("Find My Thing")
+      .navigationTitle("Find My Uber")
       .onAppear {
         // Dismiss keyboard when view appears
         hideKeyboard()

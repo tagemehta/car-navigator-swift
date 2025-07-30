@@ -21,7 +21,7 @@ struct CameraPreviewWrapper: View {
         CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
       }
     #else
-    CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
+      CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
     #endif
   }
 }
@@ -44,20 +44,20 @@ struct CameraPreviewView: UIViewControllerRepresentable {
     // Use the coordinator's video capture
     let capture = context.coordinator.videoCapture
     let preview = capture.previewView
-    
+
     // Configure preview view
     preview.frame = vc.view.bounds
     preview.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     preview.contentMode = .scaleAspectFill
     preview.clipsToBounds = true
-    
+
     // Add and configure the preview view
     vc.view.addSubview(preview)
     vc.view.sendSubviewToBack(preview)
-    
+
     // Set delegate and start capture if needed
     capture.delegate = delegate
-    
+
     // Set up the session and start capture if needed
     if isRunning {
       DispatchQueue.main.async {
@@ -65,7 +65,7 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         capture.start()
       }
     }
-    
+
     print("Preview view controller created with frame: \(preview.frame)")
     return vc
   }
@@ -73,13 +73,13 @@ struct CameraPreviewView: UIViewControllerRepresentable {
   func updateUIViewController(_ uiVC: UIViewController, context: Context) {
     print("Updating camera preview view controller (isRunning: \(isRunning))")
     let capture = context.coordinator.videoCapture
-    
+
     // Update delegate if needed
     if capture.delegate !== delegate {
       print("Updating capture delegate")
       capture.delegate = delegate
     }
-    
+
     // Start/stop capture as needed
     if isRunning {
       DispatchQueue.main.async {
@@ -102,12 +102,22 @@ struct CameraPreviewView: UIViewControllerRepresentable {
     weak var delegate: FrameProviderDelegate?
     private var hasSetUpSession = false
 
-    init(delegate: FrameProviderDelegate?, source: CaptureSourceType) {
+    init(
+      delegate: FrameProviderDelegate?,
+      source: CaptureSourceType
+    ) {
       self.delegate = delegate
-      self.videoCapture = source == .arkit ? ARVideoCapture() : VideoCapture()
+      switch source {
+      case .arKit:
+        self.videoCapture = ARVideoCapture()
+      case .videoFile:
+        self.videoCapture = VideoFileFrameProvider()
+      default:
+        self.videoCapture = VideoCapture()
+      }
       self.videoCapture.delegate = delegate
     }
-    
+
     func setupIfNeeded() {
       guard !hasSetUpSession else { return }
       videoCapture.setupSession()

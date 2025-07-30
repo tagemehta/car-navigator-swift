@@ -36,8 +36,3 @@ protocol FrameProvider: AnyObject {
   func setupSession()
 
 }
-
-enum CaptureSourceType {
-  case arkit
-  case avfoundation
-}

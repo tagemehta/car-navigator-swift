@@ -23,9 +23,9 @@ func bestCaptureDevice() -> AVCaptureDevice {
     print("LiDAR depth camera found")
     return device
   } else if let device = AVCaptureDevice.default(
-    .builtInTelephotoCamera, for: .video, position: .back)
+    .builtInDualWideCamera, for: .video, position: .back)
   {
-    print("telephoto")
+    print("dual wide")
     return device
   } else if let device = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) {
     print("dual")
@@ -44,7 +44,7 @@ class VideoCapture: NSObject, FrameProvider {
   // MARK: - FrameProvider Protocol Properties
   public var previewView: UIView { _previewView as UIView }
   private var _previewView: AVPreviewView
-  public var sourceType: CaptureSourceType = .avfoundation
+  public var sourceType: CaptureSourceType = .avFoundation
 
   // Rotation handling
   private(set) var videoRotationAngle: CGFloat = 0 {
@@ -77,7 +77,13 @@ class VideoCapture: NSObject, FrameProvider {
 
   deinit {
     NotificationCenter.default.removeObserver(self)
-    UIDevice.current.endGeneratingDeviceOrientationNotifications()
+    if Thread.isMainThread {
+      UIDevice.current.endGeneratingDeviceOrientationNotifications()
+    } else {
+      DispatchQueue.main.async {
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
+      }
+    }
   }
 
   // MARK: - Rotation Handling
@@ -173,16 +179,20 @@ class VideoCapture: NSObject, FrameProvider {
       outputs.append(videoOutput)
     }
 
-    if AVCaptureDevice.default(.builtInLiDARDepthCamera, for: .video, position: .back) != nil,
-      captureSession.canAddOutput(depthOutput)
-    {
-      depthOutput.isFilteringEnabled = true
-      depthOutput.alwaysDiscardsLateDepthData = true
-      captureSession.addOutput(depthOutput)
-      if depthOutput.connection(with: .depthData) != nil {
-        outputs.append(depthOutput)
+    if !captureDevice.formats.filter({ format in
+      !format.supportedDepthDataFormats.isEmpty
+    }).isEmpty {
+      if captureSession.canAddOutput(depthOutput) {
+        depthOutput.isFilteringEnabled = true
+        depthOutput.alwaysDiscardsLateDepthData = true
+        captureSession.addOutput(depthOutput)
+        if depthOutput.connection(with: .depthData) != nil {
+          outputs.append(depthOutput)
+        } else {
+          print("Warning: Depth output added but no valid connection")
+        }
       } else {
-        print("Warning: Depth output added but no valid connection")
+        print("Warning: cannot add depth output")
       }
     }
 
@@ -252,7 +262,9 @@ extension VideoCapture: AVCaptureDataOutputSynchronizerDelegate {
         CVPixelBufferLockBaseAddress(depthBuf, .readOnly)
         let width = CVPixelBufferGetWidth(depthBuf)
         let height = CVPixelBufferGetHeight(depthBuf)
-        let normalizedPoint = CGPoint(x: Int(point.x) * width, y: Int(point.y) * height)
+        let x = max(0, min(width - 1, Int(point.x * CGFloat(width))))
+        let y = max(0, min(height - 1, Int(point.y * CGFloat(height))))
+        let normalizedPoint = CGPoint(x: x, y: y)
         if let base = CVPixelBufferGetBaseAddress(depthBuf) {
           let rowBytes = CVPixelBufferGetBytesPerRow(depthBuf)
           let ptr = base.advanced(
@@ -278,6 +290,26 @@ extension VideoCapture: AVCaptureDataOutputSynchronizerDelegate {
 
 }
 
+// MARK: - AVCapture Output Delegates
+extension VideoCapture {
+  // These delegate callbacks are required so that the outputs actually emit data. We simply
+  // forward the buffers to the synchronizer via no-op implementations because we already
+  // consume synchronized data in `dataOutputSynchronizer(_:didOutput:)`.
+  public func captureOutput(
+    _ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer,
+    from connection: AVCaptureConnection
+  ) {
+    // Intentionally left blank
+  }
+
+  public func captureOutput(
+    _ output: AVCaptureOutput, didOutput depthData: AVDepthData, timestamp: CMTime,
+    connection: AVCaptureConnection
+  ) {
+    // Intentionally left blank
+  }
+}
+
 // https://medium.com/@hunter-pearson/using-avfoundations-rotationcoordinator-to-rotate-media-views-0171c336d7f1
 class AVPreviewView: UIView {
   // MARK: - Properties
@@ -301,7 +333,7 @@ class AVPreviewView: UIView {
   }
 
   deinit {
-    UIDevice.current.endGeneratingDeviceOrientationNotifications()
+    // No-op; balanced in VideoCapture
   }
 
   /// Call after the associated AVCaptureSession is fully configured.

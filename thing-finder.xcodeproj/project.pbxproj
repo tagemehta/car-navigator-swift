@@ -7,14 +7,7 @@
 	objects = {
 
 /* Begin PBXContainerItemProxy section */
-		313783B52DF497B300C36BEE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 3137839C2DF497B200C36BEE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 313783A32DF497B200C36BEE;
-			remoteInfo = "thing-finder";
-		};
-		313783BF2DF497B300C36BEE /* PBXContainerItemProxy */ = {
+		3106F9122E2C3DBD00A9092B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3137839C2DF497B200C36BEE /* Project object */;
 			proxyType = 1;
@@ -24,9 +17,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3106F90E2E2C3DBD00A9092B /* thing-finderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "thing-finderTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		313783A42DF497B200C36BEE /* thing-finder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "thing-finder.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		313783B42DF497B300C36BEE /* thing-finderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "thing-finderTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		313783BE2DF497B300C36BEE /* thing-finderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "thing-finderUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -40,6 +32,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		3106F90F2E2C3DBD00A9092B /* thing-finderTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "thing-finderTests";
+			sourceTree = "<group>";
+		};
 		313783A62DF497B200C36BEE /* thing-finder */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -48,34 +45,17 @@
 			path = "thing-finder";
 			sourceTree = "<group>";
 		};
-		313783B72DF497B300C36BEE /* thing-finderTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "thing-finderTests";
-			sourceTree = "<group>";
-		};
-		313783C12DF497B300C36BEE /* thing-finderUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "thing-finderUITests";
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3106F90B2E2C3DBD00A9092B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		313783A12DF497B200C36BEE /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		313783B12DF497B300C36BEE /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		313783BB2DF497B300C36BEE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -89,8 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				313783A62DF497B200C36BEE /* thing-finder */,
-				313783B72DF497B300C36BEE /* thing-finderTests */,
-				313783C12DF497B300C36BEE /* thing-finderUITests */,
+				3106F90F2E2C3DBD00A9092B /* thing-finderTests */,
 				313783A52DF497B200C36BEE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -99,8 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				313783A42DF497B200C36BEE /* thing-finder.app */,
-				313783B42DF497B300C36BEE /* thing-finderTests.xctest */,
-				313783BE2DF497B300C36BEE /* thing-finderUITests.xctest */,
+				3106F90E2E2C3DBD00A9092B /* thing-finderTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +86,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3106F90D2E2C3DBD00A9092B /* thing-finderTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3106F9142E2C3DBE00A9092B /* Build configuration list for PBXNativeTarget "thing-finderTests" */;
+			buildPhases = (
+				3106F90A2E2C3DBD00A9092B /* Sources */,
+				3106F90B2E2C3DBD00A9092B /* Frameworks */,
+				3106F90C2E2C3DBD00A9092B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3106F9132E2C3DBD00A9092B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3106F90F2E2C3DBD00A9092B /* thing-finderTests */,
+			);
+			name = "thing-finderTests";
+			packageProductDependencies = (
+			);
+			productName = "thing-finderTests";
+			productReference = 3106F90E2E2C3DBD00A9092B /* thing-finderTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		313783A32DF497B200C36BEE /* thing-finder */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 313783C82DF497B300C36BEE /* Build configuration list for PBXNativeTarget "thing-finder" */;
@@ -130,52 +131,6 @@
 			productReference = 313783A42DF497B200C36BEE /* thing-finder.app */;
 			productType = "com.apple.product-type.application";
 		};
-		313783B32DF497B300C36BEE /* thing-finderTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 313783CB2DF497B300C36BEE /* Build configuration list for PBXNativeTarget "thing-finderTests" */;
-			buildPhases = (
-				313783B02DF497B300C36BEE /* Sources */,
-				313783B12DF497B300C36BEE /* Frameworks */,
-				313783B22DF497B300C36BEE /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				313783B62DF497B300C36BEE /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				313783B72DF497B300C36BEE /* thing-finderTests */,
-			);
-			name = "thing-finderTests";
-			packageProductDependencies = (
-			);
-			productName = "thing-finderTests";
-			productReference = 313783B42DF497B300C36BEE /* thing-finderTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		313783BD2DF497B300C36BEE /* thing-finderUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 313783CE2DF497B300C36BEE /* Build configuration list for PBXNativeTarget "thing-finderUITests" */;
-			buildPhases = (
-				313783BA2DF497B300C36BEE /* Sources */,
-				313783BB2DF497B300C36BEE /* Frameworks */,
-				313783BC2DF497B300C36BEE /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				313783C02DF497B300C36BEE /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				313783C12DF497B300C36BEE /* thing-finderUITests */,
-			);
-			name = "thing-finderUITests";
-			packageProductDependencies = (
-			);
-			productName = "thing-finderUITests";
-			productReference = 313783BE2DF497B300C36BEE /* thing-finderUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -186,16 +141,12 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					3106F90D2E2C3DBD00A9092B = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 313783A32DF497B200C36BEE;
+					};
 					313783A32DF497B200C36BEE = {
 						CreatedOnToolsVersion = 16.2;
-					};
-					313783B32DF497B300C36BEE = {
-						CreatedOnToolsVersion = 16.2;
-						TestTargetID = 313783A32DF497B200C36BEE;
-					};
-					313783BD2DF497B300C36BEE = {
-						CreatedOnToolsVersion = 16.2;
-						TestTargetID = 313783A32DF497B200C36BEE;
 					};
 				};
 			};
@@ -214,28 +165,20 @@
 			projectRoot = "";
 			targets = (
 				313783A32DF497B200C36BEE /* thing-finder */,
-				313783B32DF497B300C36BEE /* thing-finderTests */,
-				313783BD2DF497B300C36BEE /* thing-finderUITests */,
+				3106F90D2E2C3DBD00A9092B /* thing-finderTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		3106F90C2E2C3DBD00A9092B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		313783A22DF497B200C36BEE /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		313783B22DF497B300C36BEE /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		313783BC2DF497B300C36BEE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -245,21 +188,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3106F90A2E2C3DBD00A9092B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		313783A02DF497B200C36BEE /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		313783B02DF497B300C36BEE /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		313783BA2DF497B300C36BEE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -269,19 +205,50 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		313783B62DF497B300C36BEE /* PBXTargetDependency */ = {
+		3106F9132E2C3DBD00A9092B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 313783A32DF497B200C36BEE /* thing-finder */;
-			targetProxy = 313783B52DF497B300C36BEE /* PBXContainerItemProxy */;
-		};
-		313783C02DF497B300C36BEE /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 313783A32DF497B200C36BEE /* thing-finder */;
-			targetProxy = 313783BF2DF497B300C36BEE /* PBXContainerItemProxy */;
+			targetProxy = 3106F9122E2C3DBD00A9092B /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		3106F9152E2C3DBE00A9092B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XK27F6NC2A;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kraken.carFinderTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/thing-finder.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/thing-finder";
+			};
+			name = Debug;
+		};
+		3106F9162E2C3DBE00A9092B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XK27F6NC2A;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kraken.carFinderTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/thing-finder.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/thing-finder";
+			};
+			name = Release;
+		};
 		313783C62DF497B300C36BEE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -415,7 +382,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "thing-finder";
 				INFOPLIST_KEY_NSCameraUsageDescription = 1.0;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Please;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -428,7 +395,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.thing-finder";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -450,7 +417,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "thing-finder";
 				INFOPLIST_KEY_NSCameraUsageDescription = 1.0;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Please;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -463,7 +430,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.thing-finder";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -471,81 +438,18 @@
 			};
 			name = Release;
 		};
-		313783CC2DF497B300C36BEE /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = XK27F6NC2A;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.thing-finderTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/thing-finder.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/thing-finder";
-			};
-			name = Debug;
-		};
-		313783CD2DF497B300C36BEE /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = XK27F6NC2A;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.thing-finderTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/thing-finder.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/thing-finder";
-			};
-			name = Release;
-		};
-		313783CF2DF497B300C36BEE /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = XK27F6NC2A;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.thing-finderUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "thing-finder";
-			};
-			name = Debug;
-		};
-		313783D02DF497B300C36BEE /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = XK27F6NC2A;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.kraken.thing-finderUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "thing-finder";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3106F9142E2C3DBE00A9092B /* Build configuration list for PBXNativeTarget "thing-finderTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3106F9152E2C3DBE00A9092B /* Debug */,
+				3106F9162E2C3DBE00A9092B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3137839F2DF497B200C36BEE /* Build configuration list for PBXProject "thing-finder" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -560,24 +464,6 @@
 			buildConfigurations = (
 				313783C92DF497B300C36BEE /* Debug */,
 				313783CA2DF497B300C36BEE /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		313783CB2DF497B300C36BEE /* Build configuration list for PBXNativeTarget "thing-finderTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				313783CC2DF497B300C36BEE /* Debug */,
-				313783CD2DF497B300C36BEE /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		313783CE2DF497B300C36BEE /* Build configuration list for PBXNativeTarget "thing-finderUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				313783CF2DF497B300C36BEE /* Debug */,
-				313783D02DF497B300C36BEE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

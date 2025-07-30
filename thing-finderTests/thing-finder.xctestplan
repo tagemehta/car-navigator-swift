@@ -1,0 +1,39 @@
+{
+  "configurations" : [
+    {
+      "id" : "1083D102-7052-4C39-8CAA-2D631EB2CEF4",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "environmentVariableEntries" : [
+      {
+        "enabled" : false,
+        "key" : "",
+        "value" : ""
+      }
+    ],
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:thing-finder.xcodeproj",
+      "identifier" : "313783A32DF497B200C36BEE",
+      "name" : "thing-finder"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "skippedTests" : [
+        "thing_finderTests"
+      ],
+      "target" : {
+        "containerPath" : "container:thing-finder.xcodeproj",
+        "identifier" : "3106F90D2E2C3DBD00A9092B",
+        "name" : "thing-finderTests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,25 +1,22 @@
-import ARKit
 import SwiftUI
 
 struct SettingsView: View {
   @ObservedObject var settings: Settings
-  @State private var showAdvancedSettings = false
 
   var body: some View {
     NavigationView {
       List {
-        // MARK: - Navigation Settings
+        // MARK: - Navigation Feedback
         Section(header: Text("Navigation Feedback")) {
-          Toggle("Audio Beeps", isOn: $settings.enableAudio)
-          Toggle("Speech Guidance", isOn: $settings.enableSpeech)
-          Toggle("Haptic Feedback", isOn: $settings.enableHaptics)
+          Toggle("Navigate without plate match", isOn: $settings.allowPartialNavigation)
+          //          Toggle("Audio Beeps", isOn: $settings.enableAudio)
+          //          Toggle("Speech Guidance", isOn: $settings.enableSpeech)
+          //          Toggle("Haptic Feedback", isOn: $settings.enableHaptics)
 
-          if settings.enableSpeech {
-            VStack(alignment: .leading) {
-              Text("Speech Rate: \(String(format: "%.1f", settings.speechRate))")
-              Slider(value: $settings.speechRate, in: -1...1, step: 0.1)
-                .accessibilityLabel("Speech Rate")
-            }
+          VStack(alignment: .leading) {
+            Text("Speech Rate: \(String(format: "%.1f", settings.speechRate))")
+            Slider(value: $settings.speechRate, in: -1...1, step: 0.1)
+              .accessibilityLabel("Speech Rate")
           }
         }
 
@@ -69,8 +66,15 @@ struct SettingsView: View {
             Slider(value: $settings.smoothingAlpha, in: 0.05...0.5, step: 0.05)
               .accessibilityLabel("Beep Smoothing")
           }
+
+          Picker("Volume Curve", selection: $settings.volumeCurve) {
+            ForEach(VolumeCurve.allCases) { curve in
+              Text(curve.rawValue).tag(curve)
+            }
+          }
         }
 
+        /*
         // MARK: - Distance Settings
         Section(header: Text("Distance Feedback")) {
           Picker("Volume Curve", selection: $settings.volumeCurve) {
@@ -87,7 +91,7 @@ struct SettingsView: View {
 
           VStack(alignment: .leading) {
             Text("Max Distance: \(String(format: "%.1f", settings.distanceMax))m")
-            Slider(value: $settings.distanceMax, in: 1.0...5.0, step: 0.5)
+            Slider(value: $settings.distanceMax, in: 1.0...20.0, step: 0.5)
               .accessibilityLabel("Maximum Distance")
           }
 
@@ -96,69 +100,54 @@ struct SettingsView: View {
             Slider(value: $settings.volumeMin, in: 0.0...0.5, step: 0.05)
               .accessibilityLabel("Minimum Volume")
           }
-        }
+        } */
 
         // MARK: - Camera Settings
-        Section(header: Text("Camera Mode")) {
-          Toggle(isOn: $settings.useARMode) {
-            VStack(alignment: .leading, spacing: 4) {
-              Text(settings.useARMode ? "AR Mode" : "Default Mode")
-
-              if settings.hasLiDAR && settings.useARMode {
-                Text(
-                  "Recommended: Switch to default mode. Able to provide same functionality"
-                )
-                .font(.caption)
-                .foregroundColor(.secondary)
-              } else if !settings.useARMode {
-                Text("Optional: Switch to AR Mode for depth estimation")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              }
-            }
-          }
-
-          if settings.useARMode {
-            VStack(alignment: .leading, spacing: 4) {
-              HStack(spacing: 4) {
-                Image(systemName: "battery.25")
-                Text("Note: AR mode uses more battery")
-              }
-              .font(.caption)
-              .foregroundColor(.orange)
-
-              if settings.hasLiDAR {
-                Text(
-                  "LiDAR is available on this device. Default mode is recommended for most use cases."
-                )
-                .font(.caption2)
-                .foregroundColor(.secondary)
-              } else {
-                Text("AR mode provides better distance estimation on devices without LiDAR.")
-                  .font(.caption2)
-                  .foregroundColor(.secondary)
-              }
-            }
-            .padding(.top, 4)
-          }
-        }
-
-        // MARK: - Developer Mode Toggle
-        Section {
-          Toggle("Developer Mode", isOn: $settings.developerMode)
-            .onChange(of: settings.developerMode) {
-              if !settings.developerMode {
-                showAdvancedSettings = false
-              }
-            }
-
-          if settings.developerMode {
-            Toggle("Show Advanced Settings", isOn: $showAdvancedSettings)
-          }
-        }
-
+        //        Section(header: Text("Camera Mode")) {
+        //          Toggle(isOn: $settings.useARMode) {
+        //            VStack(alignment: .leading, spacing: 4) {
+        //              Text(settings.useARMode ? "AR Mode" : "Default Mode")
+        //
+        //              if settings.hasLiDAR && settings.useARMode {
+        //                Text(
+        //                  "Recommended: Switch to default mode. Able to provide same functionality"
+        //                )
+        //                .font(.caption)
+        //                .foregroundColor(.secondary)
+        //              } else if !settings.useARMode {
+        //                Text("Optional: Switch to AR Mode for depth estimation")
+        //                  .font(.caption)
+        //                  .foregroundColor(.secondary)
+        //              }
+        //            }
+        //          }
+        //
+        //          if settings.useARMode {
+        //            VStack(alignment: .leading, spacing: 4) {
+        //              HStack(spacing: 4) {
+        //                Image(systemName: "battery.25")
+        //                Text("Note: AR mode uses more battery")
+        //              }
+        //              .font(.caption)
+        //              .foregroundColor(.orange)
+        //
+        //              if settings.hasLiDAR {
+        //                Text(
+        //                  "LiDAR is available on this device. Default mode is recommended for most use cases."
+        //                )
+        //                .font(.caption2)
+        //                .foregroundColor(.secondary)
+        //              } else {
+        //                Text("AR mode provides better distance estimation on devices without LiDAR.")
+        //                  .font(.caption2)
+        //                  .foregroundColor(.secondary)
+        //              }
+        //            }
+        //            .padding(.top, 4)
+        //          }
+        //        }
         // MARK: - Advanced Settings (Developer Mode)
-        if settings.developerMode && showAdvancedSettings {
+        if settings.developerMode {
           Section(header: Text("Detection Settings")) {
             VStack(alignment: .leading) {
               Text("Confidence: \(String(format: "%.2f", settings.confidenceThreshold))")
@@ -169,7 +158,7 @@ struct SettingsView: View {
             VStack(alignment: .leading) {
               Text(
                 "Verification Cooldown: \(String(format: "%.1f", settings.verificationCooldown))s")
-              Slider(value: $settings.verificationCooldown, in: 0.5...5.0, step: 0.5)
+              Slider(value: $settings.verificationCooldown, in: 0.5...10.0, step: 0.5)
                 .accessibilityLabel("Verification Cooldown")
             }
 
@@ -183,44 +172,6 @@ struct SettingsView: View {
               "Max Lost Frames: \(settings.maxLostFrames)",
               value: $settings.maxLostFrames,
               in: 1...10)
-          }
-
-          Section(header: Text("Tracking Drift Thresholds")) {
-            VStack(alignment: .leading) {
-              Text("Min IoU: \(String(format: "%.2f", settings.minIouThreshold))")
-              Slider(value: $settings.minIouThreshold, in: 0.1...0.8, step: 0.05)
-                .accessibilityLabel("Minimum IoU Threshold")
-            }
-
-            VStack(alignment: .leading) {
-              Text("Max Center Shift: \(String(format: "%.2f", settings.maxCenterShift))")
-              Slider(value: $settings.maxCenterShift, in: 0.05...0.5, step: 0.05)
-                .accessibilityLabel("Maximum Center Shift")
-            }
-
-            VStack(alignment: .leading) {
-              Text("Max Area Shift: \(String(format: "%.2f", settings.maxAreaShift))")
-              Slider(value: $settings.maxAreaShift, in: 0.1...0.8, step: 0.05)
-                .accessibilityLabel("Maximum Area Shift")
-            }
-
-            VStack(alignment: .leading) {
-              Text(
-                "Min Tracking Confidence: \(String(format: "%.2f", settings.minTrackingConfidence))"
-              )
-              Slider(value: $settings.minTrackingConfidence, in: 0.1...0.8, step: 0.05)
-                .accessibilityLabel("Minimum Tracking Confidence")
-            }
-          }
-
-          Section(header: Text("Performance")) {
-            Toggle("Battery Saver Mode", isOn: $settings.batterySaver)
-
-            Stepper(
-              "FPS Window: \(settings.fpsWindow) frames",
-              value: $settings.fpsWindow,
-              in: 5...30,
-              step: 5)
           }
         }
 

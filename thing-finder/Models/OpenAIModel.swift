@@ -3,6 +3,7 @@ struct ChatCompletionRequest: Encodable {
   let model: String
   let messages: [Message]
   let tools: [Tool]
+  let tool_choice: String = "required"
   let max_tokens: Int
 }
 
@@ -49,8 +50,19 @@ struct FunctionParameters: Encodable {
 struct FunctionProperty: Encodable {
   let type: String
   let description: String
-}
+  /// Optional enumeration of allowed string values for this property, encoded as `enum` in JSON.
+  let enumValues: [String]?
+  private enum CodingKeys: String, CodingKey {
+    case type, description
+    case enumValues = "enum"
+  }
 
+  init(type: String, description: String, enumValues: [String]? = nil) {
+    self.type = type
+    self.description = description
+    self.enumValues = enumValues
+  }
+}
 
 /// MARK - Response Structs
 struct ChatCompletionResponse: Decodable {
@@ -77,4 +89,8 @@ struct FunctionCall: Decodable {
 struct MatchResult: Decodable {
   let match: Bool
   let confidence: Double
+  /// Reason for rejection when `match == false`, matches LLMRejectReason enum values.
+  let reason: String?
+  /// Short natural-language description of the detected object, e.g. “blue Toyota Camry”.
+  let description: String?
 }

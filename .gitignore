@@ -2,3 +2,8 @@
 app.todo
 Secrets.xcconfig
 CVModels/
+*.MOV
+.build/*
+datasets/*
+car_eval*.json
+results/*

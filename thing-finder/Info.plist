@@ -4,5 +4,7 @@
 <dict>
 	<key>OPENAI_API</key>
 	<string>$(OPENAI_API)</string>
+	<key>TRAFFICEYE_API_KEY</key>
+	<string>$(TRAFFICEYE_API_KEY)</string>
 </dict>
 </plist>

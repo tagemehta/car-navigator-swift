@@ -21,7 +21,7 @@ protocol ARVideoCaptureDelegate: AnyObject {
 
 class ARVideoCapture: NSObject, ARSessionDelegate, FrameProvider {
 
-  var sourceType = CaptureSourceType.arkit
+  var sourceType = CaptureSourceType.arKit
 
   // MARK: - Public Properties
 
