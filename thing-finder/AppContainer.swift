@@ -41,7 +41,8 @@ public final class AppContainer {
     let needsOCR =
       classes.contains { ["car", "truck", "bus", "van"].contains($0.lowercased()) }
       && parsed.plate != nil
-    let verifierConfig = VerificationConfig(expectedPlate: parsed.plate, shouldRunOCR: needsOCR, useCombinedVerifier: true)
+    let verifierConfig = VerificationConfig(
+      expectedPlate: parsed.plate, shouldRunOCR: needsOCR, useCombinedVerifier: true)
     let verifier = VerifierService(
       verifier: TrafficEyeVerifier(
         targetClasses: classes, targetTextDescription: description, config: verifierConfig),
