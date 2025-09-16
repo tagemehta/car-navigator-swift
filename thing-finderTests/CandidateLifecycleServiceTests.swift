@@ -21,7 +21,7 @@ final class CandidateLifecycleServiceTests: XCTestCase {
 
   override func setUp() {
     super.setUp()
-    service = CandidateLifecycleService(imgUtils: ImageUtilities.shared, missThreshold: 2, rejectCooldown: 5)
+    service = CandidateLifecycleService(imgUtils: ImageUtilities.shared, missThreshold: 15, rejectCooldown: 5)
     store = CandidateStore()
   }
 

@@ -45,13 +45,13 @@ private struct MMR: Codable {
   let make: MMRItem?
   let model: MMRItem?
   let color: MMRItem?
+  let view: MMRItem?
 }
 
 private struct MMRItem: Codable {
   let value: String
   let score: Double
 }
-
 // MARK: - TrafficEye Verifier
 
 public final class TrafficEyeVerifier: ImageVerifier {
@@ -86,7 +86,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
     let blurScore = imgUtils.blurScore(from: image)
     guard blurScore != nil && imgUtils.blurScore(from: image)! < 0.1 else {
       return Just(
-        VerificationOutcome(isMatch: false, description: "blurry", rejectReason: "unclear_image")
+        VerificationOutcome(isMatch: false, description: "blurry", rejectReason: .unclearImage)
       ).setFailureType(to: Error.self)  // promote to Error failure
         .eraseToAnyPublisher()
     }
@@ -97,18 +97,32 @@ public final class TrafficEyeVerifier: ImageVerifier {
       .catch { _ in Just(RecognitionResult(mmr: nil, plate: nil)).setFailureType(to: Error.self) }
       .flatMap { result -> AnyPublisher<VerificationOutcome, Error> in
         // --- License plate early verification ---
-        /*if let expectedPlate = self.config.expectedPlate,
+        if let expectedPlate = self.config.expectedPlate,
           let detectedPlate = result.plate
         {
           let expectedNorm = expectedPlate.replacingOccurrences(of: " ", with: "").uppercased()
-          let detectedNorm = detectedPlate.text.value.replacingOccurrences(of: " ", with: "").uppercased()
+          let detectedNorm = detectedPlate.text.value.replacingOccurrences(of: " ", with: "")
+            .uppercased()
 
           if detectedNorm == expectedNorm {
             // Perfect match – success
+            let vehicleView: Candidate.VehicleView = {
+              switch result.mmr?.view?.value.lowercased() {
+              case "frontal": return .front
+              case "rear", "back": return .rear
+              case "side": return .side
+              default: return .unknown
+              }
+            }()
             let outcome = VerificationOutcome(
-              isMatch: true, description: detectedPlate.text.value, rejectReason: "success")
+              isMatch: true,
+              description: detectedPlate.text.value,
+              rejectReason: .success,
+              isPlateMatch: true,
+              vehicleView: vehicleView,
+              viewScore: result.mmr?.view?.score)
             return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
-          } else if (detectedPlate.text.score ?? 0) >= self.config.ocrConfidenceMin
+          } else if (detectedPlate.text.score ?? 0) >= 0.9
             && detectedNorm.count == expectedNorm.count
           {
             // High-conf mismatch – reject early
@@ -119,19 +133,48 @@ public final class TrafficEyeVerifier: ImageVerifier {
             let outcome = VerificationOutcome(
               isMatch: false,
               description: "\(mmcDesc) \(detectedPlate.text.value)",
-              rejectReason: "license_plate_mismatch")
+              rejectReason: .licensePlateMismatch)
             return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
           }
           // Low confidence or length mismatch – proceed to LLM
-        } */
+        }
 
         guard let mmr = result.mmr else {
           // No vehicle detection at all
           let outcome = VerificationOutcome(
-            isMatch: false, description: "No vehicle detected", rejectReason: "api_error")
+            isMatch: false, description: "No vehicle detected", rejectReason: .apiError)
           return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
-        // Defer to LLM for make/model/color comparison
+        let vehicleView: Candidate.VehicleView =  {
+          switch mmr.view?.value {
+          case "frontal": return .front
+          case "rear", "back": return .rear
+          case "side": return .side
+          default: return .unknown
+          }
+        }()
+        // Compute info quality and decide whether to call LLM
+        let infoQ = {
+          let makeScore = mmr.make?.score ?? 0
+          let modelScore = mmr.model?.score ?? 0
+          let colorScore = mmr.color?.score ?? 0
+          return 0.5 * makeScore + 0.3 * modelScore + 0.2 * colorScore
+        }()
+        if infoQ < 0.4 {
+          return Just(
+            VerificationOutcome(
+              isMatch: false, description: "Insufficient information",
+              rejectReason: .insufficientInfo,
+              vehicleView: vehicleView
+              
+            )
+          )
+          .setFailureType(to: Error.self)
+          .eraseToAnyPublisher()
+        }
+        //        print(infoQ)
+        // Even for low information quality, defer to LLM – it can respond with `maybe` which we map to a retryable reason.
+        // Defer to LLM for make/model/color comparison regardless of info quality
         return self.callLLMForComparison(with: mmr)
       }
       .eraseToAnyPublisher()
@@ -166,10 +209,12 @@ public final class TrafficEyeVerifier: ImageVerifier {
           // No detections or missing data
           return RecognitionResult(mmr: nil, plate: nil)
         }
-        return RecognitionResult(mmr: roadUser.mmr, plate: roadUser.plates?.max(by: { p1, p2 in
-          p1.text.score ?? 0 < p2.text.score ?? 0
-          // A predicate that returns true if its first argument should be ordered before its second argument [for increasing order]; otherwise, false.
-        }))
+        return RecognitionResult(
+          mmr: roadUser.mmr,
+          plate: roadUser.plates?.max(by: { p1, p2 in
+            p1.text.score ?? 0 < p2.text.score ?? 0
+            // A predicate that returns true if its first argument should be ordered before its second argument [for increasing order]; otherwise, false.
+          }))
       }
       // .handleEvents(receiveCompletion: { completion in
       //   if case .failure(let err) = completion {
@@ -221,13 +266,15 @@ public final class TrafficEyeVerifier: ImageVerifier {
 
     let systemPrompt = """
       You are a vehicle verification expert. You are given the output of an ML vehicle recognition API (including make, model, color, and confidence scores for each), and a user's natural language description of their vehicle. The ML output may be imperfect.
-      Your job is to estimate the probability (0-1) that the ML prediction refers to the same car as described by the user.
+      Your job is to estimate the probability (0-1) that the ML prediction refers to the same car as described by the user, **and** provide a semantic_reason:
+      - "match" if confident they are the same car.
+      - "mismatch" if confident they are different.
+      - "maybe" when uncertain or info is missing.
       You are necessary because there are differences in the technical api output and the plain language user input (like dashes, abbreviations, slight color differences)  and we still need a robust way to match the descriptions.
       Consider:
       - If the make and color are correct and the model is similar (and low-confidence), a match is likely.
       - If the api provides more information than the user, (e.g. API - Red honda civic User - Honda civic or Red civic) consider them to be equal
       - If the make is correct but the model is very different (e.g. Accord vs CR-V), it's likely not a match.
-      - 
       - If a license plate is part of the user prompt but none is provided by the api, treat it as a non-factor
       The API only outputs colors as "BLUE", "BROWN", "YELLOW", "GRAY", "GREEN", "PURPLE", "RED", "WHITE", "BLACK", "ORANGE".
       Therefore, treat colors that are roughly equivalent (silver vs gray, as equal)
@@ -260,11 +307,15 @@ public final class TrafficEyeVerifier: ImageVerifier {
                   "probability_match": .init(
                     type: "number",
                     description:
-                      "Estimated probability (0-1) that the ML prediction refers to the same car as described by the user. Treat similar colors (silver and gray as equal)"
+                      "Estimated probability (0-1) that the ML prediction refers to the same car as described by the user. Treat similar coloras (silver and gray) as equal"
                   ),
-                  "reason": .init(
-                    type: "string", description: "10 words or less justify your prediction"),
-                ], required: ["probability_match", "reason"]))
+                  "semantic_reason": .init(
+                    type: "string",
+                    description:
+                      "Match if confident they are the same car. Mismatch if confident they are different. Maybe when uncertain or info is missing.",
+                    enumValues: ["match", "maybe", "mismatch"]
+                  ),
+                ], required: ["probability_match", "semantic_reason"]))
         )
       ], max_tokens: 50
     )
@@ -285,22 +336,60 @@ public final class TrafficEyeVerifier: ImageVerifier {
             .badServerResponse,
             userInfo: [NSLocalizedDescriptionKey: "Malformed OpenAI tool call response"])
         }
-        struct LLMProbabilityResult: Decodable {
+        struct LLMResult: Decodable {
           let probability_match: Double
-          let reason: String
+          let semantic_reason: String
         }
-        let args = try self.jsonDecoder.decode(LLMProbabilityResult.self, from: data)
-        let isMatch = args.probability_match > self.confidenceThresholdMatch
-        let rejectReason =
-          isMatch
-          ? "success"
-          : args.probability_match > self.confidenceThresholdAmbiguous
-            ? "low_confidence" : "wrong_model_or_color"
+        func infoQuality(from mmr: MMR) -> Double {
+          let makeScore = mmr.make?.score ?? 0
+          let modelScore = mmr.model?.score ?? 0
+          let colorScore = mmr.color?.score ?? 0
+          return 0.5 * makeScore + 0.3 * modelScore + 0.2 * colorScore
+        }
+        let args = try self.jsonDecoder.decode(LLMResult.self, from: data)
+        let infoQ = infoQuality(from: mmrResult)
+        let qualityLevel: String = infoQ >= 0.85 ? "high" : (infoQ >= 0.4 ? "medium" : "low")
+        var isMatch = false
+        var rejectReason: RejectReason = .insufficientInfo
+        if qualityLevel == "high" {
+          // Use full decision table as before
+
+          switch args.semantic_reason {
+          case "match":
+            isMatch = true
+            rejectReason = .success
+          case "maybe":
+            isMatch = false
+            rejectReason = .lowConfidence
+          default:
+            isMatch = false
+            rejectReason = .wrongModelOrColor
+          }
+        } else {  // medium quality
+          switch args.semantic_reason {
+          case "match":
+            isMatch = true
+            rejectReason = .success
+          default:
+            isMatch = false
+            rejectReason = .insufficientInfo
+          }
+        }
+        let vehicleView: Candidate.VehicleView = {
+          switch mmrResult.view?.value.lowercased() {
+          case "frontal": return .front
+          case "rear", "back": return .rear
+          case "side": return .side
+          default: return .unknown
+          }
+        }()
         return VerificationOutcome(
           isMatch: isMatch,
           description:
             "\(mmrResult.color?.value ?? "") \(mmrResult.make?.value ?? "") \(mmrResult.model?.value ?? "")",
-          rejectReason: rejectReason
+          rejectReason: rejectReason,
+          vehicleView: vehicleView,
+          viewScore: mmrResult.view?.score
         )
       }
       .eraseToAnyPublisher()

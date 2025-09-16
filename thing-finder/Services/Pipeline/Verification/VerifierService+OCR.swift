@@ -64,6 +64,7 @@ extension VerifierService {
         // } else {
         //   cand.matchStatus = nextStatus
         // } These are not necessary anymore because of levenshtein distance check
+
         cand.matchStatus = nextStatus
       }
     }

@@ -26,6 +26,8 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
   weak var delegate: FrameProviderDelegate?
   let sourceType: CaptureSourceType = .videoFile
   private(set) var isRunning: Bool = false
+  /// Playback speed multiplier (e.g. 0.3 = 0.3x real-time)
+  private let playbackRate: Float = 0.1
 
   var deviceOrientation: UIInterfaceOrientation? {
     return UIApplication.shared.connectedScenes
@@ -44,7 +46,7 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
   func start() {
     guard !isRunning else { return }
     displayLink.isPaused = false
-    player.play()
+    player.playImmediately(atRate: playbackRate)
     isRunning = true
   }
 
@@ -53,7 +55,7 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
   @objc private func playerItemDidReachEnd(notification: Notification) {
     // Reset to beginning and play again
     player.seek(to: .zero)
-    player.play()
+    player.playImmediately(atRate: playbackRate)
   }
 
   func stop() {
@@ -72,7 +74,7 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
   ///     *false* if the pipeline already expects a constant buffer orientation
   ///     (same as the live camera path).
   override init() {
-    self.asset = AVURLAsset(url: Bundle.main.url(forResource: "IMG_3605", withExtension: "MOV")!)
+    self.asset = AVURLAsset(url: Bundle.main.url(forResource: "IMG_7211", withExtension: "MOV")!)
     self.item = AVPlayerItem(asset: asset)
     self.rotatesBuffers = true
 
@@ -86,6 +88,7 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
     item.add(output)
 
     self.player = AVPlayer(playerItem: item)
+    // The rate will be set when playback starts to ensure it sticks.
     self.playerLayer = AVPlayerLayer(player: player)
     // Prevent HDR highlights from blowing out in the preview.
     self.playerLayer.wantsExtendedDynamicRangeContent = false

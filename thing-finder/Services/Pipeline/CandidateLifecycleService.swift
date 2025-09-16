@@ -66,10 +66,13 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
   private let imgUtils: ImageUtilities
   private let missThreshold: Int
   private let rejectCooldown: TimeInterval
+  private let compass = CompassHeading.shared  //connect to global compass
 
-  public init(imgUtils: ImageUtilities = .shared,
-              missThreshold: Int = 5,
-              rejectCooldown: TimeInterval = 10) {
+  public init(
+    imgUtils: ImageUtilities = .shared,
+    missThreshold: Int = 15,
+    rejectCooldown: TimeInterval = 10
+  ) {
     self.imgUtils = imgUtils
     self.missThreshold = missThreshold
     self.rejectCooldown = rejectCooldown
@@ -104,24 +107,34 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
     var isLost = false
     // 3. Update missCount + drop stale
     let snapshot = store.snapshot()
+    let direction = compass.degrees  // initialize the direction for this frame
     for (id, cand) in snapshot {
       let overlaps = detections.contains { det in
         det.boundingBox.iou(with: cand.lastBoundingBox) > 0.1
       }
       if overlaps {
-        store.update(id: id) { $0.missCount = 0 }
+        store.update(id: id) {
+          $0.missCount = 0
+          $0.degrees = direction
+        }
       } else {
         store.update(id: id) { $0.missCount += 1 }
         if let updated = store[id] {
           // Drop if missed too many frames
           if updated.missCount >= missThreshold {
             if updated.isMatched { isLost = true }
-            store.remove(id: id)
-            continue
+            if updated.matchStatus == .full {  // if the lost candidate was a full match change its info to lost
+              store.update(id: id) { $0.matchStatus = .lost }
+              continue
+            } else if updated.matchStatus != .lost {
+              store.remove(id: id)
+              continue
+            }
           }
           // Drop after reject cooldown elapsed
           if updated.matchStatus == .rejected,
-             Date().timeIntervalSince(updated.lastUpdated) >= rejectCooldown {
+            Date().timeIntervalSince(updated.lastUpdated) >= rejectCooldown
+          {
             store.remove(id: id)
             continue
           }

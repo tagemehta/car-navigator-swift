@@ -15,7 +15,7 @@ final class HapticBeepController {
   /// Call every frame.
   /// - Parameter targetBox: optional bounding box of the target in normalized coordinates.
   func tick(targetBox: CGRect?, timestamp: Date) {
-    guard settings.enableAudio else {
+    guard settings.enableBeeps else {
       stopIfNeeded()
       return
     }

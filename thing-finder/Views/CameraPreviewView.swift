@@ -18,7 +18,11 @@ struct CameraPreviewWrapper: View {
         Color.black
           .overlay(Text("Camera Preview").foregroundColor(.white))
       } else {
+        #if targetEnvironment(simulator)
+        CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: .videoFile)
+        #else
         CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
+        #endif
       }
     #else
       CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)

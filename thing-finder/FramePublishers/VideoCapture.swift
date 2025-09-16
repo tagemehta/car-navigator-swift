@@ -19,25 +19,19 @@ import UIKit
 
 // Identifies the best available camera device based on user preferences and device capabilities.
 func bestCaptureDevice() -> AVCaptureDevice {
-  if let device = AVCaptureDevice.default(.builtInLiDARDepthCamera, for: .video, position: .back) {
-    print("LiDAR depth camera found")
-    return device
-  } else if let device = AVCaptureDevice.default(
-    .builtInDualWideCamera, for: .video, position: .back)
-  {
-    print("dual wide")
-    return device
-  } else if let device = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) {
-    print("dual")
-    return device
-  } else if let device = AVCaptureDevice.default(
-    .builtInWideAngleCamera, for: .video, position: .back)
-  {
-    print("wide angle")
-    return device
-  } else {
+  let deviceTypes: [AVCaptureDevice.DeviceType] = [
+    .builtInTripleCamera,
+    .builtInDualWideCamera,
+    .builtInLiDARDepthCamera,
+    .builtInDualCamera,
+    .builtInWideAngleCamera,
+  ]
+  let discoverySession = AVCaptureDevice.DiscoverySession(
+    deviceTypes: deviceTypes, mediaType: .video, position: .back)
+  guard let selectedDevice = discoverySession.devices.first else {
     fatalError("Expected back camera device is not available.")
   }
+  return selectedDevice
 }
 
 class VideoCapture: NSObject, FrameProvider {

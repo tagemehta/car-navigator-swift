@@ -6,7 +6,7 @@ struct ThingFinderApp: App {
   var body: some Scene {
     WindowGroup {
       MainTabView()
-//      ContentView(description: "always return false", searchMode: .objectFinder, targetClasses: ["laptop"])
+      //      ContentView(description: "always return false", searchMode: .objectFinder, targetClasses: ["laptop"])
     }
   }
 }
@@ -27,6 +27,14 @@ struct MainTabView: View {
       .tabItem {
         Label("Settings", systemImage: "gear")
       }
+
+      // NavigationStack {
+      //     CompassView()
+      // }
+      // .tabItem {
+      //   Label("Compass", systemImage: "square.and.arrow.up")
+      // }
+
     }
   }
 }

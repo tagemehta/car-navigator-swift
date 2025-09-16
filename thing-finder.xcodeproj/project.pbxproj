@@ -382,7 +382,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "thing-finder";
+				INFOPLIST_KEY_CFBundleDisplayName = UberFinder;
 				INFOPLIST_KEY_NSCameraUsageDescription = 1.0;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Please;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -417,7 +417,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "thing-finder";
+				INFOPLIST_KEY_CFBundleDisplayName = UberFinder;
 				INFOPLIST_KEY_NSCameraUsageDescription = 1.0;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Please;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

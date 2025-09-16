@@ -37,9 +37,10 @@ final class VerifierEvaluationTests: XCTestCase {
 
   // MARK: - Helpers
   private func runSuite(_ cases: [Case]) -> AnyPublisher<Metrics, Error> {
-    let testCases = Array(cases[3...4])
+    let testCases = Array(cases)
     let verifiers = testCases.map {
-      TrafficEyeVerifier(targetTextDescription: $0.target_description, config: VerificationConfig(expectedPlate: nil))
+//      LLMVerifier(targetClasses: ["car"], targetTextDescription: $0.target_description)
+        AdvancedLLMVerifier(targetTextDescription: $0.target_description)
     }
 
     return Publishers.MergeMany(
@@ -53,7 +54,7 @@ final class VerifierEvaluationTests: XCTestCase {
             Just(
               (
                 idx, c,
-                VerificationOutcome(isMatch: false, description: "", rejectReason: "api_error")
+                VerificationOutcome(isMatch: false, description: "", rejectReason: .apiError)
               )
             )
             .setFailureType(to: Error.self)
@@ -65,7 +66,7 @@ final class VerifierEvaluationTests: XCTestCase {
       var m = Metrics()
       for (_, c, out) in triplets {
         m.total += 1
-        if out.rejectReason == "api_error" { m.apiErrors += 1 }
+        if out.rejectReason == .apiError { m.apiErrors += 1 }
 
         if out.isMatch {
           c.ground_truth_match ? (m.tp += 1) : (m.fp += 1)
@@ -81,17 +82,19 @@ final class VerifierEvaluationTests: XCTestCase {
         try? FileManager.default.createDirectory(at: resultsDir, withIntermediateDirectories: true)
         let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(
           of: ":", with: "-")
-        let csvURL = resultsDir.appendingPathComponent("twoStep_\(ts).csv")
-        var csv = "image_idx,ground_truth,predicted,is_match,correct\n"
+        let csvURL = resultsDir.appendingPathComponent("TwoStep-4.1-4o_\(ts).csv")
+        var csv = "image_idx,ground_truth,predicted,is_match,correct,reject_reason\n"
         for (idx, c, out) in triplets {
           let correct = (out.isMatch == c.ground_truth_match)
           let escapedPred = out.description.replacingOccurrences(of: "\"", with: "\"\"")
           let escapedGT = c.target_description.replacingOccurrences(of: "\"", with: "\"\"")
-          csv += "\(idx),\"\(escapedGT)\",\"\(escapedPred)\",\(out.isMatch),\(correct)\n"
+          let rejectReason = out.rejectReason?.rawValue ?? ""
+          csv += "\(idx),\"\(escapedGT)\",\"\(escapedPred)\",\(out.isMatch),\(correct),\"\(rejectReason)\"\n"
         }
         try? csv.write(to: csvURL, atomically: true, encoding: .utf8)
         print("CSV written to \(csvURL.path)")
       }
+      let _ = verifiers // keep in scope
       return m
     }
     .eraseToAnyPublisher()
@@ -107,7 +110,7 @@ final class VerifierEvaluationTests: XCTestCase {
     var dirURL = URL(fileURLWithPath: thisFile)
     // Traverse up to 5 levels looking for /datasets/car_eval.json
     for _ in 0..<5 {
-      let candidate = dirURL.appendingPathComponent("datasets/car_eval_uber.json").path
+      let candidate = dirURL.appendingPathComponent("datasets/car_eval.json").path
       if FileManager.default.fileExists(atPath: candidate) {
         return candidate
       }
@@ -146,7 +149,7 @@ final class VerifierEvaluationTests: XCTestCase {
     }
     func makeTwo(c: Case) -> AnyPublisher<VerificationOutcome, Error> {
       let image = UIImage(data: Data(base64Encoded: c.image_b64)!)
-      return TwoStepVerifier(targetTextDescription: c.target_description)
+      return AdvancedLLMVerifier(targetTextDescription: c.target_description)
         .verify(image: image!)
     }
 

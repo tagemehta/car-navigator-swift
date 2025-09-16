@@ -8,13 +8,28 @@ struct SettingsView: View {
       List {
         // MARK: - Navigation Feedback
         Section(header: Text("Navigation Feedback")) {
-          Toggle("Navigate without plate match", isOn: $settings.allowPartialNavigation)
-          //          Toggle("Audio Beeps", isOn: $settings.enableAudio)
+          Toggle("Navigate Before Plate Match", isOn: $settings.allowPartialNavigation)
+          Text("Start navigation before a license plate match is confirmed.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+
+          Toggle("Announce All Detected Cars", isOn: $settings.announceRejected)
+          Text("Announce every detected car, not just the target.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+
+          Toggle("Audio Beeps", isOn: $settings.enableBeeps)
+          Text("Enable or disable audio beeps for feedback.")
+            .font(.caption)
+            .foregroundColor(.secondary)
           //          Toggle("Speech Guidance", isOn: $settings.enableSpeech)
           //          Toggle("Haptic Feedback", isOn: $settings.enableHaptics)
 
           VStack(alignment: .leading) {
             Text("Speech Rate: \(String(format: "%.1f", settings.speechRate))")
+            Text("Adjusts the speed of spoken directions.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.speechRate, in: -1...1, step: 0.1)
               .accessibilityLabel("Speech Rate")
           }
@@ -24,26 +39,44 @@ struct SettingsView: View {
         Section(header: Text("Direction Settings")) {
           VStack(alignment: .leading) {
             Text("Left Threshold: \(Int(settings.directionLeftThreshold * 100))%")
+            Text("How far left the target must be before announcing 'left'.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.directionLeftThreshold, in: 0.1...0.4, step: 0.01)
               .accessibilityLabel("Left Threshold")
           }
 
           VStack(alignment: .leading) {
             Text("Right Threshold: \(Int(settings.directionRightThreshold * 100))%")
+            Text("How far right the target must be before announcing 'right'.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.directionRightThreshold, in: 0.6...0.9, step: 0.01)
               .accessibilityLabel("Right Threshold")
           }
 
           VStack(alignment: .leading) {
             Text("Repeat Interval: \(String(format: "%.1f", settings.speechRepeatInterval))s")
+            Text("How often the same direction is repeated.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.speechRepeatInterval, in: 1...10, step: 0.5)
               .accessibilityLabel("Repeat Interval")
           }
 
+          // VStack(alignment: .leading) {
+          //   Text("Change Interval: \(String(format: "%.1f", settings.speechChangeInterval))s")
+          //   Slider(value: $settings.speechChangeInterval, in: 0.5...5, step: 0.5)
+          //     .accessibilityLabel("Change Interval")
+          // }
+
           VStack(alignment: .leading) {
-            Text("Change Interval: \(String(format: "%.1f", settings.speechChangeInterval))s")
-            Slider(value: $settings.speechChangeInterval, in: 0.5...5, step: 0.5)
-              .accessibilityLabel("Change Interval")
+            Text("Waiting Phrase Cooldown: \(Int(settings.waitingPhraseCooldown))s")
+            Text("Minimum time before repeating 'waiting' phrases.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            Slider(value: $settings.waitingPhraseCooldown, in: 2...20, step: 1)
+              .accessibilityLabel("Waiting Phrase Cooldown")
           }
         }
 
@@ -51,27 +84,39 @@ struct SettingsView: View {
         Section(header: Text("Beep Settings")) {
           VStack(alignment: .leading) {
             Text("Min Interval: \(String(format: "%.2f", settings.beepIntervalMin))s")
+            Text("Shortest time between beeps when target is centered.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.beepIntervalMin, in: 0.05...0.5, step: 0.01)
               .accessibilityLabel("Minimum Beep Interval")
           }
 
           VStack(alignment: .leading) {
             Text("Max Interval: \(String(format: "%.1f", settings.beepIntervalMax))s")
+            Text("Longest time between beeps when target is at the edge.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.beepIntervalMax, in: 0.5...2.0, step: 0.1)
               .accessibilityLabel("Maximum Beep Interval")
           }
 
           VStack(alignment: .leading) {
             Text("Smoothing: \(String(format: "%.2f", settings.smoothingAlpha))")
+            Text("Smooths out rapid changes in beep frequency.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             Slider(value: $settings.smoothingAlpha, in: 0.05...0.5, step: 0.05)
               .accessibilityLabel("Beep Smoothing")
           }
 
-          Picker("Volume Curve", selection: $settings.volumeCurve) {
-            ForEach(VolumeCurve.allCases) { curve in
-              Text(curve.rawValue).tag(curve)
-            }
-          }
+          // Picker("Volume Curve", selection: $settings.volumeCurve) {
+          //   ForEach(VolumeCurve.allCases) { curve in
+          //     Text(curve.rawValue).tag(curve)
+          //   }
+          // }
+          // Text("Controls how volume changes with distance.")
+          //   .font(.caption)
+          //   .foregroundColor(.secondary)
         }
 
         /*
@@ -147,33 +192,33 @@ struct SettingsView: View {
         //          }
         //        }
         // MARK: - Advanced Settings (Developer Mode)
-        if settings.developerMode {
-          Section(header: Text("Detection Settings")) {
-            VStack(alignment: .leading) {
-              Text("Confidence: \(String(format: "%.2f", settings.confidenceThreshold))")
-              Slider(value: $settings.confidenceThreshold, in: 0.1...0.9, step: 0.05)
-                .accessibilityLabel("Confidence Threshold")
-            }
+        // if settings.developerMode {
+        //   Section(header: Text("Detection Settings")) {
+        //     VStack(alignment: .leading) {
+        //       Text("Confidence: \(String(format: "%.2f", settings.confidenceThreshold))")
+        //       Slider(value: $settings.confidenceThreshold, in: 0.1...0.9, step: 0.05)
+        //         .accessibilityLabel("Confidence Threshold")
+        //     }
 
-            VStack(alignment: .leading) {
-              Text(
-                "Verification Cooldown: \(String(format: "%.1f", settings.verificationCooldown))s")
-              Slider(value: $settings.verificationCooldown, in: 0.5...10.0, step: 0.5)
-                .accessibilityLabel("Verification Cooldown")
-            }
+        //     VStack(alignment: .leading) {
+        //       Text(
+        //         "Verification Cooldown: \(String(format: "%.1f", settings.verificationCooldown))s")
+        //       Slider(value: $settings.verificationCooldown, in: 0.5...10.0, step: 0.5)
+        //         .accessibilityLabel("Verification Cooldown")
+        //     }
 
-            Stepper(
-              "Target Lifetime: \(settings.targetLifetime) frames",
-              value: $settings.targetLifetime,
-              in: 100...2000,
-              step: 100)
+        //     Stepper(
+        //       "Target Lifetime: \(settings.targetLifetime) frames",
+        //       value: $settings.targetLifetime,
+        //       in: 100...2000,
+        //       step: 100)
 
-            Stepper(
-              "Max Lost Frames: \(settings.maxLostFrames)",
-              value: $settings.maxLostFrames,
-              in: 1...10)
-          }
-        }
+        //     Stepper(
+        //       "Max Lost Frames: \(settings.maxLostFrames)",
+        //       value: $settings.maxLostFrames,
+        //       in: 1...10)
+        //   }
+        // }
 
         // MARK: - Reset Section
         Section {

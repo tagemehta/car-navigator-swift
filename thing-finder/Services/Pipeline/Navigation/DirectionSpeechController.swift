@@ -7,15 +7,17 @@ final class DirectionSpeechController {
   private let speaker: SpeechOutput
   private var lastDirection: Direction = .center
   private var timeLastSpoken: Date = .distantPast
+  private let settings: Settings
 
-  init(config: NavigationFeedbackConfig, speaker: SpeechOutput) {
+  init(config: NavigationFeedbackConfig, speaker: SpeechOutput, settings: Settings) {
     self.config = config
     self.speaker = speaker
+    self.settings = settings
   }
 
   /// Pass `nil` when there is no active target against which to provide direction.
-  func tick(targetBox: CGRect?, distance: Double?, timestamp: Date, settings: Settings) {
-    guard let box = targetBox else { return }
+  func tick(targetBox: CGRect?, distance: Double?, timestamp: Date) {
+    guard let box = targetBox, settings.enableSpeech else { return }
     let newDir = settings.getDirection(normalizedX: box.midX)
     let elapsed = timestamp.timeIntervalSince(timeLastSpoken)
 

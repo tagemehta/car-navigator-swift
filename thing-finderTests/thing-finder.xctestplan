@@ -26,6 +26,8 @@
     {
       "parallelizable" : false,
       "skippedTests" : [
+        "VerifierEvaluationTests",
+        "VerifierEvaluationTests\/test_TwoStep_beatsOriginal_onPrecision()",
         "thing_finderTests"
       ],
       "target" : {

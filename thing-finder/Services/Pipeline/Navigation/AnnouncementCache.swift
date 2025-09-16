@@ -7,6 +7,8 @@ final class AnnouncementCache {
     var lastGlobal: (phrase: String, time: Date)? = nil
     /// Last phrase uttered per candidate.
     var lastByCandidate: [UUID: (phrase: String, time: Date)] = [:]
-    /// Whether the global "Waiting for verification" has already been said for the current epoch.
-    var hasSpokenWaiting = false
+    /// Timestamp the global "Waiting for verification" phrase was last spoken.
+    var lastWaitingTime: Date = .distantPast
+    /// Timestamp the last retry phrase (e.g. "need a better view") was spoken globally.
+    var lastRetryTime: Date = .distantPast
 }

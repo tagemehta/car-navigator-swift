@@ -24,8 +24,8 @@ struct InputView: View {
     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
     "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog",
     "horse", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
-    "sports ball", "kite",
-    "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle",
+    "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+    "tennis racket", "bottle",
     "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich",
     "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
     "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote",
@@ -40,22 +40,6 @@ struct InputView: View {
   var body: some View {
     NavigationStack {
       Form {
-        // Section(header: Text("Search Mode")) {
-        //   Picker("Mode", selection: $searchMode) {
-        //     ForEach(SearchMode.allCases, id: \.id) { mode in
-        //       VStack(alignment: .leading) {
-        //         Text(mode.rawValue)
-        //           .font(.headline)
-        //         Text(mode.description)
-        //           .font(.caption)
-        //           .foregroundColor(.secondary)
-        //       }
-        //       .tag(mode)
-        //     }
-        //   }
-        //   .pickerStyle(.inline)
-        // }
-
         Section(
           header: Text(
             searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
@@ -78,6 +62,7 @@ struct InputView: View {
           )
           .textFieldStyle(RoundedBorderTextFieldStyle())
           .lineLimit(3, reservesSpace: true)
+          .focused($isInputFocused)
         }
 
         Section {
@@ -109,6 +94,10 @@ struct InputView: View {
         )
       }
     }
+    .simultaneousGesture(
+      TapGesture().onEnded { isInputFocused = false }
+    )
+
   }
 }
 

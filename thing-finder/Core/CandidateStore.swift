@@ -9,7 +9,6 @@
 //  on the main thread using a lightweight synchronous hop.
 
 import Combine
-
 import CoreGraphics
 import Foundation
 import Vision
@@ -97,7 +96,7 @@ public final class CandidateStore: ObservableObject {
     let matched = candidates.values.filter { $0.isMatched }
     guard let winner = matched.max(by: { $0.lastUpdated < $1.lastUpdated }) else { return }
     syncOnMain {
-      for (id, _) in candidates where id != winner.id {
+      for (id, cand) in candidates where id != winner.id || cand.matchStatus == .lost {
         candidates.removeValue(forKey: id)
       }
     }
@@ -109,6 +108,7 @@ public final class CandidateStore: ObservableObject {
   ) -> Bool {
     for cand in candidates.values {
       // Check IoU overlap first (fast)
+      if cand.matchStatus == .lost { continue }
       if cand.lastBoundingBox.iou(with: bbox) > iouThreshold {
         return true
       }

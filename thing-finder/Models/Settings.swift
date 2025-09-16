@@ -14,7 +14,9 @@ enum Direction: String {
 /// Uses @AppStorage for persistence and provides defaults matching the original implementation.
 public class Settings: ObservableObject {
   // MARK: - Navigation Settings
-
+  /// Speech rate (-1.0 to 1.0, where 0 is normal)
+  @AppStorage("speech_rate") var speechRate: Double = 0.5
+  
   /// Minimum interval between beeps when target is centered (seconds)
   @AppStorage("beep_interval_min") var beepIntervalMin: Double = 0.1
 
@@ -33,13 +35,16 @@ public class Settings: ObservableObject {
   /// Minimum time between announcing direction changes (seconds)
   @AppStorage("speech_change_interval") var speechChangeInterval: Double = 2.0
 
+  /// Cooldown time for waiting phrases (seconds)
+  @AppStorage("waiting_phrase_cooldown") var waitingPhraseCooldown: Double = 10.0
+
   // MARK: - Distance Feedback Settings
 
   /// Minimum distance for volume mapping (meters)
   @AppStorage("distance_min") var distanceMin: Double = 0.2
 
   /// Maximum distance for volume mapping (meters)
-  @AppStorage("distance_max") var distanceMax: Double = 3.0
+  @AppStorage("distance_max") var distanceMax: Double = 10.0
 
   /// Minimum volume level (0.0-1.0)
   @AppStorage("volume_min") var volumeMin: Double = 0.2
@@ -84,7 +89,7 @@ public class Settings: ObservableObject {
   // MARK: - Feedback Mode Settings
 
   /// Enable audio feedback (beeps)
-  @AppStorage("enable_audio") var enableAudio: Bool = true
+  @AppStorage("enable_beeps") var enableBeeps: Bool = true
 
   /// Enable haptic feedback
   @AppStorage("enable_haptics") var enableHaptics: Bool = false
@@ -95,10 +100,8 @@ public class Settings: ObservableObject {
   /// Allow navigation cues before plate confirm (partial match)
   @AppStorage("allow_partial_nav") var allowPartialNavigation: Bool = true
 
-  /// Speech rate (-1.0 to 1.0, where 0 is normal)
-  @AppStorage("speech_rate") var speechRate: Double = 0.5
-
-  // MARK: - Advanced Settings
+  /// Announce all detected cars (rejected candidates as well)
+  @AppStorage("announce_rejected") var announceRejected: Bool = true
 
   /// Smoothing factor for exponential moving average (0.0-1.0)
   @AppStorage("smoothing_alpha") var smoothingAlpha: Double = 0.2
@@ -185,6 +188,7 @@ extension Settings {
     speechRepeatInterval = 4.0
     speechChangeInterval = 2.0
     allowPartialNavigation = true
+    announceRejected = true
 
     // Distance Feedback Settings
     distanceMin = 0.2
@@ -203,7 +207,7 @@ extension Settings {
     maxLostFrames = 4
 
     // Feedback Mode Settings
-    enableAudio = true
+    enableBeeps = true
     enableHaptics = false
     enableSpeech = true
     speechRate = 0.5
@@ -211,6 +215,7 @@ extension Settings {
     // Advanced Settings
     smoothingAlpha = 0.2
     developerMode = false
+    
 
     // Force UserDefaults to synchronize changes
     UserDefaults.standard.synchronize()

@@ -136,7 +136,8 @@ final class FramePipelineCoordinatorTests: XCTestCase {
       store: store,
       lifecycle: lifecycle,
       targetClasses: ["car"],
-      targetDescription: "blue sedan"
+      targetDescription: "blue sedan",
+      settings: Settings()
     )
   }
 

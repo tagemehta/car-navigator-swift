@@ -133,11 +133,11 @@ public final class LLMVerifier: ImageVerifier {
         if let argsString = response.choices.first?.message.tool_calls?[0].function.arguments {
           let argsData = argsString.data(using: .utf8)!
           let matchResult = try self!.jsonDecoder.decode(MatchResult.self, from: argsData)
-          let rej: String? = matchResult.match ? nil : matchResult.reason
+          let rej: RejectReason? = matchResult.match ? nil : matchResult.reason == nil ? .apiError : RejectReason(rawValue: matchResult.reason!)
           print(matchResult.confidence)
           if matchResult.match && matchResult.confidence < self!.confidenceThreshold {
             return VerificationOutcome(
-              isMatch: false, description: matchResult.description!, rejectReason: "low_confidence")
+              isMatch: false, description: matchResult.description!, rejectReason: .lowConfidence)
           }
           let v = VerificationOutcome(
             isMatch: matchResult.match, description: matchResult.description!,

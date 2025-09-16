@@ -140,7 +140,7 @@ final class VerifierServiceTests: XCTestCase {
     mockVerifier.nextOutcome = VerificationOutcome(
       isMatch: false, 
       description: "Not a car", 
-      rejectReason: "wrong_object"
+      rejectReason: .wrongObjectClass
     )
     
     // Observe store changes
@@ -161,7 +161,7 @@ final class VerifierServiceTests: XCTestCase {
     
     wait(for: [expectation], timeout: 1.0)
     XCTAssertEqual(mockVerifier.verifyCalls, 1)
-    XCTAssertEqual(store[candidate.id]?.rejectReason, "wrong_object")
+    XCTAssertEqual(store[candidate.id]?.rejectReason, .wrongObjectClass)
   }
   
   /// Test that unclear images stay in unknown state for retry
@@ -175,7 +175,7 @@ final class VerifierServiceTests: XCTestCase {
     mockVerifier.nextOutcome = VerificationOutcome(
       isMatch: false, 
       description: "Image is blurry", 
-      rejectReason: "unclear_image"
+      rejectReason: .unclearImage
     )
     
     // First observe waiting state

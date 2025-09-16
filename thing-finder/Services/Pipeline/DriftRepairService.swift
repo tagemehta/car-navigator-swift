@@ -98,6 +98,9 @@ final class DriftRepairService: DriftRepairServiceProtocol {
         cand.trackingRequest = newRequest
         cand.lastBoundingBox = best.boundingBox
         cand.embedding = cached.1
+        if cand.matchStatus == .lost {
+          cand.matchStatus = .full
+        }
       }
     }
   }
@@ -152,7 +155,6 @@ final class DriftRepairService: DriftRepairServiceProtocol {
       // Score then combines to find best match
       // Temporarily getting rid of center threshold
       // because it introduces noise for semi-quick movements
-    
 
       let score = sim
       if sim > simThreshold && score > bestScore {

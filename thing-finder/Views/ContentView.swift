@@ -34,7 +34,7 @@ struct ContentView: View {
   var body: some View {
     VStack {
       ZStack {
-        CameraPreviewView(
+        CameraPreviewWrapper(
           isRunning: $isCameraRunning,
           delegate: detectionModel, source: settings.useARMode ? .arKit : .avFoundation
         )

@@ -73,6 +73,8 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
         let orientation = self.imgUtils.cgOrientation(for: self.interfaceOrientation)
         self.boundingBoxes = pres.candidates.map { cand in
           // Map normalized bbox to view-space rect
+//            if cand.matchStatus == .lost
+//            {continue}
           let (imageRect, viewRect) = self.imgUtils.unscaledBoundingBoxes(
             for: cand.lastBoundingBox,
             imageSize: imageSize,
@@ -86,6 +88,7 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
           case .full: color = .green
           case .partial: color = .orange
           case .rejected: color = .red
+          case .lost: color = .black
           }
           return BoundingBox(imageRect: imageRect, viewRect: viewRect, label: cand.id.uuidString, color: color!)
         }
