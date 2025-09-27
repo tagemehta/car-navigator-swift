@@ -62,7 +62,7 @@ final class MockVerifier: VerifierServiceProtocol {
           break  // already done
         case .rejected:
           break
-        case .lost:
+        default:
           break
         }
       }

@@ -1,4 +1,6 @@
-// swift-tools-version:5.9
+// swift-tools-version: 5.9
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 import PackageDescription
 
 let package = Package(
@@ -8,22 +10,30 @@ let package = Package(
     .macOS(.v13),
   ],
   products: [
+    // Products define the executables and libraries a package produces, making them visible to other packages.
     .library(
-      name: "thing-finder",
-      targets: ["thing-finder"])
+      name: "ThingFinder",
+      targets: ["ThingFinder"])
   ],
-  dependencies: [],
+  dependencies: [
+    // Dependencies declare other packages that this package depends on.
+    // Add external dependencies here if needed
+  ],
   targets: [
+    // Targets are the basic building blocks of a package, defining a module or a test suite.
     .target(
-      name: "thing-finder",
+      name: "ThingFinder",
+      dependencies: [],
       path: "thing-finder",
-      exclude: ["Info.plist"]
+      resources: [
+        .process("Assets.xcassets"),
+        .process("Sounds"),
+      ]
     ),
     .testTarget(
-      name: "thing-finderTests",
-      dependencies: ["thing-finder"],
+      name: "ThingFinderTests",
+      dependencies: ["ThingFinder"],
       path: "thing-finderTests"
     ),
-  ],
-  swiftLanguageVersions: [.v5]
+  ]
 )
