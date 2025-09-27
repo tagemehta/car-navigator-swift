@@ -24,7 +24,10 @@ public final class LLMVerifier: ImageVerifier {
     self.targetTextDescription = targetTextDescription
   }
 
-  public func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error> {
+  public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
+  {
+    DebugPublisher.shared.info(
+      "[LLMVerifier][\(candidateId.uuidString.suffix(8))] Starting verification...")
     guard let base64 = image.jpegData(compressionQuality: 1)?.base64EncodedString() else {
       return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
     }
@@ -133,8 +136,13 @@ public final class LLMVerifier: ImageVerifier {
         if let argsString = response.choices.first?.message.tool_calls?[0].function.arguments {
           let argsData = argsString.data(using: .utf8)!
           let matchResult = try self!.jsonDecoder.decode(MatchResult.self, from: argsData)
-          let rej: RejectReason? = matchResult.match ? nil : matchResult.reason == nil ? .apiError : RejectReason(rawValue: matchResult.reason!)
-          print(matchResult.confidence)
+          let rej: RejectReason? =
+            matchResult.match
+            ? nil
+            : matchResult.reason == nil ? .apiError : RejectReason(rawValue: matchResult.reason!)
+          DebugPublisher.shared.info(
+            "[LLMVerifier][\(candidateId.uuidString.suffix(8))] Match result confidence: \(matchResult.confidence)"
+          )
           if matchResult.match && matchResult.confidence < self!.confidenceThreshold {
             return VerificationOutcome(
               isMatch: false, description: matchResult.description!, rejectReason: .lowConfidence)

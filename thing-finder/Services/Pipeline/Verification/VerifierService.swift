@@ -109,11 +109,6 @@ public final class VerifierService: VerifierServiceProtocol {
     let pendingUnknown = candidatesSnapshot.values.filter { $0.matchStatus == .unknown }
 
     // // Include stale partial/full candidates for re-verification
-    // let staleVerified = candidatesSnapshot.values.filter {
-    //   ($0.matchStatus == .partial || $0.matchStatus == .full)
-    //     && (now.timeIntervalSince($0.lastVerified ?? $0.createdAt)
-    //       >= self.verificationConfig.reverifyInterval)
-    // }
     // Split candidates into ones we can auto-match (no text description) and ones needing verification.
     var toVerify: [Candidate] = []
     // toVerify.append(contentsOf: staleVerified)  // Disabled re-verification
@@ -159,8 +154,8 @@ public final class VerifierService: VerifierServiceProtocol {
     lastVerifyBatch = now
     for cand in toVerify {
       // ---------------- Per-candidate throttling ----------------
-      print(
-        "[Verifier] Considering candidate \(cand.id); bestView=\(cand.view); lastMMR=\(cand.lastMMRTime.timeIntervalSince1970)"
+      DebugPublisher.shared.info(
+        "[Verifier][\(cand.id.uuidString.suffix(8))] Considering candidate; bestView=\(cand.view), lastMMR=\(cand.lastMMRTime.timeIntervalSince1970)"
       )
 
       // Skip verification if the candidate's bounding box covers less than 15% of the frame.
@@ -170,7 +165,7 @@ public final class VerifierService: VerifierServiceProtocol {
       let minAreaThreshold: CGFloat = 0.01  // 1% of the image
       if bboxArea < minAreaThreshold {
         let message =
-          "Candidate \(cand.id.uuidString.prefix(8)) skipped – bbox too small (\(String(format: "%.1f", bboxArea * 100))%)"
+          "Candidate \(cand.id.uuidString.suffix(8)) skipped – bbox too small (\(String(format: "%.1f", bboxArea * 100))%)"
         //        print("[Verifier] \(message)")
         //        DebugPublisher.shared.info(message)
         continue
@@ -182,8 +177,8 @@ public final class VerifierService: VerifierServiceProtocol {
       let maxTallness: CGFloat = 3  // height cannot exceed 300% of width
       if aspectRatio > maxTallness {
         let message =
-          "Candidate \(cand.id.uuidString.prefix(8)) skipped – bbox too tall (h/w=\(String(format: "%.1f", aspectRatio)))"
-        print("[Verifier] \(message)")
+          "Candidate \(cand.id.uuidString.suffix(8)) skipped – bbox too tall (h/w=\(String(format: "%.1f", aspectRatio)))"
+        DebugPublisher.shared.warning("[Verifier] \(message)")
         continue
       }
 
@@ -191,8 +186,8 @@ public final class VerifierService: VerifierServiceProtocol {
         && now.timeIntervalSince(cand.lastMMRTime) < verificationConfig.perCandidateMMRInterval
       {
         // Skip TrafficEye re-verify until per-candidate interval passes.
-        let message = "Candidate \(cand.id.uuidString.prefix(8)) skipped – MMR throttled"
-        print("[Verifier] \(message)")
+        let message = "Candidate \(cand.id.uuidString.suffix(8)) skipped – MMR throttled"
+        DebugPublisher.shared.info("[Verifier] \(message)")
         continue
       }
 
@@ -219,7 +214,9 @@ public final class VerifierService: VerifierServiceProtocol {
           case .finished:
             break
           case .failure(let error):
-            print("[Verifier] Error for candidate \(cand.id): \(error)")
+            DebugPublisher.shared.error(
+              "[Verifier][\(cand.id.uuidString.suffix(8))] Pipeline failed with error: \(error.localizedDescription)"
+            )
             // Handle verification failure with proper error mapping
             let rejectReason: RejectReason
             if let twoStepError = error as? TwoStepError {
@@ -246,8 +243,8 @@ public final class VerifierService: VerifierServiceProtocol {
           // -------- Post-verification bookkeeping --------
           let latency = Date().timeIntervalSince(verifyStartTime)
 
-          print(
-            "[Verifier] Result for candidate \(cand.id): strategy=\(strategyName) match=\(outcome.isMatch) view=\(String(describing: outcome.vehicleView)) score=\(String(describing: outcome.viewScore)) reason=\(String(describing: outcome.rejectReason?.rawValue)) latency=\(String(format: "%.3f", latency))s"
+          DebugPublisher.shared.info(
+            "[Verifier][\(cand.id.uuidString.suffix(8))] Result: strategy=\(strategyName), match=\(outcome.isMatch), view=\(String(describing: outcome.vehicleView)), score=\(String(describing: outcome.viewScore)), reason=\(String(describing: outcome.rejectReason?.rawValue)), latency=\(String(format: "%.3f", latency))s"
           )
 
           // Update view and timing information
@@ -273,12 +270,16 @@ public final class VerifierService: VerifierServiceProtocol {
           }
 
           if outcome.isMatch {
-            print("[Verifier] Matched candidate \(cand.id)")
+            DebugPublisher.shared.info(
+              "[Verifier][\(cand.id.uuidString.suffix(8))] Matched candidate")
             store.update(id: cand.id) {
               $0.detectedDescription = outcome.description
               $0.lastVerified = Date()
             }
             if !self.verificationConfig.shouldRunOCR || outcome.isPlateMatch {
+              DebugPublisher.shared.info(
+                "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \(store[cand.id]?.matchStatus ?? .unknown). Updating to .full."
+              )
               store.update(id: cand.id) {
                 $0.matchStatus = .full
                 $0.lastVerified = Date()
@@ -287,6 +288,9 @@ public final class VerifierService: VerifierServiceProtocol {
               return
             }
             // Promote to partial and begin OCR verification
+            DebugPublisher.shared.info(
+              "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \(store[cand.id]?.matchStatus ?? .unknown). Matched, but requires OCR. Updating to .partial."
+            )
             store.update(id: cand.id) {
               $0.matchStatus = .partial
               $0.detectedDescription = outcome.description
@@ -302,10 +306,16 @@ public final class VerifierService: VerifierServiceProtocol {
 
               // Check if the reason is retryable
               if let reason = reason, reason.isRetryable {
+                DebugPublisher.shared.info(
+                  "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \($0.matchStatus). Retryable reason: \(reason). Updating to .unknown."
+                )
                 // Retryable reason - keep searching so candidate will be retried
                 $0.matchStatus = .unknown
               } else if reason != nil {
                 // Hard reject reason
+                DebugPublisher.shared.info(
+                  "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \($0.matchStatus). Hard reject reason: \(reason!). Updating to .rejected."
+                )
                 $0.matchStatus = .rejected
               }
 

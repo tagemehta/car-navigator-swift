@@ -99,6 +99,6 @@ public class AdvancedLLMStrategy: BaseVerificationStrategy {
         image: UIImage,
         candidate: Candidate
     ) -> AnyPublisher<VerificationOutcome, Error> {
-        return advancedLLMVerifier.verify(image: image)
+        return advancedLLMVerifier.verify(image: image, candidateId: candidate.id)
     }
 }

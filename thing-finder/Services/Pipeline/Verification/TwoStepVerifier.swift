@@ -103,11 +103,15 @@ public final class TwoStepVerifier: ImageVerifier {
         required: ["match", "confidence", "description", "reason"])))
 
   // MARK: - Public API
-  public func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error> {
+  public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
+  {
     guard let base64 = image.jpegData(compressionQuality: 1)?.base64EncodedString() else {
       return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
     }
-    lastVerifiedDate = Date()
+    let startTime = Date()
+    lastVerifiedDate = startTime
+    DebugPublisher.shared.info(
+      "[TwoStep][\(candidateId.uuidString.suffix(8))] Starting verification...")
 
     // 1️⃣ Build step-1 request (extract)
     var req1 = URLRequest(url: endpoint)
@@ -141,22 +145,22 @@ public final class TwoStepVerifier: ImageVerifier {
         }
         let info = try self.decoder.decode(VehicleInfo.self, from: data)
         DebugPublisher.shared.info(
-          "[TwoStep] Extracted info: make=\(info.make) model=\(info.model) color=\(info.color ?? "unknown") view=\(info.view)"
+          "[TwoStep][\(candidateId.uuidString.suffix(8))] Extracted info: make=\(info.make) model=\(info.model) color=\(info.color ?? "unknown") view=\(info.view)"
         )
         DebugPublisher.shared.info(
-          "[TwoStep] Confidence: make=\(String(format: "%.2f", info.make_score)) model=\(String(format: "%.2f", info.model_score)) color=\(String(format: "%.2f", info.color_score)) overall=\(String(format: "%.2f", info.confidence))"
+          "[TwoStep][\(candidateId.uuidString.suffix(8))] Confidence: make=\(String(format: "%.2f", info.make_score)) model=\(String(format: "%.2f", info.model_score)) color=\(String(format: "%.2f", info.color_score)) overall=\(String(format: "%.2f", info.confidence))"
         )
         // Early reject for heavy occlusion
         if info.visible_fraction < 0.5 {
           DebugPublisher.shared.warning(
-            "[TwoStep] Rejecting: Heavy occlusion detected (visible_fraction=\(String(format: "%.2f", info.visible_fraction)))"
+            "[TwoStep][\(candidateId.uuidString.suffix(8))] Rejecting: Heavy occlusion detected (visible_fraction=\(String(format: "%.2f", info.visible_fraction)))"
           )
           throw TwoStepError.occluded
         }
         // Reject low extraction confidence to curb over-confidence
         if info.confidence < 0.9 {
           DebugPublisher.shared.warning(
-            "[TwoStep] Rejecting: Low confidence in extraction (confidence=\(String(format: "%.2f", info.confidence)), threshold=0.90)"
+            "[TwoStep][\(candidateId.uuidString.suffix(8))] Rejecting: Low confidence in extraction (confidence=\(String(format: "%.2f", info.confidence)), threshold=0.90)"
           )
           throw TwoStepError.lowConfidence
         }
@@ -167,7 +171,7 @@ public final class TwoStepVerifier: ImageVerifier {
           return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
         }
         // 2️⃣ Build comparison request via LLM (shared logic from TrafficEye)
-        return self.callLLMForComparison(with: info)
+        return self.callLLMForComparison(with: info, candidateId: candidateId)
       }
       .eraseToAnyPublisher()
   }
@@ -177,9 +181,11 @@ public final class TwoStepVerifier: ImageVerifier {
   }
 
   // MARK: - LLM Comparison (step 2)
-  private func callLLMForComparison(with vehicleInfo: VehicleInfo) -> AnyPublisher<
-    VerificationOutcome, Error
-  > {
+  private func callLLMForComparison(with vehicleInfo: VehicleInfo, candidateId: UUID)
+    -> AnyPublisher<
+      VerificationOutcome, Error
+    >
+  {
     // Serialize VehicleInfo to JSON for the prompt
     let infoJSON: String = {
       let encoder = JSONEncoder()
@@ -259,7 +265,8 @@ public final class TwoStepVerifier: ImageVerifier {
           let data = argStr.data(using: .utf8)
         else {
           DebugPublisher.shared.error(
-            "[TwoStep] LLM comparison failed: No tool call response from API")
+            "[TwoStep][\(candidateId.uuidString.suffix(8))] LLM comparison failed: No tool call response from API"
+          )
           throw URLError(.badServerResponse)
         }
         struct LLMResult: Decodable {
@@ -267,9 +274,16 @@ public final class TwoStepVerifier: ImageVerifier {
           let semantic_reason: String
         }
         let args = try self.decoder.decode(LLMResult.self, from: data)
-        DebugPublisher.shared.info("[TwoStep] LLM prob=\(String(format: "%.2f", args.probability_match)) reason=\(args.semantic_reason)")
+        DebugPublisher.shared.info(
+          "[TwoStep][\(candidateId.uuidString.suffix(8))] LLM prob=\(String(format: "%.2f", args.probability_match)) reason=\(args.semantic_reason)"
+        )
 
-        let qualityLevel = 0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2 * vehicleInfo.color_score >= 0.85 ? "high" : (0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2 * vehicleInfo.color_score >= 0.4 ? "medium" : "low")
+        let qualityLevel =
+          0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2
+            * vehicleInfo.color_score >= 0.85
+          ? "high"
+          : (0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2
+            * vehicleInfo.color_score >= 0.4 ? "medium" : "low")
         var isMatch = false
         var reject: RejectReason = .insufficientInfo
         if qualityLevel == "high" {
@@ -303,15 +317,19 @@ public final class TwoStepVerifier: ImageVerifier {
 
         if isMatch {
           DebugPublisher.shared.success(
-            "[TwoStep] MATCH: \(vehicleInfo.color ?? "") \(vehicleInfo.make) \(vehicleInfo.model) (confidence=\(String(format: "%.2f", args.probability_match)))"
+            "[TwoStep][\(candidateId.uuidString.suffix(8))] MATCH: \(vehicleInfo.color ?? "") \(vehicleInfo.make) \(vehicleInfo.model) (confidence=\(String(format: "%.2f", args.probability_match)))"
           )
         } else {
           let rejectMsg = reject.rawValue
           DebugPublisher.shared.error(
-            "[TwoStep] REJECT: \(rejectMsg) (probability=\(String(format: "%.2f", args.probability_match)), semantic_reason=\(args.semantic_reason))"
+            "[TwoStep][\(candidateId.uuidString.suffix(8))] REJECT: \(rejectMsg) (probability=\(String(format: "%.2f", args.probability_match)), semantic_reason=\(args.semantic_reason))"
           )
         }
 
+        let latency = Date().timeIntervalSince(self.lastVerifiedDate)
+        DebugPublisher.shared.info(
+          "[TwoStep][\(candidateId.uuidString.suffix(8))] Verification completed in \(String(format: "%.3f", latency))s"
+        )
         return outcome
       }
       .eraseToAnyPublisher()

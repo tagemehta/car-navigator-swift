@@ -8,7 +8,7 @@ import Combine
 final class ConstantMatchVerifier: ImageVerifier {
     var targetClasses: [String] = ["car"]
     var targetTextDescription: String = "desc"
-  func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error> {
+  func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error> {
         Just(VerificationOutcome(isMatch: true, description: "desc", rejectReason: nil))
             .setFailureType(to: Error.self)
             .eraseToAnyPublisher()
@@ -55,7 +55,7 @@ final class VerifierServiceOCRTests: XCTestCase {
     private var cancellables: Set<AnyCancellable> = []
 
     private func makeService(maxRetries: Int = 2) {
-        let cfg = VerificationConfig(expectedPlate: nil, maxOCRRetries: maxRetries, cooldownAfterRejectSecs: 0.1, shouldRunOCR: true)
+        let cfg = VerificationConfig(expectedPlate: nil, maxOCRRetries: maxRetries, shouldRunOCR: true)
         service = VerifierService(verifier: verifier, imgUtils: ImageUtilities.shared, config: cfg, ocrEngine: ocrMock)
     }
 

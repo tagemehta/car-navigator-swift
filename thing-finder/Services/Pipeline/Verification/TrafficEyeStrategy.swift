@@ -105,6 +105,6 @@ public class TrafficEyeStrategy: BaseVerificationStrategy {
         image: UIImage, 
         candidate: Candidate
     ) -> AnyPublisher<VerificationOutcome, Error> {
-        return trafficEyeVerifier.verify(image: image)
+        return trafficEyeVerifier.verify(image: image, candidateId: candidate.id)
     }
 }

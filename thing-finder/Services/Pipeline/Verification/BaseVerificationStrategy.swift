@@ -83,15 +83,23 @@ public class BaseVerificationStrategy: VerificationStrategy {
     ///   - candidate: The candidate being verified (for context)
     /// - Returns: Publisher that emits verification outcome
     public func verify(image: UIImage, candidate: Candidate) -> AnyPublisher<VerificationOutcome, Error> {
-        lastVerifiedDate = Date()
+        let startTime = Date()
+        lastVerifiedDate = startTime
         
         return performVerification(image: image, candidate: candidate)
-            .timeout(.seconds(5), scheduler: DispatchQueue.global(qos: .userInitiated))
+            .handleEvents(receiveOutput: { outcome in
+                let latency = Date().timeIntervalSince(startTime)
+                DebugPublisher.shared.info(
+                    "[Strategy][\(candidate.id.uuidString.suffix(8))] \(self.strategyName) completed in \(String(format: "%.3f", latency))s"
+                )
+            })
+            .timeout(.seconds(5), scheduler: DispatchQueue.main)
             .catch { [weak self] error -> AnyPublisher<VerificationOutcome, Error> in
                 guard let self = self else {
                     return Fail(error: VerificationError.strategyFailed("Strategy deallocated"))
                         .eraseToAnyPublisher()
                 }
+                
                 return self.handleVerificationError(error, for: candidate)
             }
             .eraseToAnyPublisher()

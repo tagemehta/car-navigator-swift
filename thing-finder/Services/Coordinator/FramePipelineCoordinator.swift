@@ -157,7 +157,7 @@ public final class FramePipelineCoordinator: ObservableObject {
       if let d = depthAt(center) {
         targetDistance = Double(d)
       }
-      print("Target distance: \(targetDistance ?? 0)")
+//      print("Target distance: \(targetDistance ?? 0)")
     }
 
     // 7.5 Navigation tick

@@ -21,9 +21,6 @@ public struct VerificationConfig {
   /// Maximum times we will attempt OCR on a candidate before rejecting.
   public var maxOCRRetries: Int
 
-  /// Time after which partial/full candidates should be re-verified (seconds).
-  public var reverifyInterval: TimeInterval
-
   /// Maximum Levenshtein edit distance considered a MATCH (full).
   public var maxEditsForMatch: Int
   /// Maximum edit distance that still allows us to CONTINUE (partial). Anything higher is rejected.
@@ -31,9 +28,6 @@ public struct VerificationConfig {
 
   /// Whether we should run OCR for this verification cycle.
   public var shouldRunOCR: Bool
-
-  /// Cool-down after a rejection to avoid spamming.
-  public var cooldownAfterRejectSecs: TimeInterval
 
   /// Maximum frequency (seconds) to call MMR for the *same* candidate.
   public var perCandidateMMRInterval: TimeInterval
@@ -47,21 +41,17 @@ public struct VerificationConfig {
       pattern: "^[A-Z0-9]{5,8}$", options: .caseInsensitive),
     ocrConfidenceMin: Double = 0.2,  // What are the odds you get an almost exact match on a license plate w/ the same make model at the same time in the same place
     maxOCRRetries: Int = 30,
-    cooldownAfterRejectSecs: TimeInterval = 10,
     shouldRunOCR: Bool = false,
-    reverifyInterval: TimeInterval = 10,
     maxEditsForMatch: Int = 1,  // an edit is a change in a single character of the ocr text
     maxEditsForContinue: Int = 2,  // an edit is a change in a single character of the ocr text
     useCombinedVerifier: Bool = true,
     perCandidateMMRInterval: TimeInterval = 0.8
   ) {
-    self.cooldownAfterRejectSecs = cooldownAfterRejectSecs
     self.expectedPlate = expectedPlate?.uppercased()
     self.regex = regex
     self.ocrConfidenceMin = ocrConfidenceMin
     self.maxOCRRetries = maxOCRRetries
     self.shouldRunOCR = shouldRunOCR
-    self.reverifyInterval = reverifyInterval
     self.maxEditsForMatch = maxEditsForMatch
     self.maxEditsForContinue = maxEditsForContinue
     self.useCombinedVerifier = useCombinedVerifier

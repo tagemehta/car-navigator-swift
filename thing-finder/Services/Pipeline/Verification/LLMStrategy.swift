@@ -101,6 +101,6 @@ public class LLMStrategy: BaseVerificationStrategy {
         image: UIImage, 
         candidate: Candidate
     ) -> AnyPublisher<VerificationOutcome, Error> {
-        return llmVerifier.verify(image: image)
+        return llmVerifier.verify(image: image, candidateId: candidate.id)
     }
 }

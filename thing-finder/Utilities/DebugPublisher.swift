@@ -20,31 +20,51 @@ public final class DebugPublisher {
     
     private init() {}
     
-    /// Publish an error message to the debug overlay
+    /// Publish an error message to the debug overlay and print to console
     /// - Parameter message: The error message text
     public func error(_ message: String) {
-        guard settings.debugOverlayEnabled else { return }
-        DispatchQueue.main.async { self.messageSubject.send((message, .error)) }
+        // Always print to console
+        print("🔴 [ERROR] \(message)")
+        
+        // Send to debug overlay if enabled
+        if settings.debugOverlayEnabled {
+            DispatchQueue.main.async { self.messageSubject.send((message, .error)) }
+        }
     }
     
-    /// Publish a warning message to the debug overlay
+    /// Publish a warning message to the debug overlay and print to console
     /// - Parameter message: The warning message text
     public func warning(_ message: String) {
-        guard settings.debugOverlayEnabled else { return }
-        DispatchQueue.main.async { self.messageSubject.send((message, .warning)) }
+        // Always print to console
+        print("🟠 [WARNING] \(message)")
+        
+        // Send to debug overlay if enabled
+        if settings.debugOverlayEnabled {
+            DispatchQueue.main.async { self.messageSubject.send((message, .warning)) }
+        }
     }
     
-    /// Publish an info message to the debug overlay
+    /// Publish an info message to the debug overlay and print to console
     /// - Parameter message: The info message text
     public func info(_ message: String) {
-        guard settings.debugOverlayEnabled else { return }
-        DispatchQueue.main.async { self.messageSubject.send((message, .info)) }
+        // Always print to console
+        print("ℹ️ [INFO] \(message)")
+        
+        // Send to debug overlay if enabled
+        if settings.debugOverlayEnabled {
+            DispatchQueue.main.async { self.messageSubject.send((message, .info)) }
+        }
     }
     
-    /// Publish a success message to the debug overlay
+    /// Publish a success message to the debug overlay and print to console
     /// - Parameter message: The success message text
     public func success(_ message: String) {
-        guard settings.debugOverlayEnabled else { return }
-        DispatchQueue.main.async { self.messageSubject.send((message, .success)) }
+        // Always print to console
+        print("✅ [SUCCESS] \(message)")
+        
+        // Send to debug overlay if enabled
+        if settings.debugOverlayEnabled {
+            DispatchQueue.main.async { self.messageSubject.send((message, .success)) }
+        }
     }
 }

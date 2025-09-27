@@ -47,7 +47,7 @@ public protocol ImageVerifier {
   var targetTextDescription: String { get }
 
   /// Returns a publisher that eventually emits a `VerificationOutcome`.
-  func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error>
+  func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
 
   /// Seconds since the last call to `verify` finished.
   func timeSinceLastVerification() -> TimeInterval
