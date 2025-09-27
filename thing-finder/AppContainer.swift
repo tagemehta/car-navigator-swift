@@ -12,9 +12,14 @@
 
 import Foundation
 import Vision
+import SwiftUI
 
 public final class AppContainer {
   static let shared = AppContainer()
+  
+  /// Shared debug overlay model for displaying verification errors and debug information
+  let debugOverlayModel = DebugOverlayModel()
+  
   private init() {}
 
   // Build a fully-wired coordinator for a given capture mode.

@@ -220,6 +220,14 @@ struct SettingsView: View {
         //   }
         // }
 
+        // MARK: - Developer Options
+        Section(header: Text("Developer Options")) {
+          Toggle("Debug Overlay", isOn: $settings.debugOverlayEnabled)
+          Text("Show verification details and debug messages.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+        
         // MARK: - Reset Section
         Section {
           Button("Reset to Defaults") {

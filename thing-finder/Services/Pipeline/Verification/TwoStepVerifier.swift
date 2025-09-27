@@ -140,13 +140,24 @@ public final class TwoStepVerifier: ImageVerifier {
           throw TwoStepError.noToolResponse
         }
         let info = try self.decoder.decode(VehicleInfo.self, from: data)
-        print(info)
+        DebugPublisher.shared.info(
+          "[TwoStep] Extracted info: make=\(info.make) model=\(info.model) color=\(info.color ?? "unknown") view=\(info.view)"
+        )
+        DebugPublisher.shared.info(
+          "[TwoStep] Confidence: make=\(String(format: "%.2f", info.make_score)) model=\(String(format: "%.2f", info.model_score)) color=\(String(format: "%.2f", info.color_score)) overall=\(String(format: "%.2f", info.confidence))"
+        )
         // Early reject for heavy occlusion
         if info.visible_fraction < 0.5 {
+          DebugPublisher.shared.warning(
+            "[TwoStep] Rejecting: Heavy occlusion detected (visible_fraction=\(String(format: "%.2f", info.visible_fraction)))"
+          )
           throw TwoStepError.occluded
         }
         // Reject low extraction confidence to curb over-confidence
         if info.confidence < 0.9 {
+          DebugPublisher.shared.warning(
+            "[TwoStep] Rejecting: Low confidence in extraction (confidence=\(String(format: "%.2f", info.confidence)), threshold=0.90)"
+          )
           throw TwoStepError.lowConfidence
         }
         return info
@@ -247,6 +258,8 @@ public final class TwoStepVerifier: ImageVerifier {
         guard let argStr = resp.choices.first?.message.tool_calls?.first?.function.arguments,
           let data = argStr.data(using: .utf8)
         else {
+          DebugPublisher.shared.error(
+            "[TwoStep] LLM comparison failed: No tool call response from API")
           throw URLError(.badServerResponse)
         }
         struct LLMResult: Decodable {
@@ -254,10 +267,9 @@ public final class TwoStepVerifier: ImageVerifier {
           let semantic_reason: String
         }
         let args = try self.decoder.decode(LLMResult.self, from: data)
-        let infoQ =
-          0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2
-          * vehicleInfo.color_score
-        let qualityLevel = infoQ >= 0.85 ? "high" : (infoQ >= 0.4 ? "medium" : "low")
+        DebugPublisher.shared.info("[TwoStep] LLM prob=\(String(format: "%.2f", args.probability_match)) reason=\(args.semantic_reason)")
+
+        let qualityLevel = 0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2 * vehicleInfo.color_score >= 0.85 ? "high" : (0.5 * vehicleInfo.make_score + 0.3 * vehicleInfo.model_score + 0.2 * vehicleInfo.color_score >= 0.4 ? "medium" : "low")
         var isMatch = false
         var reject: RejectReason = .insufficientInfo
         if qualityLevel == "high" {
@@ -282,12 +294,25 @@ public final class TwoStepVerifier: ImageVerifier {
             reject = .insufficientInfo
           }
         }
-        return VerificationOutcome(
+        let outcome = VerificationOutcome(
           isMatch: isMatch,
           description: "\(vehicleInfo.color ?? "") \(vehicleInfo.make) \(vehicleInfo.model)",
           rejectReason: reject,
           vehicleView: Self.mapView(vehicleInfo.view),
           viewScore: vehicleInfo.visible_fraction)
+
+        if isMatch {
+          DebugPublisher.shared.success(
+            "[TwoStep] MATCH: \(vehicleInfo.color ?? "") \(vehicleInfo.make) \(vehicleInfo.model) (confidence=\(String(format: "%.2f", args.probability_match)))"
+          )
+        } else {
+          let rejectMsg = reject.rawValue
+          DebugPublisher.shared.error(
+            "[TwoStep] REJECT: \(rejectMsg) (probability=\(String(format: "%.2f", args.probability_match)), semantic_reason=\(args.semantic_reason))"
+          )
+        }
+
+        return outcome
       }
       .eraseToAnyPublisher()
   }

@@ -144,7 +144,10 @@ public final class VerifierService: VerifierServiceProtocol {
       let bboxArea = cand.lastBoundingBox.width * cand.lastBoundingBox.height
       let minAreaThreshold: CGFloat = 0.01  // 1% of the image
       if bboxArea < minAreaThreshold {
-        print("[Verifier] Candidate \(cand.id) skipped – bbox too small (\(bboxArea * 100)%)")
+        let message =
+          "Candidate \(cand.id.uuidString.prefix(8)) skipped – bbox too small (\(String(format: "%.1f", bboxArea * 100))%)"
+        //        print("[Verifier] \(message)")
+        //        DebugPublisher.shared.info(message)
         continue
       }
 
@@ -153,7 +156,9 @@ public final class VerifierService: VerifierServiceProtocol {
       let aspectRatio = cand.lastBoundingBox.height / max(cand.lastBoundingBox.width, 0.0001)
       let maxTallness: CGFloat = 3  // height cannot exceed 300% of width
       if aspectRatio > maxTallness {
-        print("[Verifier] Candidate \(cand.id) skipped – bbox too tall (h/w=\(aspectRatio))")
+        let message =
+          "Candidate \(cand.id.uuidString.prefix(8)) skipped – bbox too tall (h/w=\(String(format: "%.1f", aspectRatio)))"
+        print("[Verifier] \(message)")
         continue
       }
 
@@ -161,7 +166,8 @@ public final class VerifierService: VerifierServiceProtocol {
         && now.timeIntervalSince(cand.lastMMRTime) < verificationConfig.perCandidateMMRInterval
       {
         // Skip TrafficEye re-verify until per-candidate interval passes.
-        print("[Verifier] Candidate \(cand.id) skipped – MMR throttled")
+        let message = "Candidate \(cand.id.uuidString.prefix(8)) skipped – MMR throttled"
+        print("[Verifier] \(message)")
         continue
       }
 
@@ -232,6 +238,7 @@ public final class VerifierService: VerifierServiceProtocol {
           .eraseToAnyPublisher()
         }
         .sink { outcome in
+          print("[Verifier] Outcome! \(outcome)")
           // -------- Post-verification bookkeeping --------
           // Update best view & timing
           let latency = Date().timeIntervalSince(verifyStartTime)
@@ -255,6 +262,7 @@ public final class VerifierService: VerifierServiceProtocol {
           }
 
           if outcome.isMatch {
+            print("[Verifier] Matched candidate \(cand.id)")
             store.update(id: cand.id) {
               $0.detectedDescription = outcome.description
               $0.lastVerified = Date()
@@ -264,6 +272,7 @@ public final class VerifierService: VerifierServiceProtocol {
                 $0.matchStatus = .full
                 $0.lastVerified = Date()
               }
+              DebugPublisher.shared.success("Match: \(outcome.description)")
               return
             }
             // Promote to partial and begin OCR verification
