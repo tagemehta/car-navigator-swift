@@ -48,8 +48,21 @@ struct InputView: View {
     NavigationStack {
       Form {
         Section(
-          header: Text(
-            searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
+          header: HStack {
+            Text(searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
+              .font(.headline)
+            
+            Spacer()
+            
+            if !description.isEmpty {
+              Button("Clear") {
+                description = ""
+                showPlaceholder = true
+              }
+              .font(.subheadline)
+              .foregroundColor(.blue)
+            }
+          }
         ) {
           if searchMode == .objectFinder {
             Picker("Object Class", selection: $selectedClass) {
