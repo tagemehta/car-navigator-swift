@@ -7,3 +7,5 @@ CVModels/
 datasets/*
 */car_eval*.json
 results/*
+# Secrets
+thing-finder/Secrets.xcconfig
