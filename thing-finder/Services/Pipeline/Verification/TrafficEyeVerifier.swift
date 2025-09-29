@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftUI
 import UIKit
 
 // MARK: - TrafficEye API Data Models
@@ -81,20 +82,36 @@ public final class TrafficEyeVerifier: ImageVerifier {
     self.config = config
   }
 
-  public func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error> {
-    lastVerifiedDate = Date()
+  public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
+  {
+    let startTime = Date()
+    lastVerifiedDate = startTime
+    DebugPublisher.shared.info(
+      "[TrafficEye][\(candidateId.uuidString.suffix(8))] ENTRY: verify() method called")
+    DebugPublisher.shared.info(
+      "[TrafficEye][\(candidateId.uuidString.suffix(8))] Starting verification...")
     let blurScore = imgUtils.blurScore(from: image)
     guard blurScore != nil && imgUtils.blurScore(from: image)! < 0.1 else {
+      DebugPublisher.shared.warning(
+        "[TrafficEye][\(candidateId.uuidString.suffix(8))] Rejecting: Image too blurry (blurScore=\(blurScore ?? -1))"
+      )
       return Just(
         VerificationOutcome(isMatch: false, description: "blurry", rejectReason: .unclearImage)
       ).setFailureType(to: Error.self)  // promote to Error failure
         .eraseToAnyPublisher()
     }
     guard let imageBytes = image.jpegData(compressionQuality: 1) else {
+      DebugPublisher.shared.error(
+        "[TrafficEye][\(candidateId.uuidString.suffix(8))] Failed to convert image to JPEG data")
       return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
     }
-    return callTrafficEyeAPI(imageBytes: imageBytes)
-      .catch { _ in Just(RecognitionResult(mmr: nil, plate: nil)).setFailureType(to: Error.self) }
+    return callTrafficEyeAPI(imageBytes: imageBytes, candidateId: candidateId)
+      .catch { error in
+        DebugPublisher.shared.error(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] API call failed: \(error.localizedDescription)"
+        )
+        return Just(RecognitionResult(mmr: nil, plate: nil)).setFailureType(to: Error.self)
+      }
       .flatMap { result -> AnyPublisher<VerificationOutcome, Error> in
         // --- License plate early verification ---
         if let expectedPlate = self.config.expectedPlate,
@@ -141,11 +158,27 @@ public final class TrafficEyeVerifier: ImageVerifier {
 
         guard let mmr = result.mmr else {
           // No vehicle detection at all
+          DebugPublisher.shared.error(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] No vehicle MMR data in API response")
           let outcome = VerificationOutcome(
             isMatch: false, description: "No vehicle detected", rejectReason: .apiError)
           return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
-        let vehicleView: Candidate.VehicleView =  {
+
+        // Log MMR details for debugging
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] MMR data: make=\(mmr.make?.value ?? "unknown") model=\(mmr.model?.value ?? "unknown") color=\(mmr.color?.value ?? "unknown") view=\(mmr.view?.value ?? "unknown")"
+        )
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] MMR confidence: make=\(String(format: "%.2f", mmr.make?.score ?? 0)) model=\(String(format: "%.2f", mmr.model?.score ?? 0)) color=\(String(format: "%.2f", mmr.color?.score ?? 0))"
+        )
+
+        if let plate = result.plate {
+          DebugPublisher.shared.info(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] Plate detected: \(plate.text.value) (confidence=\(String(format: "%.2f", plate.text.score ?? 0)))"
+          )
+        }
+        let vehicleView: Candidate.VehicleView = {
           switch mmr.view?.value {
           case "frontal": return .front
           case "rear", "back": return .rear
@@ -161,12 +194,14 @@ public final class TrafficEyeVerifier: ImageVerifier {
           return 0.5 * makeScore + 0.3 * modelScore + 0.2 * colorScore
         }()
         if infoQ < 0.4 {
+          DebugPublisher.shared.warning(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] Insufficient information quality (infoQ=\(String(format: "%.2f", infoQ)), threshold=0.40)"
+          )
           return Just(
             VerificationOutcome(
               isMatch: false, description: "Insufficient information",
               rejectReason: .insufficientInfo,
               vehicleView: vehicleView
-              
             )
           )
           .setFailureType(to: Error.self)
@@ -175,7 +210,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
         //        print(infoQ)
         // Even for low information quality, defer to LLM – it can respond with `maybe` which we map to a retryable reason.
         // Defer to LLM for make/model/color comparison regardless of info quality
-        return self.callLLMForComparison(with: mmr)
+        return self.callLLMForComparison(with: mmr, candidateId: candidateId)
       }
       .eraseToAnyPublisher()
   }
@@ -185,8 +220,11 @@ public final class TrafficEyeVerifier: ImageVerifier {
     let plate: Plate?
   }
 
-  private func callTrafficEyeAPI(imageBytes: Data) -> AnyPublisher<RecognitionResult, Error> {
-    // print("[DEBUG] Sending TrafficEye API request...")
+  private func callTrafficEyeAPI(imageBytes: Data, candidateId: UUID) -> AnyPublisher<
+    RecognitionResult, Error
+  > {
+    DebugPublisher.shared.info(
+      "[TrafficEye][\(candidateId.uuidString.suffix(8))] Sending API request...")
     let boundary = "Boundary-\(UUID().uuidString)"
     var request = URLRequest(url: trafficEyeEndpoint)
     request.httpMethod = "POST"
@@ -198,17 +236,38 @@ public final class TrafficEyeVerifier: ImageVerifier {
     request.httpBody = requestBody
 
     return URLSession.shared.dataTaskPublisher(for: request)
-      .tryMap { $0.data }
+      .handleEvents(receiveOutput: { output in
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Received API response (\(output.data.count) bytes)"
+        )
+      })
+      .tryMap { obj in
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Processing API response...")
+        return obj.data
+      }
       .decode(type: TrafficEyeResponse.self, decoder: jsonDecoder)
+      .handleEvents(receiveOutput: { response in
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Successfully decoded API response")
+      })
       .map { response -> RecognitionResult in
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Mapping response to RecognitionResult..."
+        )
         let combinations = response.data?.combinations ?? []
         guard let first = combinations.first,
           let roadUser = first.roadUsers?.first,
           !combinations.isEmpty
         else {
           // No detections or missing data
+          DebugPublisher.shared.info(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] No detections found in response")
           return RecognitionResult(mmr: nil, plate: nil)
         }
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Found detections, creating RecognitionResult"
+        )
         return RecognitionResult(
           mmr: roadUser.mmr,
           plate: roadUser.plates?.max(by: { p1, p2 in
@@ -216,11 +275,17 @@ public final class TrafficEyeVerifier: ImageVerifier {
             // A predicate that returns true if its first argument should be ordered before its second argument [for increasing order]; otherwise, false.
           }))
       }
-      // .handleEvents(receiveCompletion: { completion in
-      //   if case .failure(let err) = completion {
-      //     print("[DEBUG] TrafficEye API error: \(err)")
-      //   }
-      // })
+      .handleEvents(receiveCompletion: { completion in
+        switch completion {
+        case .finished:
+          DebugPublisher.shared.info(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] API call completed successfully")
+        case .failure(let err):
+          DebugPublisher.shared.error(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] API call failed: \(err.localizedDescription)"
+          )
+        }
+      })
       .eraseToAnyPublisher()
   }
 
@@ -251,7 +316,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
     return body
   }
 
-  private func callLLMForComparison(with mmrResult: MMR) -> AnyPublisher<
+  private func callLLMForComparison(with mmrResult: MMR, candidateId: UUID) -> AnyPublisher<
     VerificationOutcome, Error
   > {
     // Serialize the full MMR object (including confidences) as JSON for LLM prompt
@@ -349,6 +414,18 @@ public final class TrafficEyeVerifier: ImageVerifier {
         let args = try self.jsonDecoder.decode(LLMResult.self, from: data)
         let infoQ = infoQuality(from: mmrResult)
         let qualityLevel: String = infoQ >= 0.85 ? "high" : (infoQ >= 0.4 ? "medium" : "low")
+
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] LLM comparison: probability=\(String(format: "%.2f", args.probability_match)) reason=\(args.semantic_reason)"
+        )
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Quality metrics: infoQ=\(String(format: "%.2f", infoQ)) qualityLevel=\(qualityLevel)"
+        )
+
+        // Log the target text description for comparison
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Target description: '\(self.targetTextDescription)'"
+        )
         var isMatch = false
         var rejectReason: RejectReason = .insufficientInfo
         if qualityLevel == "high" {
@@ -383,7 +460,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
           default: return .unknown
           }
         }()
-        return VerificationOutcome(
+        let outcome = VerificationOutcome(
           isMatch: isMatch,
           description:
             "\(mmrResult.color?.value ?? "") \(mmrResult.make?.value ?? "") \(mmrResult.model?.value ?? "")",
@@ -391,6 +468,22 @@ public final class TrafficEyeVerifier: ImageVerifier {
           vehicleView: vehicleView,
           viewScore: mmrResult.view?.score
         )
+
+        if isMatch {
+          DebugPublisher.shared.success(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] MATCH : \(mmrResult.color?.value ?? "") \(mmrResult.make?.value ?? "") \(mmrResult.model?.value ?? "") (probability=\(String(format: "%.2f", args.probability_match)))"
+          )
+        } else {
+          DebugPublisher.shared.error(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] REJECT: \(rejectReason.rawValue) (probability=\(String(format: "%.2f", args.probability_match)), semantic_reason=\(args.semantic_reason))"
+          )
+        }
+
+        let latency = Date().timeIntervalSince(self.lastVerifiedDate)
+        DebugPublisher.shared.info(
+          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Verification completed in \(String(format: "%.3f", latency))s"
+        )
+        return outcome
       }
       .eraseToAnyPublisher()
   }

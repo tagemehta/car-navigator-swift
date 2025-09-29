@@ -68,8 +68,7 @@ is composed in `AppContainer`.
 | **CandidateLifecycleService** | Ingests new detections, computes embeddings, enforces single-winner, drops stale. |
 | **VerifierService**           | Asynchronously validates a candidate using LLM / feature-print.                   |
 | **NavigationManager**         | Emits coarse nav events for downstream UX (haptics, audio, etc.).                 |
-| **CandidateStore**            | Thread-safe `@Published` map of `Candidate` models.                               |
-| **DetectionStateMachine**     | Derives high-level phase (`searching`, `verifying`, `found`).                     |
+| **CandidateStore**            | Thread-safe `@Published` map of `Candidate` models.                               |  
 
 All heavy Vision / ML work happens off the main thread; UI only receives immutable
 snapshots (`FramePresentation`).
@@ -113,6 +112,15 @@ Tests can inject mocks for any protocol-typed dependency.
 - **Alternative verifier** – Swap `VerifierServiceProtocol`.
 - **Custom nav behavior** – Implement `NavigationManager`.
 - **AR-only mode** – Provide a tracker that backs onto `ARAnchor`s.
+
+---
+
+## Threading Model Cheatsheet
+
+- `FramePipelineCoordinator.process` executes on the capture queue (see `VideoCapture.cameraQueue`).
+- All mutations of `CandidateStore` hop onto the main thread via `syncOnMain`.
+- **Reads must also go through `CandidateStore.snapshot()` or another helper that uses `syncOnMain`.**
+- Any polling or derived values needed off the main queue should take a snapshot first, then compute on the background queue to avoid blocking UI work longer than necessary.
 
 ---
 

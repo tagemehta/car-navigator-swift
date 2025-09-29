@@ -1,6 +1,9 @@
+import Combine
 import SwiftUI
 
 struct ContentView: View {
+  // Debug overlay model from AppContainer
+  @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
   @State private var isCameraRunning = true
   let description: String
   let searchMode: SearchMode
@@ -57,6 +60,11 @@ struct ContentView: View {
               .padding()
           }
           Spacer()
+        }
+
+        // Debug Overlay - only show when enabled in settings
+        if settings.debugOverlayEnabled {
+          DebugOverlayView(model: debugOverlayModel, position: .bottom)
         }
       }
     }
