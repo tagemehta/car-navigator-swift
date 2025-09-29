@@ -15,7 +15,7 @@ private final class MockVerifier2: ImageVerifier {
   var nextOutcome: VerificationOutcome = VerificationOutcome(isMatch: true, description: "A car", rejectReason: nil)
   var verifyCalls = 0
 
-  func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error> {
+  func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error> {
     verifyCalls += 1
     return Just(nextOutcome)
       .setFailureType(to: Error.self)
@@ -55,7 +55,6 @@ final class VerifierServiceTests: XCTestCase {
     let config = VerificationConfig(
       expectedPlate: nil,
       maxOCRRetries: 2,
-      cooldownAfterRejectSecs: 1.0,
       shouldRunOCR: false
     )
     service = VerifierService(verifier: mockVerifier, imgUtils: ImageUtilities.shared, config: config)
@@ -208,7 +207,6 @@ final class VerifierServiceTests: XCTestCase {
     let config = VerificationConfig(
       expectedPlate: nil,
       maxOCRRetries: 2,
-      cooldownAfterRejectSecs: 1.0,
       shouldRunOCR: true
     )
     service = VerifierService(verifier: mockVerifier, imgUtils: ImageUtilities.shared, config: config)

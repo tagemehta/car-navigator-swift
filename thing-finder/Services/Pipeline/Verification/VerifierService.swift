@@ -54,8 +54,8 @@ import UIKit
 import Vision
 
 public final class VerifierService: VerifierServiceProtocol {
-  /// When using combined strategy we build verifiers on-the-fly; otherwise we keep one.
-  private let defaultVerifier: ImageVerifier
+  /// Strategy manager for handling verification
+  private let strategyManager: VerificationStrategyManager
 
   internal let imgUtils: ImageUtilities
   internal let verificationConfig: VerificationConfig
@@ -67,10 +67,29 @@ public final class VerifierService: VerifierServiceProtocol {
   private let minVerifyInterval: TimeInterval = 1  // seconds
 
   init(
-    verifier: ImageVerifier, imgUtils: ImageUtilities, config: VerificationConfig,
+    targetTextDescription: String,
+    imgUtils: ImageUtilities,
+    config: VerificationConfig,
     ocrEngine: OCREngine = VisionOCREngine()
   ) {
-    self.defaultVerifier = verifier
+    let factory = VerificationStrategyFactory(config: config)
+    self.strategyManager = factory.createStrategyManager(
+      targetTextDescription: targetTextDescription)
+    self.imgUtils = imgUtils
+    self.verificationConfig = config
+    self.ocrEngine = ocrEngine
+  }
+
+  /// Legacy initializer for backwards compatibility
+  init(
+    verifier: ImageVerifier,
+    imgUtils: ImageUtilities,
+    config: VerificationConfig,
+    ocrEngine: OCREngine = VisionOCREngine()
+  ) {
+    let factory = VerificationStrategyFactory(config: config)
+    self.strategyManager = factory.createStrategyManager(
+      targetTextDescription: verifier.targetTextDescription)
     self.imgUtils = imgUtils
     self.verificationConfig = config
     self.ocrEngine = ocrEngine
@@ -90,15 +109,16 @@ public final class VerifierService: VerifierServiceProtocol {
     let pendingUnknown = candidatesSnapshot.values.filter { $0.matchStatus == .unknown }
 
     // // Include stale partial/full candidates for re-verification
-    // let staleVerified = candidatesSnapshot.values.filter {
-    //   ($0.matchStatus == .partial || $0.matchStatus == .full)
-    //     && (now.timeIntervalSince($0.lastVerified ?? $0.createdAt)
-    //       >= self.verificationConfig.reverifyInterval)
-    // }
     // Split candidates into ones we can auto-match (no text description) and ones needing verification.
     var toVerify: [Candidate] = []
     // toVerify.append(contentsOf: staleVerified)  // Disabled re-verification
-    if defaultVerifier.targetTextDescription.isEmpty {
+
+    // Check if we have a target description to verify against
+    let hasTargetDescription =
+      !strategyManager.strategies.isEmpty
+      && !(strategyManager.targetTextDescription?.isEmpty ?? true)
+
+    if !hasTargetDescription {
       for cand in pendingUnknown {
         store.update(id: cand.id) { $0.matchStatus = .full }
       }
@@ -134,8 +154,8 @@ public final class VerifierService: VerifierServiceProtocol {
     lastVerifyBatch = now
     for cand in toVerify {
       // ---------------- Per-candidate throttling ----------------
-      print(
-        "[Verifier] Considering candidate \(cand.id); bestView=\(cand.view); lastMMR=\(cand.lastMMRTime.timeIntervalSince1970)"
+      DebugPublisher.shared.info(
+        "[Verifier][\(cand.id.uuidString.suffix(8))] Considering candidate; bestView=\(cand.view), lastMMR=\(cand.lastMMRTime.timeIntervalSince1970)"
       )
 
       // Skip verification if the candidate's bounding box covers less than 15% of the frame.
@@ -144,7 +164,10 @@ public final class VerifierService: VerifierServiceProtocol {
       let bboxArea = cand.lastBoundingBox.width * cand.lastBoundingBox.height
       let minAreaThreshold: CGFloat = 0.01  // 1% of the image
       if bboxArea < minAreaThreshold {
-        print("[Verifier] Candidate \(cand.id) skipped – bbox too small (\(bboxArea * 100)%)")
+        let message =
+          "Candidate \(cand.id.uuidString.suffix(8)) skipped – bbox too small (\(String(format: "%.1f", bboxArea * 100))%)"
+        //        print("[Verifier] \(message)")
+        //        DebugPublisher.shared.info(message)
         continue
       }
 
@@ -153,7 +176,9 @@ public final class VerifierService: VerifierServiceProtocol {
       let aspectRatio = cand.lastBoundingBox.height / max(cand.lastBoundingBox.width, 0.0001)
       let maxTallness: CGFloat = 3  // height cannot exceed 300% of width
       if aspectRatio > maxTallness {
-        print("[Verifier] Candidate \(cand.id) skipped – bbox too tall (h/w=\(aspectRatio))")
+        let message =
+          "Candidate \(cand.id.uuidString.suffix(8)) skipped – bbox too tall (h/w=\(String(format: "%.1f", aspectRatio)))"
+        DebugPublisher.shared.warning("[Verifier] \(message)")
         continue
       }
 
@@ -161,7 +186,8 @@ public final class VerifierService: VerifierServiceProtocol {
         && now.timeIntervalSince(cand.lastMMRTime) < verificationConfig.perCandidateMMRInterval
       {
         // Skip TrafficEye re-verify until per-candidate interval passes.
-        print("[Verifier] Candidate \(cand.id) skipped – MMR throttled")
+        let message = "Candidate \(cand.id.uuidString.suffix(8)) skipped – MMR throttled"
+        DebugPublisher.shared.info("[Verifier] \(message)")
         continue
       }
 
@@ -179,94 +205,92 @@ public final class VerifierService: VerifierServiceProtocol {
       if cand.matchStatus == .unknown {
         store.update(id: cand.id) { $0.matchStatus = .waiting }
       }
-      // Choose verifier per candidate based on config & policy, with optional override
-      let chosenKind: VerifierKind
-      let chosenVerifier: ImageVerifier
-      if self.verificationConfig.useCombinedVerifier {
-        switch VerificationPolicy.nextKind(for: cand) {
-        case .trafficEye:
-          chosenKind = .trafficEye
-          chosenVerifier = TrafficEyeVerifier(
-            targetTextDescription: self.defaultVerifier.targetTextDescription,
-            config: self.verificationConfig)
-        case .llm:
-          chosenKind = .llm
-          chosenVerifier = TwoStepVerifier(
-            targetTextDescription: self.defaultVerifier.targetTextDescription)
-        }
-        // Reset opposite verifier attempt counters when switching to allow continuous cycling
-        store.update(id: cand.id) {
-          switch chosenKind {
-          case .trafficEye:
-            $0.verificationTracker.llmAttempts = 0
-          case .llm:
-            $0.verificationTracker.trafficAttempts = 0
-          }
-        }
-      } else {
-        chosenKind = .trafficEye
-        chosenVerifier = self.defaultVerifier
-      }
 
       let verifyStartTime = Date()
-      // Enforce a hard timeout on verifier calls to avoid hanging subscriptions
-      chosenVerifier.verify(image: img)
-        .timeout(.seconds(5), scheduler: DispatchQueue.global(qos: .userInitiated))
-        .catch { error -> AnyPublisher<VerificationOutcome, Never> in
-          let rejectReason: RejectReason
-          if let twoStepError = error as? TwoStepError {
-            switch twoStepError {
-            case .noToolResponse, .networkError:
+      // Use strategy manager to handle verification with proper counter management
+      strategyManager.verify(image: img, candidate: cand, store: store)
+        .sink { completion in
+          switch completion {
+          case .finished:
+            break
+          case .failure(let error):
+            DebugPublisher.shared.error(
+              "[Verifier][\(cand.id.uuidString.suffix(8))] Pipeline failed with error: \(error.localizedDescription)"
+            )
+            // Handle verification failure with proper error mapping
+            let rejectReason: RejectReason
+            if let twoStepError = error as? TwoStepError {
+              switch twoStepError {
+              case .noToolResponse, .networkError:
+                rejectReason = .apiError
+              case .occluded:
+                rejectReason = .unclearImage
+              case .lowConfidence:
+                rejectReason = .lowConfidence
+              }
+            } else {
               rejectReason = .apiError
-            case .occluded:
-              rejectReason = .unclearImage
-            case .lowConfidence:
-              rejectReason = .lowConfidence
             }
-          } else {
-            rejectReason = .apiError
+
+            store.update(id: cand.id) {
+              $0.matchStatus = .unknown
+              $0.rejectReason = rejectReason
+            }
           }
-          return Just(
-            VerificationOutcome(isMatch: false, description: "", rejectReason: rejectReason)
-          )
-          .eraseToAnyPublisher()
-        }
-        .sink { outcome in
+        } receiveValue: { [weak self] (outcome, strategyName) in
+          guard let self = self else { return }
+
           // -------- Post-verification bookkeeping --------
-          // Update best view & timing
           let latency = Date().timeIntervalSince(verifyStartTime)
-          print(
-            "[Verifier] Result for candidate \(cand.id): kind=\(chosenKind) match=\(outcome.isMatch) view=\(String(describing: outcome.vehicleView)) score=\(String(describing: outcome.viewScore)) reason=\(String(describing: outcome.rejectReason?.rawValue)) latency=\(String(format: "%.3f", latency))s"
+
+          DebugPublisher.shared.info(
+            "[Verifier][\(cand.id.uuidString.suffix(8))] Result: strategy=\(strategyName), match=\(outcome.isMatch), view=\(String(describing: outcome.vehicleView)), score=\(String(describing: outcome.viewScore)), reason=\(String(describing: outcome.rejectReason?.rawValue)), latency=\(String(format: "%.3f", latency))s"
           )
+
+          // Update view and timing information
           store.update(id: cand.id) { c in
             if let v = outcome.vehicleView, let score = outcome.viewScore {
               c.updateView(v, score: score)
             }
-            if chosenKind == .trafficEye { c.lastMMRTime = now }
+            // Update MMR time for TrafficEye strategies
+            if strategyName.contains("TrafficEye") {
+              c.lastMMRTime = now
+            }
           }
 
+          // Update attempt counters based on strategy type
           if !outcome.isMatch {
             store.update(id: cand.id) {
-              switch chosenKind {
-              case .trafficEye: $0.verificationTracker.trafficAttempts += 1
-              case .llm: $0.verificationTracker.llmAttempts += 1
+              if strategyName.contains("TrafficEye") {
+                $0.verificationTracker.trafficAttempts += 1
+              } else {
+                $0.verificationTracker.llmAttempts += 1
               }
             }
           }
 
           if outcome.isMatch {
+            DebugPublisher.shared.info(
+              "[Verifier][\(cand.id.uuidString.suffix(8))] Matched candidate")
             store.update(id: cand.id) {
               $0.detectedDescription = outcome.description
               $0.lastVerified = Date()
             }
             if !self.verificationConfig.shouldRunOCR || outcome.isPlateMatch {
+              DebugPublisher.shared.info(
+                "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \(store[cand.id]?.matchStatus ?? .unknown). Updating to .full."
+              )
               store.update(id: cand.id) {
                 $0.matchStatus = .full
                 $0.lastVerified = Date()
               }
+              DebugPublisher.shared.success("Match: \(outcome.description)")
               return
             }
             // Promote to partial and begin OCR verification
+            DebugPublisher.shared.info(
+              "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \(store[cand.id]?.matchStatus ?? .unknown). Matched, but requires OCR. Updating to .partial."
+            )
             store.update(id: cand.id) {
               $0.matchStatus = .partial
               $0.detectedDescription = outcome.description
@@ -282,10 +306,16 @@ public final class VerifierService: VerifierServiceProtocol {
 
               // Check if the reason is retryable
               if let reason = reason, reason.isRetryable {
+                DebugPublisher.shared.info(
+                  "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \($0.matchStatus). Retryable reason: \(reason). Updating to .unknown."
+                )
                 // Retryable reason - keep searching so candidate will be retried
                 $0.matchStatus = .unknown
               } else if reason != nil {
                 // Hard reject reason
+                DebugPublisher.shared.info(
+                  "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \($0.matchStatus). Hard reject reason: \(reason!). Updating to .rejected."
+                )
                 $0.matchStatus = .rejected
               }
 

@@ -12,9 +12,14 @@
 
 import Foundation
 import Vision
+import SwiftUI
 
 public final class AppContainer {
   static let shared = AppContainer()
+  
+  /// Shared debug overlay model for displaying verification errors and debug information
+  let debugOverlayModel = DebugOverlayModel()
+  
   private init() {}
 
   // Build a fully-wired coordinator for a given capture mode.
@@ -41,7 +46,8 @@ public final class AppContainer {
     let needsOCR =
       classes.contains { ["car", "truck", "bus", "van"].contains($0.lowercased()) }
       && parsed.plate != nil
-    let verifierConfig = VerificationConfig(expectedPlate: parsed.plate, shouldRunOCR: needsOCR, useCombinedVerifier: true)
+    let verifierConfig = VerificationConfig(
+      expectedPlate: parsed.plate, shouldRunOCR: needsOCR, useCombinedVerifier: true)
     let verifier = VerifierService(
       verifier: TrafficEyeVerifier(
         targetClasses: classes, targetTextDescription: description, config: verifierConfig),

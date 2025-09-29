@@ -82,8 +82,11 @@ public final class AdvancedLLMVerifier: ImageVerifier {
         ])))
 
   // MARK: - Public API
-  public func verify(image: UIImage) -> AnyPublisher<VerificationOutcome, Error> {
+  public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
+  {
     let startTime = Date()
+    DebugPublisher.shared.info(
+      "[AdvancedLLMVerifier][\(candidateId.uuidString.suffix(8))] Starting verification...")
     guard let base64 = image.jpegData(compressionQuality: 0.7)?.base64EncodedString() else {
       return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
     }
@@ -301,7 +304,8 @@ public final class AdvancedLLMVerifier: ImageVerifier {
             userInfo: [NSLocalizedDescriptionKey: "No tool args"])
         }
         let combined = try self.decoder.decode(CombinedVehicleMatch.self, from: data)
-        print(combined)
+        DebugPublisher.shared.info(
+          "[AdvancedLLMVerifier][\(candidateId.uuidString.suffix(8))] Combined result: \(combined)")
         // Handle confidence, ambiguity, etc. as before
         // Early reject for insufficient visible area
         if combined.visible_fraction < 0.8 {
@@ -334,7 +338,8 @@ public final class AdvancedLLMVerifier: ImageVerifier {
       .handleEvents(
         receiveOutput: { _ in
           let latency = Date().timeIntervalSince(startTime)
-          print("[AdvancedLLMVerifier] latency: \(latency)s")
+          DebugPublisher.shared.info(
+            "[AdvancedLLMVerifier][\(candidateId.uuidString.suffix(8))] latency: \(latency)s")
         },
         receiveCompletion: { _ in
         }

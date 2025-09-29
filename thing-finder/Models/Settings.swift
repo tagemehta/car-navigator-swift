@@ -108,6 +108,9 @@ public class Settings: ObservableObject {
 
   /// Enable developer mode with additional settings
   @AppStorage("developer_mode") var developerMode: Bool = false
+  
+  /// Enable debug overlay with verification messages
+  @AppStorage("debug_overlay_enabled") var debugOverlayEnabled: Bool = false
 }
 
 /// Volume curve types for distance mapping
@@ -215,6 +218,7 @@ extension Settings {
     // Advanced Settings
     smoothingAlpha = 0.2
     developerMode = false
+    debugOverlayEnabled = false
     
 
     // Force UserDefaults to synchronize changes
