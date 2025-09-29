@@ -14,6 +14,7 @@ struct InputView: View {
   @State private var selectedClass: String = "car"
   @State private var description: String = ""
   @State private var isShowingCamera = false
+  @State private var showPlaceholder = true
   @FocusState private var isInputFocused: Bool
 
   // Vehicle classes for Uber Finder
@@ -37,12 +38,31 @@ struct InputView: View {
     searchMode == .uberFinder ? vehicleClasses : [selectedClass]
   }
 
+  var placeholderText: String {
+    searchMode == .uberFinder
+      ? "Describe your ride (e.g., 'white Toyota Camry with license plate ABC123')"
+      : "Describe it in detail (e.g., 'silver laptop with a white and green laptop sticker')"
+  }
+
   var body: some View {
     NavigationStack {
       Form {
         Section(
-          header: Text(
-            searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
+          header: HStack {
+            Text(searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
+              .font(.headline)
+            
+            Spacer()
+            
+            if !description.isEmpty {
+              Button("Clear") {
+                description = ""
+                showPlaceholder = true
+              }
+              .font(.subheadline)
+              .foregroundColor(.blue)
+            }
+          }
         ) {
           if searchMode == .objectFinder {
             Picker("Object Class", selection: $selectedClass) {
@@ -53,16 +73,30 @@ struct InputView: View {
             .pickerStyle(MenuPickerStyle())
           }
 
-          TextField(
-            searchMode == .uberFinder
-              ? "Describe your ride (e.g., 'white Toyota Camry with license plate ABC123')"
-              : "Describe it in detail (e.g., 'silver laptop with a white and green laptop sticker')",
-            text: $description,
-            axis: .vertical
-          )
-          .textFieldStyle(RoundedBorderTextFieldStyle())
-          .lineLimit(3, reservesSpace: true)
-          .focused($isInputFocused)
+          ZStack(alignment: .topLeading) {
+            TextField("", text: $description, axis: .vertical)
+              .textFieldStyle(RoundedBorderTextFieldStyle())
+              .lineLimit(3, reservesSpace: true)
+              .focused($isInputFocused)
+              .onChange(of: isInputFocused) { oldValue, newValue in
+                if newValue {
+                  showPlaceholder = false
+                } else {
+                  showPlaceholder = description.isEmpty
+                }
+              }
+
+            if showPlaceholder {
+              Text(placeholderText)
+                .foregroundColor(.gray)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 8)
+                .onTapGesture {
+                  isInputFocused = true
+                }
+            }
+          }
+          .frame(minHeight: 80)
         }
 
         Section {
@@ -79,11 +113,9 @@ struct InputView: View {
       }
       .navigationTitle("Find My Uber")
       .onAppear {
-        // Dismiss keyboard when view appears
         hideKeyboard()
       }
       .onDisappear {
-        // Dismiss keyboard when view disappears
         hideKeyboard()
       }
       .navigationDestination(isPresented: $isShowingCamera) {
@@ -95,9 +127,10 @@ struct InputView: View {
       }
     }
     .simultaneousGesture(
-      TapGesture().onEnded { isInputFocused = false }
+      TapGesture().onEnded {
+        isInputFocused = false
+      }
     )
-
   }
 }
 
