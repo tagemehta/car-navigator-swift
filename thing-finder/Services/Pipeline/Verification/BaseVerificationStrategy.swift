@@ -264,7 +264,7 @@ extension BaseVerificationStrategy {
                 priority += 20 // Prefer TrafficEye if LLM has failed
             }
         case .llm:
-            if candidate.verificationTracker.trafficAttempts >= VerificationPolicy.minPrimaryRetries {
+            if candidate.verificationTracker.trafficAttempts >= VerificationPolicy.maxPrimaryRetries {
                 priority += 30 // Prefer LLM if TrafficEye has failed multiple times
             }
             if candidate.view == .side {

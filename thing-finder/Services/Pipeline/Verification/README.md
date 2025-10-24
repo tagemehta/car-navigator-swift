@@ -1,127 +1,132 @@
-# Verification Pipeline – Continuous TrafficEye ↔︎ LLM Loop
+# Verification Pipeline – Strategy-Driven TrafficEye ↔︎ LLM Loop
 
-> _Updated 2025-08-06 for the new cycling policy_
+> _Updated 2025-10-23 to document the new **strategy-manager architecture**._
 
-This document explains how the **hybrid verifier** balances cost, latency and accuracy by **cycling indefinitely** between the paid but fast **TrafficEye MMR API** and the slower yet cheaper **LLM-based verifier** until a conclusive decision is reached.
+This document describes how the verification subsystem combines the paid, low-latency **TrafficEye MMR API** with the slower but cheaper **LLM-based verifier**.  
+A **strategy manager** picks the best engine for every frame, guided by policy counters and configurable thresholds.
 
 ---
 
-## 1  Engines
+## 1  High-Level Architecture
 
-| Engine | Typical Latency | Relative Cost | When We Prefer It |
-|--------|-----------------|--------------|-------------------|
-| **TrafficEye MMR** | ≈ 50 ms | $$$ | Precise make-model; reliable front / rear discrimination. |
-| **LLM Verifier**   | 3-10 s | $   | Robust to partial / side views; fuzzy semantic reasoning. |
-
-## 2  Escalation Logic (implemented in `VerificationPolicy`)
 ```
-side-view                    any view
-   ─────────────────────┐   ┌─────────────────────────────
-TrafficEye failures ≥ 1 ─┘   │ TrafficEye failures ≥ 3     │
-                            ▼                             ▼
-                      choose LLM                   choose LLM
-                           ▲                             │
-                LLM failures ≥ 2 ────────────────────────┘
++------------------+            +-------------------------+
+|  VerifierService |  creates   | VerificationStrategyFactory |
++---------+--------+            +---------------+---------+
+          |                                     |
+          |  produces                  +--------v---------+
+          |                            | Strategy Manager |
+          |                            +--------+---------+
+          |                                     |
+   calls  |  verify(image,candidate,store)      | selects best strategy
+          |                                     v
+          |                            +------------------+
+          |                            |  Strategies[]    |  (TrafficEye, LLM, …)
+          |                            +--------+---------+
+          |                                     |
+          +-------------------------------------+
+                         performVerification()
 ```
-1. **TrafficEye first.** After 1 failure on a side view, or 3 failures on any view, escalate to LLM.
-2. **LLM fallback.** After 2 consecutive LLM failures, fall back to TrafficEye.
-3. **Counters reset.** Each time we switch engine the opposite counter is reset, allowing the loop to repeat endlessly until a match or hard-reject.
 
-> Constants (`minPrimaryRetries`, `maxPrimaryRetries`, `maxLLMRetries`) are tunable without touching the service.
+* **VerifierService** – public entry-point. Runs on every tracking _tick_ and owns global throttling.
+* **VerificationStrategyFactory** – builds all available strategies once at startup.
+* **Strategy Manager** – runtime decision maker. For each candidate:
+  * Filters strategies via `shouldUse(for:)`.
+  * Picks highest `priority(for:)`.
+  * Resets the *other* engine’s counters before execution.
+* **Concrete Strategies** – wrapper classes (`TrafficEyeStrategy`, `LLMStrategy`, `AdvancedLLMStrategy`) that delegate to the underlying verifiers while honouring timeouts and error handling in `BaseVerificationStrategy`.
 
-## 3  Per-Frame Flow (`VerifierService.tick()`)
+---
+
+## 2  Engines
+
+| Engine | Typical Latency | Relative Cost | Strengths |
+|--------|-----------------|--------------|-----------|
+| **TrafficEye MMR API** | ≈ 50 ms | $$$ | Precise make-model, reliable front / rear discrimination. |
+| **LLM Verifier** | 3-10 s | $ | Robust to partial / side views; fuzzy semantic reasoning. |
+
+---
+
+## 3  Escalation Policy (`VerificationPolicy`)
+
+```
+TrafficEye failures ≥ 3
+          │
+          ▼
+     choose LLM
+          │
+          ▼
+LLM failures ≥ 3
+          │
+          ▼
+ choose TrafficEye
+```
+
+* **TrafficEye first.** After **three** consecutive failures for the same candidate, escalate to LLM.
+* **LLM fallback.** After **three** consecutive LLM failures, fall back to TrafficEye.
+* **Counters reset.** Switching engines zeroes the opposite counter so the loop can repeat until match or hard-reject.
+
+_Tunable constants_: `maxPrimaryRetries` (TrafficEye → LLM) and `maxLLMRetries` (LLM → TrafficEye).
+
+---
+
+## 4  Per-Frame Flow (`VerifierService.tick()`)
+
 1. Snapshot all `Candidate`s.
-2. Skip if global throttle (`minVerifyInterval`) not elapsed.
-3. For each candidate due for verification:
-   1. Call `VerificationPolicy.nextKind` → **TrafficEye or LLM**.
-   2. **Reset** the opposite counter inside `VerifierService`.
-   3. Crop, encode and send the image to the chosen verifier (async).
-   4. Update `CandidateStore`:
-      * On success → `.matched` (+timings, description).
-      * On failure → increment active counter, remain `.unknown` unless hard reject.
-4. Optionally enqueue OCR when a partial match requires a plate check.
+2. Skip verification if global throttle `minVerifyInterval` (1 s) has not elapsed.
+3. For every candidate due:
+   1. Ask **Strategy Manager** to `verify (image,candidate,store)`.
+   2. Manager selects best strategy (section 1) and resets counters.
+   3. Strategy runs `performVerification`, returns a `VerificationOutcome`.
+   4. On failure the manager increments the relevant attempt counter.
+   5. Outcomes propagate to `CandidateStore` (status, description, timings).
 
-## 4  Counters & Data Fields
+---
+
+## 5  Counters & Runtime Data
+
 | Field | Purpose |
 |-------|---------|
 | `trafficAttempts` | Consecutive failed TrafficEye calls. |
 | `llmAttempts` | Consecutive failed LLM calls. |
-| `VehicleView` + `viewScore` | Best observed angle assists early side-view escalation. |
-| `lastMMRTime` | Candidate-level TrafficEye throttle. |
-
-## 5  Throttling
-* **Global** – `minVerifyInterval` (1 s) to keep API usage sane.
-* **Per-candidate** – implicit via counters + `lastMMRTime`.
-
-## 6  Why Loop?
-• Vehicles may enter/exist the frame at awkward angles; continuous cycling ensures we keep trying the cheaper, faster path whenever it might now succeed.
-
-• Eliminates sticky failure states where a candidate could rack up counters and get stuck on the slow path for the remainder of its lifetime.
+| `VehicleView` / `viewScore` | Best observed angle – still informative for analytics and future heuristics. |
+| `lastMMRTime` | Timestamp of the last TrafficEye call for this candidate (per-candidate throttle). |
 
 ---
-_Last updated: 2025-08-06_
 
-This document describes the **view-aware, cost-aware vehicle verification pipeline** introduced in August 2025.
+## 6  Throttling
 
-## Overview
-The system combines two verification engines:
-
-| Engine | Latency | Cost | Strengths |
-|--------|---------|------|-----------|
-| **TrafficEye MMR API** | ~50 ms | High | Precise make-model-rear/front detection. Provides *view angle* metadata. |
-| **LLM Verifier** | 3-10 s | Low | Handles side/partial views; good at fuzzy semantic reasoning. |
-
-Goal: maximise accuracy while *minimising paid MMR calls* and *avoiding LLM latency* whenever a clean front/rear shot is available.
-
-## Key Data Added
-* `Candidate.VehicleView` – `.front`, `.rear`, `.side`, `.unknown`  
-  stores the **best observed angle** + `viewScore`.
-* `lastMMRTime` – last timestamp this candidate hit the MMR API.
-* `waitingUntil` – when a side/unknown view may fall back to LLM.
-* `VerificationConfig`
-  * `perCandidateMMRInterval` (default 2 s)
-  * `sideViewWait` (default 0.8 s)
-
-## Processing Steps
-1. **Initial detection**  
-   *Every new candidate* immediately triggers **one** MMR call, giving both
-   – a quick match decision, and  
-   – the first `vehicleView` assessment.
-
-2. **Fast path** – *front / rear*  
-   If that angle is `.front` or `.rear`:
-   * Accept / reject using the **MMR result only**.  
-   * Do **not** call the LLM.  
-   * Further MMR calls for this candidate are suppressed for
-     `perCandidateMMRInterval` seconds.
-
-3. **Slow path** – *side / unknown*
-   * Set `waitingUntil = now + sideViewWait`.
-   * Delay and keep scanning frames.
-   * When the per-candidate MMR throttle expires:
-     * If a *new* MMR returns front/rear → go to Fast path.
-     * Else if `now ≥ waitingUntil` → fire **one** LLM call and cache its result.  
-       (LLM results are cheap but slow; we only pay when truly necessary.)
-
-4. **Book-keeping after every verification**
-   * `updateView()` keeps the best angle and score.
-   * `lastMMRTime` stamped for MMR responses.
-   * `waitingUntil` reset/cleared as appropriate.
-
-## Throttling Summary
 * **Global** – `minVerifyInterval` (3 s) prevents frame-rate MMR floods.
-* **Per Candidate** – `perCandidateMMRInterval` (2 s) caps paid hits per car.
-* **Side-view Timeout** – `sideViewWait` (0.8 s) before allowing an LLM fallback.
+* **Per Candidate** – `perCandidateMMRInterval` (0.8 s) caps paid hits per vehicle.
 
-Together these rules mean:
-* Every car costs **≥1** MMR call (cannot know angle otherwise).
-* Subsequent MMR calls are rare, LLM calls are rarer.
-* User receives quick confirmation for good angles; slower but still timely feedback when only side views are visible.
-
-## Future Enhancements
-* **Multi-frame vote** – require 2 agreeing positives within 1 s before full match.
-* Adaptive timing based on real-world cost data.
-* Dynamic change of `sideViewWait` if vehicle remains side-only for extended periods.
+Together these rules ensure:
+* Every car incurs **≥ 1** TrafficEye call (needed to classify view).
+* Additional TrafficEye calls are rare; LLM calls are rarer still.
+* Users get instant feedback for clear angles, and slower but acceptable feedback otherwise.
 
 ---
-_Last updated: 2025-08-01_
+
+## 7  Implementation Highlights
+
+| Area | Key File (link) | What Happens |
+|------|-----------------|--------------|
+| **Frame Tick** | `VerifierService.swift` (`tick(...)`) | Called every video frame; snapshots candidate store, applies global throttle (1c) and triggers verification/OCR. |
+| **Candidate Filtering** | `VerifierService.swift` (1b) | Filters unknown candidates before verification. |
+| **Batch Throttling** | `VerifierService.swift` (1c) | Ensures at least 1 s between verify batches via `lastVerifyBatch`. |
+| **Strategy Delegation** | `VerifierService.swift` (1d) | Sends image + candidate to Strategy Manager. |
+| **Strategy Manager** | `VerificationStrategy.swift` (2a–2c) | Selects best strategy, resets opposite counter, increments counters on failure. |
+| **TrafficEye Strategy** | `TrafficEyeStrategy.swift` (2d, 3d) | Fast path; blocks when attempt limit reached. |
+| **TrafficEye Verifier** | `TrafficEyeVerifier.swift` (3a–3e) | Blur check → API call → early plate match → LLM fallback. |
+| **LLM / Advanced Strategies** | `LLMStrategy.swift`, `AdvancedLLMStrategy.swift` | Secondary / fallback semantic verification paths. |
+| **OCR Pipeline** | `VerifierService.swift` (4a…) | Optional license-plate OCR for partial matches with retry caps. |
+
+---
+
+## 8  Future Work
+
+* Multi-frame voting (require N agreeing positives within T seconds).
+* Adaptive timing based on real-world cost data.
+* Smarter side-view heuristics leveraging `VehicleView` once TrafficEye side-view accuracy improves further.
+
+---
+_Last updated: 2025-10-23_
