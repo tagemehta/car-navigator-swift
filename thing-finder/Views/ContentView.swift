@@ -43,6 +43,9 @@ struct ContentView: View {
           HStack {
             // Pause / Resume Toggle
             Button(action: {
+              if isCameraRunning {
+                AudioControl.pauseAll()
+              }
               isCameraRunning.toggle()
             }) {
               Text(isCameraRunning ? "Pause" : "Resume")
@@ -55,6 +58,7 @@ struct ContentView: View {
             // Reset Detection Pipeline
             Button(action: {
               // 1. Stop current capture
+              AudioControl.pauseAll()
               isCameraRunning = false
               // 2. Allow AVFoundation to release the camera.
               DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
