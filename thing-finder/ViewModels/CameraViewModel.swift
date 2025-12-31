@@ -47,15 +47,16 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
 
   /// Image utilities for image processing
   private var imgUtils: ImageUtilities { dependencies.imageUtils }
-  
-  private var fpsManager: FPSCalculator {dependencies.fpsManager}
+
+  private var fpsManager: FPSCalculator { dependencies.fpsManager }
   // MARK: - Initialization
 
   /// Initializes the CameraViewModel with required parameters
   /// - Parameter dependencies: Container for all required dependencies
   init(dependencies: CameraDependencies) {
     // Build new pipeline coordinator
-    self.pipeline = AppContainer.shared.makePipeline(classes: dependencies.targetClasses, description: dependencies.targetTextDescription)
+    self.pipeline = AppContainer.shared.makePipeline(
+      classes: dependencies.targetClasses, description: dependencies.targetTextDescription)
     self.dependencies = dependencies
     super.init()
 
@@ -73,8 +74,8 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
         let orientation = self.imgUtils.cgOrientation(for: self.interfaceOrientation)
         self.boundingBoxes = pres.candidates.map { cand in
           // Map normalized bbox to view-space rect
-//            if cand.matchStatus == .lost
-//            {continue}
+          //            if cand.matchStatus == .lost
+          //            {continue}
           let (imageRect, viewRect) = self.imgUtils.unscaledBoundingBoxes(
             for: cand.lastBoundingBox,
             imageSize: imageSize,
@@ -90,7 +91,8 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
           case .rejected: color = .red
           case .lost: color = .black
           }
-          return BoundingBox(imageRect: imageRect, viewRect: viewRect, label: cand.id.uuidString, color: color!)
+          return BoundingBox(
+            imageRect: imageRect, viewRect: viewRect, label: cand.id.uuidString, color: color!)
         }
       }
       .store(in: &cancellables)

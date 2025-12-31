@@ -1,18 +1,20 @@
 import Combine
-import Foundation
 import SwiftUI
-import UIKit
 
 // MARK: - TrafficEye API Data Models
 
 private struct TrafficEyeRecognitionRequest: Codable {
   let saveImage: Bool
   let tasks: [String]
+  // let mmrModuleNames: [String: String]
 
   init() {
     self.saveImage = false
     // Include OCR so we get license plate text in response
     self.tasks = ["DETECTION", "OCR", "MMR"]
+    // self.mmrModuleNames = [
+    //   "box": "CNN_MMRTF2LITE_VCMMGVCT_BGR_224x224_NONE_LIN_EXP25_PROTECTED_HASP_enc.dat"
+    // ]
   }
 }
 

@@ -14,9 +14,8 @@ public enum VerifierKind {
 }
 
 public struct VerificationPolicy {
-  /// After the initial TrafficEye call classifies the orientation, side-view frames
-  /// escalate to the LLM immediately on the *next* failure (i.e. after 1 prior TE attempt).
-  public static let minPrimaryRetries: Int = 2
+  /// Reserved constant for future tweakable retry threshold (currently unused for side-view specific logic)
+  public static let minPrimaryRetries: Int = 3
   /// Hard cap – any candidate escalates to LLM after this many consecutive TrafficEye failures.
   public static let maxPrimaryRetries: Int = 3
   /// After this many consecutive LLM failures we fall back to TrafficEye again.
@@ -29,11 +28,6 @@ public struct VerificationPolicy {
     }
     // Escalate to LLM when TrafficEye keeps failing (any view)
     if candidate.verificationTracker.trafficAttempts >= maxPrimaryRetries {
-      return .llm
-    }
-    // Earlier fallback for side view after fewer failures
-    if candidate.view == .side && candidate.verificationTracker.trafficAttempts >= minPrimaryRetries
-    {
       return .llm
     }
     return .trafficEye

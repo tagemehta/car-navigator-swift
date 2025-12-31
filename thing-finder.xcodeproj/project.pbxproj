@@ -378,12 +378,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"thing-finder/Preview Content\"";
-				DEVELOPMENT_TEAM = G9YGLVF559;
+				DEVELOPMENT_TEAM = XK27F6NC2A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = UberFinder;
 				INFOPLIST_KEY_NSCameraUsageDescription = 1.0;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "compass used for navigation";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Please;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -395,7 +396,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder-1";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -413,12 +414,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"thing-finder/Preview Content\"";
-				DEVELOPMENT_TEAM = Q95RBB3N96;
+				DEVELOPMENT_TEAM = XK27F6NC2A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = UberFinder;
 				INFOPLIST_KEY_NSCameraUsageDescription = 1.0;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "compass used for navigation";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Please;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -430,7 +432,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nycudl.carFinder;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

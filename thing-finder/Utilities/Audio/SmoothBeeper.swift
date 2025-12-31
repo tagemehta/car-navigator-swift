@@ -47,6 +47,13 @@ final class SmoothBeeper: Beeper {
       name: UIApplication.willEnterForegroundNotification,
       object: nil
     )
+
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handlePauseAllAudio),
+      name: AudioControl.pauseAllNotification,
+      object: nil
+    )
   }
 
   deinit {
@@ -158,6 +165,10 @@ final class SmoothBeeper: Beeper {
       // Restart with the same interval
       start(interval: targetInterval)
     }
+  }
+
+  @objc private func handlePauseAllAudio() {
+    stop()
   }
 
   private func generateClickSound() {

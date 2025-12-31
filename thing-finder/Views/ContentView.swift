@@ -2,14 +2,14 @@ import Combine
 import SwiftUI
 
 struct ContentView: View {
-  // Debug overlay model from AppContainer
-  @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
   @State private var isCameraRunning = true
+  /// Changing this key forces SwiftUI to recreate `DetectorContainer`,
+  /// which in turn rebuilds the `CameraViewModel` and fully resets the pipeline.
+  @State private var detectorKey = UUID()
   let description: String
   let searchMode: SearchMode
   let targetClasses: [String]
   private let settings: Settings
-  @StateObject private var detectionModel: CameraViewModel
 
   init(
     description: String,
@@ -21,13 +21,6 @@ struct ContentView: View {
     self.targetClasses = targetClasses
     let settings = Settings()
     self.settings = settings
-    _detectionModel = StateObject(
-      wrappedValue: CameraViewModel(
-        targetClasses: targetClasses,
-        targetTextDescription: description,
-        settings: settings
-      )
-    )
   }
 
   var title: String {
@@ -37,43 +30,63 @@ struct ContentView: View {
   var body: some View {
     VStack {
       ZStack {
-        CameraPreviewWrapper(
+        DetectorContainer(
           isRunning: $isCameraRunning,
-          delegate: detectionModel, source: settings.useARMode ? .arKit : .avFoundation
+          description: description,
+          targetClasses: targetClasses,
+          settings: settings
         )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .id(detectorKey)
 
-        BoundingBoxViewOverlay(
-          boxes: $detectionModel.boundingBoxes
-        )
-
-        // FPS Display
         VStack {
-          HStack {
-            Spacer()
-            Text(String(format: "%.1f FPS", detectionModel.currentFPS))
-              .font(.system(size: 14, weight: .medium, design: .monospaced))
-              .foregroundColor(.white)
-              .padding(8)
-              .background(Color.black.opacity(0.5))
-              .cornerRadius(8)
-              .padding()
-          }
           Spacer()
-        }
+          HStack {
+            // Pause / Resume Toggle
+            Button(action: {
+              if isCameraRunning {
+                AudioControl.pauseAll()
+              }
+              isCameraRunning.toggle()
+            }) {
+              Text(isCameraRunning ? "Pause" : "Resume")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white)
+                .padding()
+                .background(isCameraRunning ? Color.red.opacity(0.8) : Color.green.opacity(0.8))
+              // .clipShape(Circle())
+            }
+            // Reset Detection Pipeline
+            Button(action: {
+              // 1. Stop current capture
+              AudioControl.pauseAll()
+              isCameraRunning = false
+              // 2. Allow AVFoundation to release the camera.
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                // 3. Recreate the container (new pipeline)
+                detectorKey = UUID()
+                // 4. Start capture after the new view has appeared
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                  isCameraRunning = true
+                }
+              }
+            }) {
+              Text("Reset")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white)
+                .padding()
+                .background(Color.blue.opacity(0.8))
+              // .clipShape(Circle())
+            }
 
-        // Debug Overlay - only show when enabled in settings
-        if settings.debugOverlayEnabled {
-          DebugOverlayView(model: debugOverlayModel, position: .bottom)
+          }
+          .padding(.vertical)
         }
       }
+
     }
     .navigationBarTitle(title, displayMode: .inline)
-    .onRotate { newOrientation in
-      detectionModel.handleOrientationChange()
-    }
-    .onAppear {
-      detectionModel.handleOrientationChange()
+    .onRotate { _ in
+      // Orientation changes are handled inside DetectorContainer
     }
   }
 }

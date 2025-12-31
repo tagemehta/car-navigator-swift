@@ -11,6 +11,9 @@ protocol FPSCalculator {
     
     /// Updates the FPS calculation with a new frame
     func updateFPSCalculation()
+    
+    /// Resets the FPS calculation state
+    func reset()
 }
 
 
@@ -46,6 +49,14 @@ class FPSManager: FPSCalculator, ObservableObject {
             DispatchQueue.main.async {
                 self.currentFPS = min(fps, 60.0)  // Cap at 60 FPS which is typical for iOS
             }
+        }
+    }
+    
+    /// Resets the FPS calculation state
+    func reset() {
+        frameTimes.removeAll()
+        DispatchQueue.main.async {
+            self.currentFPS = 0.0
         }
     }
 }
