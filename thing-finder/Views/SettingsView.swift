@@ -4,7 +4,7 @@ struct SettingsView: View {
   @ObservedObject var settings: Settings
 
   var body: some View {
-    NavigationView {
+    NavigationStack {
       List {
         // MARK: - Navigation Feedback
         Section(header: Text("Navigation Feedback")) {
@@ -227,7 +227,7 @@ struct SettingsView: View {
             .font(.caption)
             .foregroundColor(.secondary)
         }
-        
+
         // MARK: - Reset Section
         Section {
           Button("Reset to Defaults") {
@@ -238,7 +238,6 @@ struct SettingsView: View {
       }
       .navigationTitle("Settings")
     }
-    .navigationViewStyle(StackNavigationViewStyle())
   }
   private func resetToDefaults() {
     // Call the resetToDefaults method on the Settings class

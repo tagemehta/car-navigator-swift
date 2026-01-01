@@ -70,7 +70,7 @@ struct ContentView: View {
                 }
               }
             }) {
-              Text("Reset")
+              Text("Rescan")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.white)
                 .padding()
