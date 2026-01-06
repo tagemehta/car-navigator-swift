@@ -51,9 +51,9 @@ struct InputView: View {
           header: HStack {
             Text(searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
               .font(.headline)
-            
+
             Spacer()
-            
+
             if !description.isEmpty {
               Button("Clear") {
                 description = ""
@@ -111,7 +111,7 @@ struct InputView: View {
               : false)
         }
       }
-      .navigationTitle("Find My Uber")
+      .navigationTitle("Find My Car")
       .onAppear {
         hideKeyboard()
       }
