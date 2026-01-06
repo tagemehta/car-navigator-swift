@@ -37,7 +37,7 @@ struct SettingsView: View {
 
         // MARK: - Direction Settings
         Section(header: Text("Direction Settings")) {
-          VStack(alignment: .leading) {
+          /*VStack(alignment: .leading) {
             Text("Left Threshold: \(Int(settings.directionLeftThreshold * 100))%")
             Text("How far left the target must be before announcing 'left'.")
               .font(.caption)
@@ -53,7 +53,7 @@ struct SettingsView: View {
               .foregroundColor(.secondary)
             Slider(value: $settings.directionRightThreshold, in: 0.6...0.9, step: 0.01)
               .accessibilityLabel("Right Threshold")
-          }
+          }*/
 
           VStack(alignment: .leading) {
             Text("Repeat Interval: \(String(format: "%.1f", settings.speechRepeatInterval))s")
