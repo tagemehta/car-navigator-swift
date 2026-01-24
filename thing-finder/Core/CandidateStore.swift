@@ -91,7 +91,9 @@ public final class CandidateStore: ObservableObject {
     }
   }
 
-  /// Keep only the most recently updated *matched* candidate (if any).
+  /// Enforce single-winner invariant: at most one candidate can be `.full` at a time.
+  /// Users get into one rideshare, not multiple – multiple simultaneous targets is unsupported.
+  /// Keeps the most recently updated matched candidate and removes all others.
   public func pruneToSingleMatched() {
     let matched = candidates.values.filter { $0.isMatched }
     guard let winner = matched.max(by: { $0.lastUpdated < $1.lastUpdated }) else { return }
@@ -102,7 +104,12 @@ public final class CandidateStore: ObservableObject {
     }
   }
 
-  // Utility: check if this is likely a duplicate of an existing candidate using IoU and center distance
+  /// Check if `bbox` likely represents the same object as an existing candidate.
+  /// Uses IoU (intersection-over-union) and center distance to prevent creating
+  /// duplicate candidates for the same physical object.
+  /// - Parameters:
+  ///   - iouThreshold: Boxes with IoU above this are considered duplicates. Empirically tuned.
+  ///   - centerDistanceThreshold: Normalized distance (0-1). Empirically tuned.
   public func containsDuplicateOf(
     _ bbox: CGRect, iouThreshold: CGFloat = 0.6, centerDistanceThreshold: CGFloat = 0.15
   ) -> Bool {

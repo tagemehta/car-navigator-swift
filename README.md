@@ -1,10 +1,8 @@
-# Thing Finder
+# CurbToCar
 
 ## Overview
 
-Thing Finder is a cutting-edge assistive technology application designed specifically for blind users. It empowers individuals by helping them identify and navigate to car services and newly introduced household objects. By integrating basic object detection with advanced large language models (LLMs), Thing Finder offers a new approach to personalized object discovery. The app leverages Apple's CoreML vision tools, SwiftUI Lidar, and ARKit to deliver an enhanced user experience.
-
-<img src="https://github.com/user-attachments/assets/4515e9e9-0984-4dfb-bab2-87cb15addc55" alt="Screenshot of app interface. Two modes: Uber Finder and Object Finder. Textfield for object/car description" width="300" height="auto" >
+CurbToCar is an assistive technology application designed to help blind users identify and navigate to car services using object detection and large language models.
 
 ## Installation Instructions
 

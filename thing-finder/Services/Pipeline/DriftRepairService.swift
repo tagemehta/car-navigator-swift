@@ -38,7 +38,12 @@ final class DriftRepairService: DriftRepairServiceProtocol {
   private let imageUtils: ImageUtilities
 
   // MARK: Config
+  /// How often to run drift repair (every N frames). At 30fps, 15 = ~0.5s.
+  /// Tradeoff: lower = more accurate but higher battery/CPU; higher = better perf but more drift.
+  /// Empirically tuned to balance accuracy, battery usage, and lag.
   private let repairStride: Int
+  /// Minimum cosine similarity between embeddings to consider a detection a match.
+  /// Somewhat arbitrarily chosen; high enough to avoid false matches.
   private let simThreshold: Float
   private var frameCounter: Int = 0
 

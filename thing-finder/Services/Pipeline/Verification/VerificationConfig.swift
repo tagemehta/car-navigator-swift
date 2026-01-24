@@ -19,6 +19,9 @@ public struct VerificationConfig {
   public var ocrConfidenceMin: Double
 
   /// Maximum times we will attempt OCR on a candidate before rejecting.
+  /// - Note: **Legacy value.** Originally set high (30) because OCR might miss by a single
+  ///   character. Now that Levenshtein distance matching is implemented via `maxEditsForMatch`,
+  ///   fuzzy matching handles minor OCR errors automatically. This limit could be reduced.
   public var maxOCRRetries: Int
 
   /// Maximum Levenshtein edit distance considered a MATCH (full).

@@ -64,7 +64,10 @@ public protocol CandidateLifecycleServiceProtocol {
 public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol {
 
   private let imgUtils: ImageUtilities
+  /// Consecutive frames without detection overlap before candidate is removed/lost.
+  /// At 30fps, 15 frames = ~0.5s. Provides tolerance for brief occlusions and detection flicker.
   private let missThreshold: Int
+  /// How long (seconds) to keep rejected candidates before removing them.
   private let rejectCooldown: TimeInterval
   private let compass = CompassHeading.shared  //connect to global compass
 

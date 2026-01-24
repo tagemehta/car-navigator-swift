@@ -115,14 +115,24 @@ public struct Candidate: Identifiable, Equatable {
 
 // MARK: - MatchStatus enum (copied from existing model if present)
 
-/// LLM verification result for a candidate.
+/// Verification state for a candidate.
+///
+/// Flow: `unknown` → `waiting` → `partial`/`full`/`rejected`
+///       `full` → `lost` (when tracking fails)
 public enum MatchStatus: String, Codable {
-  case unknown  // detector output, API not called yet
-  case waiting  // API verification in-flight
-  case partial  // API matched, plate not confirmed
-  case full  // API + plate confirmed
-  case rejected  // negative result (wrong plate / retry exhausted)
-  case lost  // if the car was a full match then was lost it is stored as lost until new match
+  /// Detector output, API not called yet
+  case unknown
+  /// API verification in-flight
+  case waiting
+  /// API matched vehicle, but license plate not yet confirmed (OCR pending)
+  case partial
+  /// Fully verified: vehicle + plate confirmed (or plate not required)
+  case full
+  /// Hard rejection: wrong vehicle, wrong plate, or retry exhausted
+  case rejected
+  /// Was `.full` but tracking lost the bounding box. Candidate stays `.full` while
+  /// actively tracked; only becomes `.lost` when missCount exceeds threshold.
+  case lost
 }
 
 /// Specific reason for rejection or retry of a candidate.

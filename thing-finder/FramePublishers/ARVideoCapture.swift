@@ -1,6 +1,10 @@
 //  ARVideoCapture.swift
 //  Drop-in replacement for VideoCapture, with depth closure API.
 //  Requires iOS 14+ and ARKit.
+//
+//  Note: ARKit is currently used primarily for depth data (via raycasting on LiDAR devices).
+//  Spatial audio and AR anchors are potential future enhancements but not currently implemented.
+//  The ARKit integration provides the foundation if these features are needed later.
 
 import ARKit
 import CoreVideo

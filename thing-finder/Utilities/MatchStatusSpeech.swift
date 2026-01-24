@@ -51,6 +51,10 @@ enum MatchStatusSpeech {
     case .unknown:
       return nil
     case .lost:
+      // Only announce compass direction if angle change is significant (>60°).
+      // Too small = frequent interruptions as user naturally moves.
+      // Too large = user never gets helpful directional info.
+      // 60° represents a meaningful change worth announcing.
       let angle = round(compareAngles(lastDirection, CompassHeading.shared.degrees))
       if abs(angle) > 60.0 {
         if angle > 0 {

@@ -4,6 +4,9 @@
 //  Decides which verifier (TrafficEye vs LLM) should be used for a given
 //  candidate based on durable attempt counters.
 //
+//  Escalation loop: TrafficEye ↔ LLM cycles indefinitely until match or hard reject.
+//  Counters reset when switching engines (handled in VerificationStrategyManager).
+//
 //  Created by Cascade AI.
 
 import Foundation
@@ -13,6 +16,11 @@ public enum VerifierKind {
   case llm
 }
 
+/// Escalation thresholds for verification engine selection.
+///
+/// These values are somewhat arbitrary but informed by latency characteristics:
+/// - TrafficEye: ~1.9s per call (fast, can retry more before escalating)
+/// - LLM: ~4-5s per call (slow, fewer retries before switching back)
 public struct VerificationPolicy {
   /// Reserved constant for future tweakable retry threshold (currently unused for side-view specific logic)
   public static let minPrimaryRetries: Int = 3
