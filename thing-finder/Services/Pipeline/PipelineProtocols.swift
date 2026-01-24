@@ -10,7 +10,6 @@
 import CoreGraphics
 import CoreMedia
 import Foundation
-import CoreGraphics
 import Vision
 
 // MARK: - CaptureType
@@ -25,13 +24,13 @@ public enum CaptureSourceType {
 // MARK: - Object Detection
 
 public protocol ObjectDetector {
-  /// Run detection on the passed pixel buffer, returning Vision observations.
+  /// Run detection on the passed pixel buffer, returning abstract `Detection` objects.
   /// - Parameter filter: Optional closure to select relevant observations.
   func detect(
     _ pixelBuffer: CVPixelBuffer,
-    filter: (VNRecognizedObjectObservation) -> Bool,
+    filter: (Detection) -> Bool,
     orientation: CGImagePropertyOrientation
-  ) -> [VNRecognizedObjectObservation]
+  ) -> [Detection]
 }
 
 // MARK: - Vision Tracking
@@ -64,7 +63,7 @@ public protocol DriftRepairServiceProtocol {
     orientation: CGImagePropertyOrientation,
     imageSize: CGSize,
     viewBounds: CGRect,
-    detections: [VNRecognizedObjectObservation],
+    detections: [Detection],
     store: CandidateStore
   )
 }

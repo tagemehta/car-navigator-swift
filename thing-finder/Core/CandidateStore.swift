@@ -55,42 +55,6 @@ public final class CandidateStore: ObservableObject {
     syncOnMain { candidates.removeAll() }
   }
 
-  // MARK: Upsert helpers
-  /// Insert a new candidate if it is **not** a duplicate. Returns the new id when inserted, otherwise `nil`.
-  @discardableResult
-  public func upsert(
-    observation: VNRecognizedObjectObservation,
-    cgImage: CGImage,
-    imageSize: CGSize,
-    orientation: CGImagePropertyOrientation = .up
-  ) -> CandidateID? {
-    let bbox = observation.boundingBox
-    guard !containsDuplicateOf(bbox) else { return nil }
-
-    // Build tracking request
-    let req = VNTrackObjectRequest(detectedObjectObservation: observation)
-    req.trackingLevel = .accurate
-
-    // Compute initial embedding for drift-repair & verifier
-    let embedding = EmbeddingComputer.compute(
-      cgImage: cgImage,
-      boundingBox: bbox,
-      orientation: orientation,
-      imageSize: imageSize
-    )
-
-    let id = CandidateID()
-    let cand = Candidate(
-      id: id,
-      trackingRequest: req,
-      boundingBox: bbox,
-      embedding: embedding)
-    return syncOnMain {
-      candidates[id] = cand
-      return id
-    }
-  }
-
   /// Enforce single-winner invariant: at most one candidate can be `.full` at a time.
   /// Users get into one rideshare, not multiple – multiple simultaneous targets is unsupported.
   /// Keeps the most recently updated matched candidate and removes all others.

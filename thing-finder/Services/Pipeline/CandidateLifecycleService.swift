@@ -54,7 +54,7 @@ public protocol CandidateLifecycleServiceProtocol {
     pixelBuffer: CVPixelBuffer,
     orientation: CGImagePropertyOrientation,
     imageSize: CGSize,
-    detections: [VNRecognizedObjectObservation],
+    detections: [Detection],
     store: CandidateStore
   ) -> Bool
 }
@@ -69,23 +69,25 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
   private let missThreshold: Int
   /// How long (seconds) to keep rejected candidates before removing them.
   private let rejectCooldown: TimeInterval
-  private let compass = CompassHeading.shared  //connect to global compass
+  private let compass: CompassProvider
 
   public init(
     imgUtils: ImageUtilities = .shared,
     missThreshold: Int = 15,
-    rejectCooldown: TimeInterval = 10
+    rejectCooldown: TimeInterval = 10,
+    compass: CompassProvider = CompassHeading.shared
   ) {
     self.imgUtils = imgUtils
     self.missThreshold = missThreshold
     self.rejectCooldown = rejectCooldown
+    self.compass = compass
   }
 
   public func tick(
     pixelBuffer: CVPixelBuffer,
     orientation: CGImagePropertyOrientation,
     imageSize: CGSize,
-    detections: [VNRecognizedObjectObservation],
+    detections: [Detection],
     store: CandidateStore
   ) -> Bool {
 
@@ -93,15 +95,38 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
     if !store.hasActiveMatch {
       var cgImage: CGImage?
       for det in detections {
-        if cgImage == nil {
-          cgImage = ImageUtilities.shared.cvPixelBuffertoCGImage(buffer: pixelBuffer)
+        // Use the stored observation from the Detection wrapper to create tracking request
+        guard let observation = det.observation else {
+          continue
         }
-        _ = store.upsert(
-          observation: det,
+
+        let bbox = det.boundingBox
+        guard !store.containsDuplicateOf(bbox) else { continue }
+
+        // Create Tracking Request
+        let req = VNTrackObjectRequest(detectedObjectObservation: observation)
+        req.trackingLevel = .accurate
+
+        // Lazily create cgImage only when needed
+        if cgImage == nil {
+          cgImage = imgUtils.cvPixelBuffertoCGImage(buffer: pixelBuffer)
+        }
+
+        // Compute Embedding
+        let embedding = EmbeddingComputer.compute(
           cgImage: cgImage!,
-          imageSize: imageSize,
-          orientation: orientation
+          boundingBox: bbox,
+          orientation: orientation,
+          imageSize: imageSize
         )
+
+        // Create and upsert the candidate
+        let newCandidate = Candidate(
+          trackingRequest: req,
+          boundingBox: bbox,
+          embedding: embedding
+        )
+        store.upsert(newCandidate)
       }
     }
 
@@ -112,6 +137,14 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
     let snapshot = store.snapshot()
     let direction = compass.degrees  // initialize the direction for this frame
     for (id, cand) in snapshot {
+      // Check reject cooldown FIRST (before any updates that change lastUpdated)
+      if cand.matchStatus == .rejected,
+        Date().timeIntervalSince(cand.lastUpdated) >= rejectCooldown
+      {
+        store.remove(id: id)
+        continue
+      }
+
       let overlaps = detections.contains { det in
         det.boundingBox.iou(with: cand.lastBoundingBox) > 0.1
       }
@@ -133,13 +166,6 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
               store.remove(id: id)
               continue
             }
-          }
-          // Drop after reject cooldown elapsed
-          if updated.matchStatus == .rejected,
-            Date().timeIntervalSince(updated.lastUpdated) >= rejectCooldown
-          {
-            store.remove(id: id)
-            continue
           }
         }
       }

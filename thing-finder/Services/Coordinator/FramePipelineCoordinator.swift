@@ -81,8 +81,9 @@ public final class FramePipelineCoordinator: ObservableObject {
     // 1. Detection (filter always true for now)
     let detections = detector.detect(
       pixelBuffer,
-      filter: { obs in
-        targetClasses.contains(obs.labels.first?.identifier ?? "")
+      filter: { detection in
+        guard let firstLabel = detection.labels.first else { return false }
+        return targetClasses.contains(firstLabel.identifier)
       }, orientation: orientation)
 
     // 2. Vision tracking updates existing candidates
@@ -157,7 +158,7 @@ public final class FramePipelineCoordinator: ObservableObject {
       if let d = depthAt(center) {
         targetDistance = Double(d)
       }
-//      print("Target distance: \(targetDistance ?? 0)")
+      //      print("Target distance: \(targetDistance ?? 0)")
     }
 
     // 7.5 Navigation tick

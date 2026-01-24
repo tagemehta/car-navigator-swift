@@ -63,7 +63,7 @@ final class DriftRepairService: DriftRepairServiceProtocol {
     orientation: CGImagePropertyOrientation,
     imageSize: CGSize,
     viewBounds: CGRect,
-    detections: [VNRecognizedObjectObservation],
+    detections: [Detection],
     store: CandidateStore
   ) {
     frameCounter += 1
@@ -93,7 +93,12 @@ final class DriftRepairService: DriftRepairServiceProtocol {
       }
 
       // Replace tracking request & bbox
-      let newRequest = VNTrackObjectRequest(detectedObjectObservation: best)
+      // Use the stored observation from the Detection wrapper
+      guard let observation = best.observation else {
+        assertionFailure("bestMatch returned a Detection without an observation.")
+        continue
+      }
+      let newRequest = VNTrackObjectRequest(detectedObjectObservation: observation)
       newRequest.trackingLevel = .accurate
 
       // Fetch embedding from cache (guaranteed present after bestMatch)
@@ -113,14 +118,14 @@ final class DriftRepairService: DriftRepairServiceProtocol {
   // MARK: - Helpers
   private func bestMatch(
     for candidate: Candidate,
-    in detections: inout [VNRecognizedObjectObservation],
+    in detections: inout [Detection],
     cgImage: CGImage,
     orientation: CGImagePropertyOrientation,
     embedCache: inout [UUID: (CGRect, VNFeaturePrintObservation)]
-  ) -> VNRecognizedObjectObservation? {
+  ) -> Detection? {
     guard !detections.isEmpty else { return nil }
 
-    var best: VNRecognizedObjectObservation?
+    var best: Detection?
     var bestScore: Float = 0
     for (_, det) in detections.enumerated().reversed() {  // iterate reversed so we can remove easily
 
@@ -169,7 +174,7 @@ final class DriftRepairService: DriftRepairServiceProtocol {
       // Early exit if perfect match
       if bestScore >= 0.99 { break }
     }
-    if let best = best, let idx = detections.firstIndex(of: best) {
+    if let best = best, let idx = detections.firstIndex(where: { $0.uuid == best.uuid }) {
       detections.remove(at: idx)
       return best
     }
