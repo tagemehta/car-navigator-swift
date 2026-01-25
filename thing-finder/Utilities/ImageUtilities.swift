@@ -14,7 +14,7 @@ import CoreMedia
 import SwiftUI
 import Vision
 
-public final class ImageUtilities {
+public class ImageUtilities {
   public static let shared = ImageUtilities()
   private var ciImageContext: CIContext = CIContext()
 
@@ -266,6 +266,65 @@ public final class ImageUtilities {
     let ciImage = CIImage(cvPixelBuffer: buffer)
     return self.ciImageContext.createCGImage(ciImage, from: ciImage.extent)!
   }
+
+  /// Returns a normalized blur score (0…1) for the given image using Core Image.
+  /// - Parameter image: UIImage to analyze.
+  /// - Returns: A Double blur score in [0,1], where 1 = maximally blurry and 0 = very sharp.
+  func blurScore(from image: UIImage) -> Double? {
+    guard let cgImage = image.cgImage else { return nil }
+
+    let ciImage = CIImage(cgImage: cgImage)
+    let context = CIContext(options: nil)
+
+    guard let grayFilter = CIFilter(name: "CIPhotoEffectMono") else { return nil }
+    grayFilter.setValue(ciImage, forKey: kCIInputImageKey)
+    guard let grayImage = grayFilter.outputImage else { return nil }
+
+    let weights: [CGFloat] = [
+      -1, -1, -1,
+      -1, 8, -1,
+      -1, -1, -1,
+    ]
+    guard let lapFilter = CIFilter(name: "CIConvolution3X3") else { return nil }
+    lapFilter.setValue(grayImage, forKey: kCIInputImageKey)
+    lapFilter.setValue(CIVector(values: weights, count: 9), forKey: "inputWeights")
+    lapFilter.setValue(0.0, forKey: "inputBias")
+    guard let lapImage = lapFilter.outputImage else { return nil }
+
+    guard let lapCG = context.createCGImage(lapImage, from: lapImage.extent) else { return nil }
+    let width = lapCG.width
+    let height = lapCG.height
+    let bytesPerRow = width
+    var pixelData = [UInt8](repeating: 0, count: width * height)
+    let colorSpace = CGColorSpaceCreateDeviceGray()
+
+    guard
+      let bitmapCtx = CGContext(
+        data: &pixelData,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: bytesPerRow,
+        space: colorSpace,
+        bitmapInfo: CGImageAlphaInfo.none.rawValue
+      )
+    else { return nil }
+    bitmapCtx.draw(lapCG, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+    var sum = 0.0
+    var sumSq = 0.0
+    let count = Double(pixelData.count)
+    for v in pixelData {
+      let dv = Double(v)
+      sum += dv
+      sumSq += dv * dv
+    }
+    let mean = sum / count
+    let variance = sumSq / count - mean * mean
+
+    let normalizedScore = 1.0 / (variance + 1.0)
+    return min(max(normalizedScore, 0.0), 1.0)
+  }
 }
 
 extension UIInterfaceOrientation {
@@ -292,80 +351,5 @@ extension UIImage.Orientation {
     case .right: self = .right
     case .rightMirrored: self = .rightMirrored
     }
-  }
-}
-
-extension ImageUtilities {
-
-  /// Returns a normalized blur score (0…1) for the given JPEG data using Core Image.
-  /// - Parameter jpegData: Data containing JPEG image bytes.
-  /// - Returns: A Double blur score in [0,1], where 1 = maximally blurry and 0 = very sharp.
-  func blurScore(from image: UIImage) -> Double? {
-    // 1. Decode Data → CGImage
-    guard let cgImage = image.cgImage
-    else {
-      return nil
-    }
-
-    let ciImage = CIImage(cgImage: cgImage)
-    let context = CIContext(options: nil)
-
-    // 2. Convert to grayscale
-    guard let grayFilter = CIFilter(name: "CIPhotoEffectMono") else { return nil }
-    grayFilter.setValue(ciImage, forKey: kCIInputImageKey)
-    guard let grayImage = grayFilter.outputImage else { return nil }
-
-    // 3. Apply a 3×3 Laplacian kernel
-    let weights: [CGFloat] = [
-      -1, -1, -1,
-      -1, 8, -1,
-      -1, -1, -1,
-    ]
-    guard let lapFilter = CIFilter(name: "CIConvolution3X3") else { return nil }
-    lapFilter.setValue(grayImage, forKey: kCIInputImageKey)
-    lapFilter.setValue(CIVector(values: weights, count: 9), forKey: "inputWeights")
-    lapFilter.setValue(0.0, forKey: "inputBias")
-    guard let lapImage = lapFilter.outputImage else { return nil }
-
-    // 4. Render the filtered image to raw gray pixels
-    guard let lapCG = context.createCGImage(lapImage, from: lapImage.extent) else { return nil }
-    let width = lapCG.width
-    let height = lapCG.height
-    let bytesPerRow = width
-    var pixelData = [UInt8](repeating: 0, count: width * height)
-    let colorSpace = CGColorSpaceCreateDeviceGray()
-
-    guard
-      let bitmapCtx = CGContext(
-        data: &pixelData,
-        width: width,
-        height: height,
-        bitsPerComponent: 8,
-        bytesPerRow: bytesPerRow,
-        space: colorSpace,
-        bitmapInfo: CGImageAlphaInfo.none.rawValue
-      )
-    else { return nil }
-    bitmapCtx.draw(lapCG, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-    // 5. Compute mean and variance of the Laplacian response
-    var sum = 0.0
-    var sumSq = 0.0
-    let count = Double(pixelData.count)
-    for v in pixelData {
-      let dv = Double(v)
-      sum += dv
-      sumSq += dv * dv
-    }
-    let mean = sum / count
-    let variance = sumSq / count - mean * mean
-
-    // 6. Normalize to [0,1]:
-    //    variance = 0 → score = 1 (max blur)
-    //    variance → ∞ → score → 0 (max sharp)
-    let normalizedScore = 1.0 / (variance + 1.0)
-
-    // 7. Clamp just in case and return
-    return min(max(normalizedScore, 0.0), 1.0)
   }
 }

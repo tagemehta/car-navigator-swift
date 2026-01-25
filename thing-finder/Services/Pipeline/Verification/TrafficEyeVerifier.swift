@@ -63,25 +63,38 @@ public final class TrafficEyeVerifier: ImageVerifier {
   private let trafficEyeEndpoint = URL(string: "https://trafficeye.ai/recognition")!
   private let openAIEndpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
 
-  private let trafficEyeApiKey = Bundle.main.infoDictionary!["TRAFFICEYE_API_KEY"] as! String
-  private let openAIApiKey = Bundle.main.infoDictionary!["OPENAI_API"] as! String
+  private let trafficEyeApiKey: String
+  private let openAIApiKey: String
 
   private let jsonEncoder = JSONEncoder()
   private let jsonDecoder = JSONDecoder()
   private let confidenceThresholdMatch: Double = 0.80
   private let confidenceThresholdAmbiguous: Double = 0.60
 
-  private let imgUtils = ImageUtilities.shared
+  private let imgUtils: ImageUtilities
+  private let urlSession: URLSessionProtocol
 
   public let targetClasses: [String]
   public let targetTextDescription: String
   public let config: VerificationConfig
 
-  init(targetClasses: [String] = ["car"], targetTextDescription: String, config: VerificationConfig)
-  {
+  init(
+    targetClasses: [String] = ["car"],
+    targetTextDescription: String,
+    config: VerificationConfig,
+    imgUtils: ImageUtilities = .shared,
+    urlSession: URLSessionProtocol = URLSession.shared,
+    trafficEyeApiKey: String? = nil,
+    openAIApiKey: String? = nil
+  ) {
     self.targetClasses = targetClasses
     self.targetTextDescription = targetTextDescription
     self.config = config
+    self.imgUtils = imgUtils
+    self.urlSession = urlSession
+    self.trafficEyeApiKey =
+      trafficEyeApiKey ?? (Bundle.main.infoDictionary?["TRAFFICEYE_API_KEY"] as? String ?? "")
+    self.openAIApiKey = openAIApiKey ?? (Bundle.main.infoDictionary?["OPENAI_API"] as? String ?? "")
   }
 
   public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
@@ -237,7 +250,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
     let requestBody = createMultipartBody(boundary: boundary, image: imageBytes)
     request.httpBody = requestBody
 
-    return URLSession.shared.dataTaskPublisher(for: request)
+    return urlSession.dataTaskPublisherForRequest(request)
       .handleEvents(receiveOutput: { output in
         DebugPublisher.shared.info(
           "[TrafficEye][\(candidateId.uuidString.suffix(8))] Received API response (\(output.data.count) bytes)"
@@ -392,7 +405,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
     request.setValue("Bearer \(openAIApiKey)", forHTTPHeaderField: "Authorization")
     request.httpBody = try? JSONEncoder().encode(requestPayload)
     let _ = Date()
-    return URLSession.shared.dataTaskPublisher(for: request)
+    return urlSession.dataTaskPublisherForRequest(request)
       .tryMap { $0.data }
       .decode(type: ChatCompletionResponse.self, decoder: jsonDecoder)
       .tryMap { response -> VerificationOutcome in
