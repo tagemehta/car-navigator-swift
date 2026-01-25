@@ -211,7 +211,7 @@ final class DriftRepairServiceTests: XCTestCase {
   func test_tick_candidateWithEmbedding_noDetections_markedForDestruction() {
     let service = DriftRepairService(repairStride: 1)
 
-    let embedding = Embedding()  // Test embedding
+    let embedding = MockEmbedding()  // Test embedding
     let candidate = TestCandidates.make(
       boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2),
       embedding: embedding
@@ -322,8 +322,8 @@ final class DriftRepairServiceTests: XCTestCase {
     let detEmbId = UUID()
 
     // Create candidate embedding that reports high similarity to detection embedding
-    let candEmb = Embedding(id: candEmbId, mockSimilarities: [detEmbId: 0.95])
-    let detEmb = Embedding(id: detEmbId)
+    let candEmb = MockEmbedding(id: candEmbId, similarities: [detEmbId: 0.95])
+    let detEmb = MockEmbedding(id: detEmbId)
 
     let candBox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
     let detBox = CGRect(x: 0.15, y: 0.15, width: 0.2, height: 0.2)  // Slightly shifted
@@ -368,8 +368,8 @@ final class DriftRepairServiceTests: XCTestCase {
     let detEmbId = UUID()
 
     // Create candidate embedding that reports LOW similarity to detection embedding
-    let candEmb = Embedding(id: candEmbId, mockSimilarities: [detEmbId: 0.50])
-    let detEmb = Embedding(id: detEmbId)
+    let candEmb = MockEmbedding(id: candEmbId, similarities: [detEmbId: 0.50])
+    let detEmb = MockEmbedding(id: detEmbId)
 
     let candBox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
     let detBox = CGRect(x: 0.5, y: 0.5, width: 0.2, height: 0.2)
@@ -408,8 +408,8 @@ final class DriftRepairServiceTests: XCTestCase {
     let candEmbId = UUID()
     let detEmbId = UUID()
 
-    let candEmb = Embedding(id: candEmbId, mockSimilarities: [detEmbId: 0.90])  // Exactly at threshold
-    let detEmb = Embedding(id: detEmbId)
+    let candEmb = MockEmbedding(id: candEmbId, similarities: [detEmbId: 0.90])  // Exactly at threshold
+    let detEmb = MockEmbedding(id: detEmbId)
 
     let candBox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
     let detBox = CGRect(x: 0.15, y: 0.15, width: 0.2, height: 0.2)
@@ -449,14 +449,14 @@ final class DriftRepairServiceTests: XCTestCase {
     let det2EmbId = UUID()
 
     // Candidate has different similarities to two detections
-    let candEmb = Embedding(
+    let candEmb = MockEmbedding(
       id: candEmbId,
-      mockSimilarities: [
+      similarities: [
         det1EmbId: 0.92,  // Good match
         det2EmbId: 0.98,  // Better match
       ])
-    let det1Emb = Embedding(id: det1EmbId)
-    let det2Emb = Embedding(id: det2EmbId)
+    let det1Emb = MockEmbedding(id: det1EmbId)
+    let det2Emb = MockEmbedding(id: det2EmbId)
 
     let candBox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
     let det1Box = CGRect(x: 0.12, y: 0.12, width: 0.2, height: 0.2)
@@ -501,8 +501,8 @@ final class DriftRepairServiceTests: XCTestCase {
     let detEmbId = UUID()
 
     // Similarity of 0.80 - below default 0.90 but above custom 0.70
-    let candEmb = Embedding(id: candEmbId, mockSimilarities: [detEmbId: 0.80])
-    let detEmb = Embedding(id: detEmbId)
+    let candEmb = MockEmbedding(id: candEmbId, similarities: [detEmbId: 0.80])
+    let detEmb = MockEmbedding(id: detEmbId)
 
     let candBox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
     let detBox = CGRect(x: 0.15, y: 0.15, width: 0.2, height: 0.2)
@@ -539,7 +539,7 @@ final class DriftRepairServiceTests: XCTestCase {
   }
 
   func test_tick_embeddingProviderReturnsNil_noMatch() {
-    let candEmb = Embedding()
+    let candEmb = MockEmbedding()
     let candBox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
     let detBox = CGRect(x: 0.15, y: 0.15, width: 0.2, height: 0.2)
 

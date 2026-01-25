@@ -8,7 +8,7 @@ import SwiftUI
 /// • Safe from bugs   – one timer, no busy-loop, race-free reschedule logic.
 /// • Easy to understand – play → schedule next, only five core vars.
 /// • Ready for change   – all timing contained in `scheduleNextBeep()`.
-final class SmoothBeeper: Beeper {
+final class SmoothBeeper: SmoothBeeperProtocol {
   // Settings for configurable parameters
   private let settings: Settings
   // MARK: – Public configuration

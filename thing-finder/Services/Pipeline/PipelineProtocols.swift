@@ -79,12 +79,12 @@ public protocol EmbeddingProvider {
   ///   - cgImage: The full image
   ///   - boundingBox: Normalized bounding box (0-1) specifying the region
   ///   - orientation: Image orientation
-  /// - Returns: An Embedding if computation succeeds, nil otherwise
+  /// - Returns: An embedding if computation succeeds, nil otherwise
   func computeEmbedding(
     from cgImage: CGImage,
     boundingBox: CGRect,
     orientation: CGImagePropertyOrientation
-  ) -> Embedding?
+  ) -> (any EmbeddingProtocol)?
 }
 
 // MARK: - Depth Provider (ray-cast / LiDAR)

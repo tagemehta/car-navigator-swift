@@ -20,7 +20,7 @@ enum TestCandidates {
     viewScore: Double = 0.0,
     trafficAttempts: Int = 0,
     llmAttempts: Int = 0,
-    embedding: Embedding? = nil
+    embedding: (any EmbeddingProtocol)? = nil
   ) -> Candidate {
     let request = TrackingRequest(boundingBox: boundingBox)
     var candidate = Candidate(

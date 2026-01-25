@@ -77,7 +77,7 @@ final class DriftRepairService: DriftRepairServiceProtocol {
     // ---------------------------------------------------------------------
     // Per-frame cache: detection UUID → (bboxImageRect, embedding)
     // ---------------------------------------------------------------------
-    var embedCache: [UUID: (CGRect, Embedding)] = [:]
+    var embedCache: [UUID: (CGRect, any EmbeddingProtocol)] = [:]
     var remainingDetections = detections
     let fullCG = imageUtils.cvPixelBuffertoCGImage(buffer: pixelBuffer)
     // For each candidate attempt to find a better detection.
@@ -134,7 +134,7 @@ final class DriftRepairService: DriftRepairServiceProtocol {
     in detections: inout [Detection],
     cgImage: CGImage,
     orientation: CGImagePropertyOrientation,
-    embedCache: inout [UUID: (CGRect, Embedding)]
+    embedCache: inout [UUID: (CGRect, any EmbeddingProtocol)]
   ) -> Detection? {
     guard !detections.isEmpty else { return nil }
 

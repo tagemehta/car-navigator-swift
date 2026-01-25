@@ -1,11 +1,3 @@
-//
-//  MockEmbeddingProvider.swift
-//  thing-finder
-//
-//  Created by Sam Mehta on 1/24/26.
-//
-
-
 //  MockEmbeddingProvider.swift
 //  thing-finderTests
 //
@@ -17,15 +9,15 @@ import ImageIO
 
 @testable import thing_finder
 
-/// Mock embedding provider that returns pre-configured embeddings for testing.
+/// Mock embedding provider that returns pre-configured MockEmbeddings for testing.
 final class MockEmbeddingProvider: EmbeddingProvider {
 
   /// Maps detection bounding box to the embedding to return.
   /// Uses bounding box origin as key (rounded to avoid floating point issues).
-  var embeddingsForBoundingBox: [String: Embedding] = [:]
+  var embeddingsForBoundingBox: [String: MockEmbedding] = [:]
 
   /// Default embedding to return if no specific mapping exists.
-  var defaultEmbedding: Embedding?
+  var defaultEmbedding: MockEmbedding?
 
   /// Tracks how many times computeEmbedding was called.
   private(set) var computeCallCount: Int = 0
@@ -37,7 +29,7 @@ final class MockEmbeddingProvider: EmbeddingProvider {
     from cgImage: CGImage,
     boundingBox: CGRect,
     orientation: CGImagePropertyOrientation
-  ) -> Embedding? {
+  ) -> (any EmbeddingProtocol)? {
     computeCallCount += 1
     computedBoundingBoxes.append(boundingBox)
 
@@ -59,7 +51,7 @@ final class MockEmbeddingProvider: EmbeddingProvider {
   }
 
   /// Configures an embedding to be returned for a specific bounding box.
-  func setEmbedding(_ embedding: Embedding, for boundingBox: CGRect) {
+  func setEmbedding(_ embedding: MockEmbedding, for boundingBox: CGRect) {
     let key = boundingBoxKey(boundingBox)
     embeddingsForBoundingBox[key] = embedding
   }

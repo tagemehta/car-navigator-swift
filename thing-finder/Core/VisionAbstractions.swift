@@ -63,64 +63,40 @@ public struct Detection {
   }
 }
 
-// MARK: - Embedding Wrapper
+// MARK: - Embedding Protocol
 
-/// Wrapper for feature-print embeddings. Can be created from `VNFeaturePrintObservation` or directly in tests.
-/// Provides similarity comparison that works with both real Vision embeddings and test mocks.
-public struct Embedding: Equatable {
+/// Protocol for embeddings that can compute similarity.
+/// Allows production code to use real Vision embeddings while tests can inject mocks.
+public protocol EmbeddingProtocol {
+  func similarity(to other: any EmbeddingProtocol) throws -> Float
+}
+
+// MARK: - Embedding
+
+/// Production embedding wrapper around Vision's VNFeaturePrintObservation.
+public struct Embedding: EmbeddingProtocol, Equatable {
   /// Unique identifier for this embedding
   public let id: UUID
 
-  /// The underlying Vision feature-print, if created from one (production use)
-  public let featurePrint: VNFeaturePrintObservation?
+  /// The underlying Vision feature-print
+  public let featurePrint: VNFeaturePrintObservation
 
-  /// Mock similarity values for testing: maps other Embedding.id -> similarity score
-  private let mockSimilarities: [UUID: Float]
-
-  /// Create from a Vision feature-print observation (production use)
+  /// Create from a Vision feature-print observation
   public init(from featurePrint: VNFeaturePrintObservation) {
     self.id = UUID()
     self.featurePrint = featurePrint
-    self.mockSimilarities = [:]
   }
 
-  /// Create directly for testing with optional mock similarity values
-  /// - Parameters:
-  ///   - id: Unique identifier (defaults to new UUID)
-  ///   - mockSimilarities: Dictionary mapping other Embedding IDs to similarity scores (0-1)
-  public init(id: UUID = UUID(), mockSimilarities: [UUID: Float] = [:]) {
-    self.id = id
-    self.featurePrint = nil
-    self.mockSimilarities = mockSimilarities
-  }
-
-  /// Computes cosine similarity to another embedding.
+  /// Computes cosine similarity to another embedding using Vision.
   /// - Returns: Similarity score in 0...1 where 1 means identical
   /// - Throws: If similarity cannot be computed (e.g., incompatible embeddings)
-  public func similarity(to other: Embedding) throws -> Float {
-    // If both have real feature prints, use Vision's similarity
-    if let selfFP = self.featurePrint, let otherFP = other.featurePrint {
-      return try selfFP.cosineSimilarity(to: otherFP)
+  public func similarity(to other: any EmbeddingProtocol) throws -> Float {
+    guard let otherEmb = other as? Embedding else {
+      return 0.0
     }
-
-    // Check mock similarities (either direction)
-    if let sim = mockSimilarities[other.id] {
-      return sim
-    }
-    if let sim = other.mockSimilarities[self.id] {
-      return sim
-    }
-
-    // Same ID means identical
-    if self.id == other.id {
-      return 1.0
-    }
-
-    // Default: no similarity data available
-    return 0.0
+    return try featurePrint.cosineSimilarity(to: otherEmb.featurePrint)
   }
 
-  // Equatable based on ID
   public static func == (lhs: Embedding, rhs: Embedding) -> Bool {
     lhs.id == rhs.id
   }

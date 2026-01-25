@@ -42,6 +42,15 @@ public protocol Beeper {
 }
 
 // Main entry for frame-driven navigation speech / haptics.
+/// A beeper that supports smooth interval changes.
+public protocol SmoothBeeperProtocol: Beeper {
+  /// Begin beeping at the supplied interval.
+  func start(interval: TimeInterval)
+  /// Request the beeper to move toward a new interval.
+  func updateInterval(to newInterval: TimeInterval, smoothly: Bool)
+}
+
+// Main entry for frame-driven navigation speech / haptics.
 public protocol NavigationSpeaker {
   func tick(
     at timestamp: Date,

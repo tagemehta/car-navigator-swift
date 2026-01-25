@@ -3,11 +3,11 @@ import Foundation
 
 /// Converts car centering → tone frequency & volume and drives a concrete `Beeper`.
 final class HapticBeepController {
-  private let beeper: Beeper
+  private let beeper: SmoothBeeperProtocol
   private let settings: Settings
   private var isBeeping = false
 
-  init(beeper: Beeper, settings: Settings) {
+  init(beeper: SmoothBeeperProtocol, settings: Settings) {
     self.beeper = beeper
     self.settings = settings
   }
@@ -33,11 +33,11 @@ final class HapticBeepController {
 
     if !isBeeping {
       // Start directly with interval-based API for a smoother first beep
-      (beeper as? SmoothBeeper)?.start(interval: interval)
+      beeper.start(interval: interval)
       isBeeping = true
     } else {
       // Smoothly adjust toward the new interval
-      (beeper as? SmoothBeeper)?.updateInterval(to: interval, smoothly: true)
+      beeper.updateInterval(to: interval, smoothly: true)
     }
   }
 

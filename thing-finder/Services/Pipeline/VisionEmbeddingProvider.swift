@@ -20,7 +20,7 @@ public final class VisionEmbeddingProvider: EmbeddingProvider {
     from cgImage: CGImage,
     boundingBox: CGRect,
     orientation: CGImagePropertyOrientation
-  ) -> Embedding? {
+  ) -> (any EmbeddingProtocol)? {
     let W = cgImage.width
     let H = cgImage.height
     let (imageRect, _) = imageUtils.unscaledBoundingBoxes(

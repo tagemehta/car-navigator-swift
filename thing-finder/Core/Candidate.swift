@@ -41,8 +41,8 @@ public struct Candidate: Identifiable {
 
   // MARK: Verification & drift repair
   /// Feature-print embedding generated via `VNGenerateImageFeaturePrintRequest` on the
-  /// same crop sent to the verifier. Uses `Embedding` wrapper for testability.
-  public var embedding: Embedding?
+  /// same crop sent to the verifier. Uses protocol type for testability.
+  public var embedding: (any EmbeddingProtocol)?
 
   /// Verification progress for this candidate.
   public var matchStatus: MatchStatus = .unknown
@@ -105,7 +105,7 @@ public struct Candidate: Identifiable {
     id: CandidateID = UUID(),
     trackingRequest: TrackingRequest,
     boundingBox: CGRect,
-    embedding: Embedding? = nil
+    embedding: (any EmbeddingProtocol)? = nil
   ) {
     self.id = id
     self.trackingRequest = trackingRequest

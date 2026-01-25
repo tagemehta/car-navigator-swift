@@ -140,66 +140,6 @@ final class DetectionManagerTests: XCTestCase {
     XCTAssertTrue(mock.cannedDetections.isEmpty)
   }
 
-  // MARK: - Embedding Wrapper Tests
-
-  func test_embedding_testInit_createsWithoutVision() {
-    let embedding = Embedding()
-
-    XCTAssertNil(embedding.featurePrint)
-    XCTAssertNotNil(embedding.id)
-  }
-
-  func test_embedding_equalityBasedOnId() {
-    let id = UUID()
-    let emb1 = Embedding(id: id)
-    let emb2 = Embedding(id: id)
-    let emb3 = Embedding()
-
-    XCTAssertEqual(emb1, emb2)
-    XCTAssertNotEqual(emb1, emb3)
-  }
-
-  func test_embedding_sameIdReturnsPerfectSimilarity() throws {
-    let id = UUID()
-    let emb1 = Embedding(id: id)
-    let emb2 = Embedding(id: id)
-
-    let similarity = try emb1.similarity(to: emb2)
-    XCTAssertEqual(similarity, 1.0)
-  }
-
-  func test_embedding_mockSimilarities() throws {
-    let id1 = UUID()
-    let id2 = UUID()
-
-    // Create emb1 with mock similarity to id2
-    let emb1 = Embedding(id: id1, mockSimilarities: [id2: 0.85])
-    let emb2 = Embedding(id: id2)
-
-    let similarity = try emb1.similarity(to: emb2)
-    XCTAssertEqual(similarity, 0.85)
-  }
-
-  func test_embedding_mockSimilaritiesBidirectional() throws {
-    let id1 = UUID()
-    let id2 = UUID()
-
-    // Create emb2 with mock similarity to id1 (reverse direction)
-    let emb1 = Embedding(id: id1)
-    let emb2 = Embedding(id: id2, mockSimilarities: [id1: 0.72])
-
-    let similarity = try emb1.similarity(to: emb2)
-    XCTAssertEqual(similarity, 0.72)
-  }
-
-  func test_embedding_noMockSimilarityReturnsZero() throws {
-    let emb1 = Embedding()
-    let emb2 = Embedding()
-
-    let similarity = try emb1.similarity(to: emb2)
-    XCTAssertEqual(similarity, 0.0)
-  }
-
   // MARK: - Helpers
 
   private func createTestPixelBuffer() -> CVPixelBuffer {
