@@ -23,81 +23,77 @@ class TrackingManager: VisionTracker {
   /// Sequence handler for performing tracking requests
   private let sequenceHandler = VNSequenceRequestHandler()
 
-  /// Currently active tracking requests
-  private var activeTracking: [VNTrackObjectRequest] = []
+  /// Maps TrackingRequest.id to the underlying VNTrackObjectRequest for Vision operations
+  private var requestMapping: [UUID: VNTrackObjectRequest] = [:]
+
+  /// Currently active Vision tracking requests
+  private var activeTracking: [VNTrackObjectRequest] {
+    Array(requestMapping.values)
+  }
 
   // legacy performTracking kept private
   private func performTracking(on buffer: CVPixelBuffer, orientation: CGImagePropertyOrientation)
     -> Result<[VNTrackObjectRequest], Error>
   {
-    guard !activeTracking.isEmpty else { return .success([]) }
+    guard !requestMapping.isEmpty else { return .success([]) }
+    let requests = Array(requestMapping.values)
     do {
       try sequenceHandler.perform(
-        activeTracking,
+        requests,
         on: buffer,
         orientation: orientation
       )
       // Remove tracking requests that have completed
-      activeTracking.removeAll { $0.isLastFrame }
-      return .success(activeTracking)
+      for (id, req) in requestMapping where req.isLastFrame {
+        requestMapping.removeValue(forKey: id)
+      }
+      return .success(Array(requestMapping.values))
     } catch {
-      activeTracking.removeAll { $0.isLastFrame }
-      clearTracking()
+      for req in requestMapping.values {
+        req.isLastFrame = true
+      }
+      requestMapping.removeAll()
       print("Tracking error: \(error)")
       return .failure(error)
     }
   }
 
-  /// Adds a tracking request
-  /// - Parameter request: The tracking request to add
-  func addTracking(_ request: VNTrackObjectRequest) {
-    activeTracking.append(request)
-  }
-
-  /// Adds multiple tracking requests
-  /// - Parameter requests: The tracking requests to add
-  func addTracking(_ requests: [VNTrackObjectRequest]) {
-    activeTracking.append(contentsOf: requests)
-  }
-
-  /// Legacy method for backward compatibility
-  /// - Parameter request: The tracking request to add
-  func addTrackingRequest(_ request: VNTrackObjectRequest) {
-    addTracking(request)
+  /// Registers a TrackingRequest wrapper for tracking
+  /// - Parameter wrapper: The TrackingRequest wrapper containing the VNTrackObjectRequest
+  func addTracking(_ wrapper: TrackingRequest) {
+    guard let visionRequest = wrapper.visionRequest else { return }
+    requestMapping[wrapper.id] = visionRequest
   }
 
   /// Clears all active tracking requests
-  /* Sets isLastFrame to true, so that vision knows to
-     stop tracking. If they are removed then vision won't stop tracking them
-     and you will get a too many objects in tracking error
-  */
   func clearTracking() {
-    activeTracking.forEach { $0.isLastFrame = true }
+    for req in requestMapping.values {
+      req.isLastFrame = true
+    }
   }
 
-  /// Clears all active tracking requests except the specified one
-  /// - Parameter keep: The tracking request to keep
-  func clearTrackingExcept(_ keep: VNTrackObjectRequest) {
-    for req in activeTracking where req !== keep {
+  /// Clears all active tracking requests except the one with the specified ID
+  /// - Parameter keepId: The TrackingRequest.id to keep
+  func clearTrackingExcept(_ keepId: UUID) {
+    for (id, req) in requestMapping where id != keepId {
       req.isLastFrame = true
     }
   }
 
   /// Checks if there are any active tracking requests
   var hasActiveTracking: Bool {
-    return !activeTracking.isEmpty
+    return !requestMapping.isEmpty
   }
-  /// Creates a tracking request for the given observation
-  /// - Parameters:
-  ///   - observation: The observation to track
-  ///   - handler: The completion handler for the tracking request
-  /// - Returns: The tracking request
+
+  /// Creates a TrackingRequest wrapper for the given observation
+  /// - Parameter observation: The observation to track
+  /// - Returns: The TrackingRequest wrapper
   func createTrackingRequest(
     for observation: VNDetectedObjectObservation
-  ) -> VNTrackObjectRequest {
+  ) -> TrackingRequest {
     let request = VNTrackObjectRequest(detectedObjectObservation: observation)
     request.trackingLevel = .accurate
-    return request
+    return TrackingRequest(from: request)
   }
 
   // MARK: - VisionTracker
@@ -109,7 +105,11 @@ class TrackingManager: VisionTracker {
       for req in requests {
         guard let det = req.results?.first as? VNDetectedObjectObservation else { continue }
         let snap = store.snapshot()
-        if let (id, _) = snap.first(where: { $0.value.trackingRequest === req }) {
+        // Find candidate by matching the VNTrackObjectRequest reference
+        if let (id, _) = snap.first(where: { cand in
+          guard let visionReq = cand.value.trackingRequest.visionRequest else { return false }
+          return visionReq === req
+        }) {
           store.update(id: id) { cand in
             cand.lastBoundingBox = det.boundingBox
           }

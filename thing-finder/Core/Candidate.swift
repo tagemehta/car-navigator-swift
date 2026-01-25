@@ -25,8 +25,8 @@ public struct Candidate: Identifiable {
 
   // MARK: Tracking
   /// Tracking request responsible for updating `lastBoundingBox` frame-to-frame.
-  /// Uses `TrackingRequest` protocol for testability; production uses `VNTrackObjectRequest`.
-  public var trackingRequest: any TrackingRequest
+  /// Uses `TrackingRequest` wrapper struct for testability.
+  public var trackingRequest: TrackingRequest
 
   /// Last known axis-aligned bounding box in **image** coordinates (0-1).
   public var lastBoundingBox: CGRect
@@ -41,8 +41,8 @@ public struct Candidate: Identifiable {
 
   // MARK: Verification & drift repair
   /// Feature-print embedding generated via `VNGenerateImageFeaturePrintRequest` on the
-  /// same crop sent to the verifier.  Length is typically 128 floats.
-  public var embedding: VNFeaturePrintObservation?
+  /// same crop sent to the verifier. Uses `Embedding` wrapper for testability.
+  public var embedding: Embedding?
 
   /// Verification progress for this candidate.
   public var matchStatus: MatchStatus = .unknown
@@ -103,9 +103,9 @@ public struct Candidate: Identifiable {
   // MARK: Init
   public init(
     id: CandidateID = UUID(),
-    trackingRequest: any TrackingRequest,
+    trackingRequest: TrackingRequest,
     boundingBox: CGRect,
-    embedding: VNFeaturePrintObservation? = nil
+    embedding: Embedding? = nil
   ) {
     self.id = id
     self.trackingRequest = trackingRequest
@@ -114,12 +114,12 @@ public struct Candidate: Identifiable {
   }
 }
 
-// MARK: - Equatable (manual implementation due to existential trackingRequest)
+// MARK: - Equatable
 
 extension Candidate: Equatable {
   public static func == (lhs: Candidate, rhs: Candidate) -> Bool {
     lhs.id == rhs.id
-      && lhs.trackingRequest === rhs.trackingRequest
+      && lhs.trackingRequest == rhs.trackingRequest
       && lhs.lastBoundingBox == rhs.lastBoundingBox
       && lhs.matchStatus == rhs.matchStatus
       && lhs.missCount == rhs.missCount

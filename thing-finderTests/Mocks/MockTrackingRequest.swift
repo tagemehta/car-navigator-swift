@@ -1,19 +1,22 @@
 //  MockTrackingRequest.swift
 //  thing-finderTests
 //
-//  Lightweight mock for TrackingRequest protocol used in unit tests.
-//  Avoids Vision framework dependency for fast, isolated testing.
+//  Helper functions for creating TrackingRequest instances in tests.
+//  Since TrackingRequest is now a struct, tests can create it directly.
 
 import CoreGraphics
+import Foundation
 
 @testable import thing_finder
 
-final class MockTrackingRequest: TrackingRequest {
-  var boundingBox: CGRect
-  var isLastFrame: Bool
-
-  init(boundingBox: CGRect = .zero, isLastFrame: Bool = false) {
-    self.boundingBox = boundingBox
-    self.isLastFrame = isLastFrame
+/// Convenience factory for creating test TrackingRequest instances
+enum TestTrackingRequest {
+  /// Creates a TrackingRequest for testing with the given bounding box
+  static func make(
+    id: UUID = UUID(),
+    boundingBox: CGRect = .zero,
+    isLastFrame: Bool = false
+  ) -> TrackingRequest {
+    TrackingRequest(id: id, boundingBox: boundingBox, isLastFrame: isLastFrame)
   }
 }

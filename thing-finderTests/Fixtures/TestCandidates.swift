@@ -2,7 +2,7 @@
 //  thing-finderTests
 //
 //  Factory helpers for creating Candidate instances in tests.
-//  Uses MockTrackingRequest to avoid Vision framework dependency.
+//  Uses TrackingRequest struct directly (no Vision dependency needed).
 
 import CoreGraphics
 import Foundation
@@ -19,14 +19,15 @@ enum TestCandidates {
     view: Candidate.VehicleView = .unknown,
     viewScore: Double = 0.0,
     trafficAttempts: Int = 0,
-    llmAttempts: Int = 0
+    llmAttempts: Int = 0,
+    embedding: Embedding? = nil
   ) -> Candidate {
-    let request = MockTrackingRequest(boundingBox: boundingBox)
+    let request = TrackingRequest(boundingBox: boundingBox)
     var candidate = Candidate(
       id: id,
       trackingRequest: request,
       boundingBox: boundingBox,
-      embedding: nil
+      embedding: embedding
     )
     candidate.matchStatus = matchStatus
     candidate.missCount = missCount

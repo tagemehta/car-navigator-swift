@@ -1,13 +1,9 @@
 //  DetectionManagerTests.swift
 //  thing-finderTests
 //
-//  Unit tests for DetectionManager.
-//  Note: DetectionManager requires a real VNCoreMLModel and VNRecognizedObjectObservation
-//  instances which cannot be easily mocked. Full testing requires integration tests
-//  with real models and Vision framework.
-//
-//  This file documents the testing limitations and provides a placeholder for
-//  future integration tests when the Vision testing strategy is implemented.
+//  Unit tests for Detection wrapper and MockObjectDetector.
+//  Note: DetectionManager itself requires a real VNCoreMLModel, but the Detection
+//  wrapper abstraction allows testing of detection-consuming code.
 
 import CoreGraphics
 import XCTest
@@ -16,24 +12,206 @@ import XCTest
 
 final class DetectionManagerTests: XCTestCase {
 
-  // MARK: - Documentation
+  // MARK: - Detection Wrapper Tests
 
-  /// DetectionManager is tightly coupled to Vision/CoreML frameworks:
-  /// - Requires VNCoreMLModel in init (needs real .mlmodel file)
-  /// - detect() returns VNRecognizedObjectObservation (no public initializer)
-  /// - stableDetections() depends on detect() results
-  /// - findBestCandidate() takes VNRecognizedObjectObservation array
-  ///
-  /// Testing options for Phase 3+:
-  /// 1. Integration tests with real model loaded from test bundle
-  /// 2. Refactor to use ObjectDetector protocol (already exists) with mock
-  /// 3. Create test fixtures with pre-recorded detection results
-  ///
-  /// For now, DetectionManager is tested via MockObjectDetector in other tests.
+  func test_detection_testInit_createsWithoutVision() {
+    let detection = Detection(
+      boundingBox: CGRect(x: 0.1, y: 0.2, width: 0.3, height: 0.4),
+      labels: [DetectionLabel(identifier: "car", confidence: 0.95)]
+    )
 
-  func test_placeholder_documentationOnly() {
-    // This test exists to document the testing limitations
-    // Real tests will be added in Phase 3 integration testing
-    XCTAssertTrue(true, "DetectionManager requires integration tests - see class documentation")
+    XCTAssertEqual(detection.boundingBox, CGRect(x: 0.1, y: 0.2, width: 0.3, height: 0.4))
+    XCTAssertEqual(detection.labels.count, 1)
+    XCTAssertEqual(detection.labels.first?.identifier, "car")
+    XCTAssertEqual(detection.labels.first?.confidence, 0.95)
+    XCTAssertEqual(detection.confidence, 1.0)  // default
+    XCTAssertNil(detection.observation)  // no Vision object
+  }
+
+  func test_detection_multipleLabels() {
+    let detection = Detection(
+      boundingBox: .zero,
+      labels: [
+        DetectionLabel(identifier: "car", confidence: 0.9),
+        DetectionLabel(identifier: "truck", confidence: 0.7),
+        DetectionLabel(identifier: "bus", confidence: 0.3),
+      ]
+    )
+
+    XCTAssertEqual(detection.labels.count, 3)
+    XCTAssertEqual(detection.labels[0].identifier, "car")
+    XCTAssertEqual(detection.labels[1].identifier, "truck")
+    XCTAssertEqual(detection.labels[2].identifier, "bus")
+  }
+
+  func test_detection_customConfidenceAndUuid() {
+    let customUuid = UUID()
+    let detection = Detection(
+      boundingBox: .zero,
+      labels: [],
+      confidence: 0.85,
+      uuid: customUuid
+    )
+
+    XCTAssertEqual(detection.confidence, 0.85)
+    XCTAssertEqual(detection.uuid, customUuid)
+  }
+
+  // MARK: - DetectionLabel Tests
+
+  func test_detectionLabel_init() {
+    let label = DetectionLabel(identifier: "motorcycle", confidence: 0.88)
+
+    XCTAssertEqual(label.identifier, "motorcycle")
+    XCTAssertEqual(label.confidence, 0.88)
+  }
+
+  // MARK: - MockObjectDetector Tests
+
+  func test_mockObjectDetector_returnsCannedDetections() {
+    let mock = MockObjectDetector()
+    let detection1 = Detection(
+      boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2),
+      labels: [DetectionLabel(identifier: "car", confidence: 0.9)]
+    )
+    let detection2 = Detection(
+      boundingBox: CGRect(x: 0.5, y: 0.5, width: 0.3, height: 0.3),
+      labels: [DetectionLabel(identifier: "truck", confidence: 0.8)]
+    )
+    mock.cannedDetections = [detection1, detection2]
+
+    let results = mock.detect(
+      createTestPixelBuffer(),
+      filter: { _ in true },
+      orientation: .up
+    )
+
+    XCTAssertEqual(results.count, 2)
+    XCTAssertEqual(mock.detectCallCount, 1)
+  }
+
+  func test_mockObjectDetector_appliesFilter() {
+    let mock = MockObjectDetector()
+    mock.cannedDetections = [
+      Detection(
+        boundingBox: .zero,
+        labels: [DetectionLabel(identifier: "car", confidence: 0.9)]
+      ),
+      Detection(
+        boundingBox: .zero,
+        labels: [DetectionLabel(identifier: "truck", confidence: 0.8)]
+      ),
+      Detection(
+        boundingBox: .zero,
+        labels: [DetectionLabel(identifier: "car", confidence: 0.7)]
+      ),
+    ]
+
+    let results = mock.detect(
+      createTestPixelBuffer(),
+      filter: { $0.labels.first?.identifier == "car" },
+      orientation: .up
+    )
+
+    XCTAssertEqual(results.count, 2)
+    XCTAssertTrue(results.allSatisfy { $0.labels.first?.identifier == "car" })
+  }
+
+  func test_mockObjectDetector_tracksCallCount() {
+    let mock = MockObjectDetector()
+
+    _ = mock.detect(createTestPixelBuffer(), filter: { _ in true }, orientation: .up)
+    _ = mock.detect(createTestPixelBuffer(), filter: { _ in true }, orientation: .up)
+    _ = mock.detect(createTestPixelBuffer(), filter: { _ in true }, orientation: .up)
+
+    XCTAssertEqual(mock.detectCallCount, 3)
+  }
+
+  func test_mockObjectDetector_reset() {
+    let mock = MockObjectDetector()
+    mock.cannedDetections = [
+      Detection(boundingBox: .zero, labels: [])
+    ]
+    _ = mock.detect(createTestPixelBuffer(), filter: { _ in true }, orientation: .up)
+
+    mock.reset()
+
+    XCTAssertEqual(mock.detectCallCount, 0)
+    XCTAssertTrue(mock.cannedDetections.isEmpty)
+  }
+
+  // MARK: - Embedding Wrapper Tests
+
+  func test_embedding_testInit_createsWithoutVision() {
+    let embedding = Embedding()
+
+    XCTAssertNil(embedding.featurePrint)
+    XCTAssertNotNil(embedding.id)
+  }
+
+  func test_embedding_equalityBasedOnId() {
+    let id = UUID()
+    let emb1 = Embedding(id: id)
+    let emb2 = Embedding(id: id)
+    let emb3 = Embedding()
+
+    XCTAssertEqual(emb1, emb2)
+    XCTAssertNotEqual(emb1, emb3)
+  }
+
+  func test_embedding_sameIdReturnsPerfectSimilarity() throws {
+    let id = UUID()
+    let emb1 = Embedding(id: id)
+    let emb2 = Embedding(id: id)
+
+    let similarity = try emb1.similarity(to: emb2)
+    XCTAssertEqual(similarity, 1.0)
+  }
+
+  func test_embedding_mockSimilarities() throws {
+    let id1 = UUID()
+    let id2 = UUID()
+
+    // Create emb1 with mock similarity to id2
+    let emb1 = Embedding(id: id1, mockSimilarities: [id2: 0.85])
+    let emb2 = Embedding(id: id2)
+
+    let similarity = try emb1.similarity(to: emb2)
+    XCTAssertEqual(similarity, 0.85)
+  }
+
+  func test_embedding_mockSimilaritiesBidirectional() throws {
+    let id1 = UUID()
+    let id2 = UUID()
+
+    // Create emb2 with mock similarity to id1 (reverse direction)
+    let emb1 = Embedding(id: id1)
+    let emb2 = Embedding(id: id2, mockSimilarities: [id1: 0.72])
+
+    let similarity = try emb1.similarity(to: emb2)
+    XCTAssertEqual(similarity, 0.72)
+  }
+
+  func test_embedding_noMockSimilarityReturnsZero() throws {
+    let emb1 = Embedding()
+    let emb2 = Embedding()
+
+    let similarity = try emb1.similarity(to: emb2)
+    XCTAssertEqual(similarity, 0.0)
+  }
+
+  // MARK: - Helpers
+
+  private func createTestPixelBuffer() -> CVPixelBuffer {
+    var pixelBuffer: CVPixelBuffer?
+    let status = CVPixelBufferCreate(
+      kCFAllocatorDefault,
+      100, 100,
+      kCVPixelFormatType_32BGRA,
+      nil,
+      &pixelBuffer
+    )
+    precondition(status == kCVReturnSuccess && pixelBuffer != nil)
+    return pixelBuffer!
   }
 }

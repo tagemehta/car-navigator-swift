@@ -2,9 +2,8 @@
 //  thing-finderTests
 //
 //  Unit tests for CandidateLifecycleService.
-//  Tests lifecycle logic: missCount tracking, pruning, reject cooldown, compass updates.
-//  Note: Detection ingestion via upsert(observation:) is not tested here as it requires
-//  real Vision objects. That path is covered by integration tests.
+//  Tests lifecycle logic: missCount tracking, pruning, reject cooldown, compass updates,
+//  and detection overlap handling using the Detection wrapper abstraction.
 
 import CoreGraphics
 import XCTest
@@ -137,18 +136,78 @@ final class CandidateLifecycleServiceTests: XCTestCase {
     XCTAssertEqual(store[candidate.id]?.matchStatus, .lost)
   }
 
+  // MARK: - Overlapping Detection Resets MissCount
+
+  func test_tick_overlappingDetection_resetsMissCount() {
+    let bbox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
+    let candidate = TestCandidates.make(boundingBox: bbox, missCount: 2)
+    store.upsert(candidate)
+
+    // Create a detection that overlaps with the candidate
+    let overlappingDetection = Detection(
+      boundingBox: CGRect(x: 0.12, y: 0.12, width: 0.18, height: 0.18),
+      labels: [DetectionLabel(identifier: "car", confidence: 0.9)]
+    )
+
+    _ = service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      detections: [overlappingDetection],
+      store: store
+    )
+
+    // MissCount should be reset to 0 due to overlapping detection
+    XCTAssertEqual(store[candidate.id]?.missCount, 0)
+  }
+
+  func test_tick_nonOverlappingDetection_incrementsMissCount() {
+    let bbox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
+    let candidate = TestCandidates.make(boundingBox: bbox, missCount: 1)
+    store.upsert(candidate)
+
+    // Create a detection that does NOT overlap with the candidate
+    let nonOverlappingDetection = Detection(
+      boundingBox: CGRect(x: 0.7, y: 0.7, width: 0.2, height: 0.2),
+      labels: [DetectionLabel(identifier: "car", confidence: 0.9)]
+    )
+
+    _ = service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      detections: [nonOverlappingDetection],
+      store: store
+    )
+
+    // MissCount should increment since detection doesn't overlap
+    XCTAssertEqual(store[candidate.id]?.missCount, 2)
+  }
+
   // MARK: - Compass Updates
 
-  func test_tick_updatesCompassDegrees() {
-    let candidate = TestCandidates.make(
-      boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
-    )
+  func test_tick_overlappingDetection_updatesCompassDegrees() {
+    let bbox = CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2)
+    let candidate = TestCandidates.make(boundingBox: bbox)
     store.upsert(candidate)
-    mockCompass.degrees = 180.0
+    mockCompass.degrees = 270.0
 
-    // We need an overlapping detection to trigger the compass update
-    // Since we can't create real detections, we verify the compass is accessible
-    XCTAssertEqual(mockCompass.degrees, 180.0)
+    // Create an overlapping detection to trigger compass update
+    let overlappingDetection = Detection(
+      boundingBox: CGRect(x: 0.12, y: 0.12, width: 0.18, height: 0.18),
+      labels: [DetectionLabel(identifier: "car", confidence: 0.9)]
+    )
+
+    _ = service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      detections: [overlappingDetection],
+      store: store
+    )
+
+    // Candidate's degrees should be updated from compass
+    XCTAssertEqual(store[candidate.id]?.degrees, 270.0)
   }
 
   // MARK: - Reject Cooldown

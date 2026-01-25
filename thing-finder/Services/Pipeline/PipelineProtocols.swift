@@ -57,6 +57,7 @@ public protocol VerifierServiceProtocol {
 
 // MARK: - Drift Repair
 
+/// Protocol for drift repair services that re-associate candidates with detections
 public protocol DriftRepairServiceProtocol {
   func tick(
     pixelBuffer: CVPixelBuffer,
@@ -66,6 +67,24 @@ public protocol DriftRepairServiceProtocol {
     detections: [Detection],
     store: CandidateStore
   )
+}
+
+// MARK: - EmbeddingProvider Protocol
+
+/// Protocol for computing embeddings from image regions.
+/// Allows injection of mock implementations for testing.
+public protocol EmbeddingProvider {
+  /// Computes an embedding for the specified region of an image.
+  /// - Parameters:
+  ///   - cgImage: The full image
+  ///   - boundingBox: Normalized bounding box (0-1) specifying the region
+  ///   - orientation: Image orientation
+  /// - Returns: An Embedding if computation succeeds, nil otherwise
+  func computeEmbedding(
+    from cgImage: CGImage,
+    boundingBox: CGRect,
+    orientation: CGImagePropertyOrientation
+  ) -> Embedding?
 }
 
 // MARK: - Depth Provider (ray-cast / LiDAR)

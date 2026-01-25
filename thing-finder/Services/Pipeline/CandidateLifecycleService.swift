@@ -103,9 +103,10 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
         let bbox = det.boundingBox
         guard !store.containsDuplicateOf(bbox) else { continue }
 
-        // Create Tracking Request
-        let req = VNTrackObjectRequest(detectedObjectObservation: observation)
-        req.trackingLevel = .accurate
+        // Create Tracking Request wrapper
+        let visionReq = VNTrackObjectRequest(detectedObjectObservation: observation)
+        visionReq.trackingLevel = .accurate
+        let trackingRequest = TrackingRequest(from: visionReq)
 
         // Lazily create cgImage only when needed
         if cgImage == nil {
@@ -122,7 +123,7 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
 
         // Create and upsert the candidate
         let newCandidate = Candidate(
-          trackingRequest: req,
+          trackingRequest: trackingRequest,
           boundingBox: bbox,
           embedding: embedding
         )

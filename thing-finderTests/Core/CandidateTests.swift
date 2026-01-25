@@ -12,7 +12,7 @@ final class CandidateTests: XCTestCase {
   // MARK: - Initialization Tests
 
   func test_init_setsDefaultValues() {
-    let request = MockTrackingRequest(boundingBox: CGRect(x: 0.1, y: 0.2, width: 0.3, height: 0.4))
+    let request = TrackingRequest(boundingBox: CGRect(x: 0.1, y: 0.2, width: 0.3, height: 0.4))
     let candidate = Candidate(
       trackingRequest: request,
       boundingBox: CGRect(x: 0.1, y: 0.2, width: 0.3, height: 0.4)
@@ -122,7 +122,8 @@ final class CandidateTests: XCTestCase {
   // MARK: - Equatable Tests
 
   func test_equatable_sameIdAndRequestAreEqual() {
-    let request = MockTrackingRequest(boundingBox: .zero)
+    let requestId = UUID()
+    let request = TrackingRequest(id: requestId, boundingBox: .zero)
     let id = UUID()
 
     var candidate1 = Candidate(id: id, trackingRequest: request, boundingBox: .zero)
@@ -137,8 +138,9 @@ final class CandidateTests: XCTestCase {
   }
 
   func test_equatable_differentRequestsAreNotEqual() {
-    let request1 = MockTrackingRequest(boundingBox: .zero)
-    let request2 = MockTrackingRequest(boundingBox: .zero)
+    // Different TrackingRequest IDs means different requests
+    let request1 = TrackingRequest(id: UUID(), boundingBox: .zero)
+    let request2 = TrackingRequest(id: UUID(), boundingBox: .zero)
     let id = UUID()
 
     let candidate1 = Candidate(id: id, trackingRequest: request1, boundingBox: .zero)
@@ -148,7 +150,8 @@ final class CandidateTests: XCTestCase {
   }
 
   func test_equatable_differentIdsAreNotEqual() {
-    let request = MockTrackingRequest(boundingBox: .zero)
+    let requestId = UUID()
+    let request = TrackingRequest(id: requestId, boundingBox: .zero)
 
     let candidate1 = Candidate(id: UUID(), trackingRequest: request, boundingBox: .zero)
     let candidate2 = Candidate(id: UUID(), trackingRequest: request, boundingBox: .zero)

@@ -1,27 +1,55 @@
 //  TrackingRequest.swift
 //  thing-finder
 //
-//  Protocol abstracting Vision's VNTrackObjectRequest for testability.
-//  Production code uses VNTrackObjectRequest directly; tests can substitute
-//  a lightweight mock without importing Vision framework.
+//  Wrapper struct abstracting Vision's VNTrackObjectRequest for testability.
+//  Production code creates from VNTrackObjectRequest; tests create directly.
 
 import CoreGraphics
 import Foundation
 import Vision
 
-/// Abstraction over a tracking request for testability.
-/// Production uses `VNTrackObjectRequest`; tests use `MockTrackingRequest`.
-public protocol TrackingRequest: AnyObject {
+/// Wrapper for tracking requests. Can be created from `VNTrackObjectRequest` or directly in tests.
+/// Uses a unique ID for identity comparison since the wrapper is a value type.
+public struct TrackingRequest: Identifiable {
+  /// Unique identifier for this tracking request (used for matching in TrackingManager)
+  public let id: UUID
+
   /// The current bounding box being tracked (normalized 0-1 coordinates).
-  var boundingBox: CGRect { get }
+  public var boundingBox: CGRect
+
   /// Whether this is the final frame for tracking (request should be removed).
-  var isLastFrame: Bool { get set }
+  public var isLastFrame: Bool
+
+  /// The underlying Vision request, if this was created from one.
+  /// Used when we need to perform actual Vision tracking.
+  public let visionRequest: VNTrackObjectRequest?
+
+  /// Create from a Vision request (production use)
+  public init(from request: VNTrackObjectRequest) {
+    self.id = UUID()
+    self.boundingBox =
+    (request.inputObservation as VNDetectedObjectObservation).boundingBox
+    self.isLastFrame = request.isLastFrame
+    self.visionRequest = request
+  }
+
+  /// Create directly (test use)
+  public init(
+    id: UUID = UUID(),
+    boundingBox: CGRect = .zero,
+    isLastFrame: Bool = false
+  ) {
+    self.id = id
+    self.boundingBox = boundingBox
+    self.isLastFrame = isLastFrame
+    self.visionRequest = nil
+  }
 }
 
-// MARK: - VNTrackObjectRequest conformance
+// MARK: - Equatable
 
-extension VNTrackObjectRequest: TrackingRequest {
-  public var boundingBox: CGRect {
-    (inputObservation as? VNDetectedObjectObservation)?.boundingBox ?? .zero
+extension TrackingRequest: Equatable {
+  public static func == (lhs: TrackingRequest, rhs: TrackingRequest) -> Bool {
+    lhs.id == rhs.id
   }
 }
