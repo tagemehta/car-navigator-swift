@@ -164,10 +164,7 @@ public final class VerifierService: VerifierServiceProtocol {
       let bboxArea = cand.lastBoundingBox.width * cand.lastBoundingBox.height
       let minAreaThreshold: CGFloat = 0.01  // 1% of the image
       if bboxArea < minAreaThreshold {
-        let message =
-          "Candidate \(cand.id.uuidString.suffix(8)) skipped – bbox too small (\(String(format: "%.1f", bboxArea * 100))%)"
-        //        print("[Verifier] \(message)")
-        //        DebugPublisher.shared.info(message)
+        // Candidate skipped – bbox too small
         continue
       }
 

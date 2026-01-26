@@ -39,6 +39,9 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
   /// Cached buffer dimensions
   private var cachedBufferDims: CGSize?
 
+  /// Current capture source type (for orientation handling)
+  private var currentCaptureSourceType: CaptureSourceType = .avFoundation
+
   /// In-flight verification requests
   private var inflight: [UUID: AnyCancellable] = [:]
 
@@ -71,7 +74,14 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
           let viewBounds = self.cachedPreviewViewBounds,
           let imageSize = self.cachedBufferDims
         else { return }
-        let orientation = self.imgUtils.cgOrientation(for: self.interfaceOrientation)
+        // Use correct orientation based on capture source type
+        let orientation: CGImagePropertyOrientation
+        switch self.currentCaptureSourceType {
+        case .metaGlasses:
+          orientation = .up  // Glasses frames are already upright
+        case .avFoundation, .arKit, .videoFile:
+          orientation = self.imgUtils.cgOrientation(for: self.interfaceOrientation)
+        }
         self.boundingBoxes = pres.candidates.map { cand in
           // Map normalized bbox to view-space rect
           //            if cand.matchStatus == .lost
@@ -165,8 +175,23 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
       return
     }
     fpsManager.updateFPSCalculation()
-    let orientation = ImageUtilities.shared.cgOrientation(
-      for: UIInterfaceOrientation(UIDevice.current.orientation))
+
+    // Track current capture source for bbox mapping
+    currentCaptureSourceType = capture.sourceType
+
+    // Determine orientation based on capture source type
+    // Meta glasses frames are already upright (no rotation needed)
+    // AVFoundation/ARKit frames need rotation based on device orientation
+    let orientation: CGImagePropertyOrientation
+    switch capture.sourceType {
+    case .metaGlasses:
+      // Glasses camera produces upright frames - no rotation needed
+      orientation = .up
+    case .avFoundation, .arKit, .videoFile:
+      // Phone camera sensor is rotated 90° - needs orientation hint
+      orientation = ImageUtilities.shared.cgOrientation(
+        for: UIInterfaceOrientation(UIDevice.current.orientation))
+    }
 
     // NEW: delegate heavy lifting to coordinator
     pipeline.process(

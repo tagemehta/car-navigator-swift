@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
   @ObservedObject var settings: Settings
+  @StateObject private var metaGlassesManager = MetaGlassesManager.shared
 
   var body: some View {
     NavigationStack {
@@ -229,6 +230,77 @@ struct SettingsView: View {
         //       in: 1...10)
         //   }
         // }
+
+        // MARK: - Meta Glasses
+        Section(header: Text("Meta Glasses")) {
+          Toggle("Use Meta Glasses Camera", isOn: $settings.useMetaGlasses)
+          Text("Stream video from connected Meta glasses instead of device camera.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+
+          if settings.useMetaGlasses {
+            // Connection status
+            HStack {
+              Text("Status")
+              Spacer()
+              if metaGlassesManager.isRegistered {
+                Label("Connected", systemImage: "checkmark.circle.fill")
+                  .foregroundColor(.green)
+              } else {
+                Label("Not Connected", systemImage: "xmark.circle")
+                  .foregroundColor(.secondary)
+              }
+            }
+
+            // Connect/Disconnect button
+            if metaGlassesManager.isRegistered {
+              Button("Disconnect Glasses") {
+                metaGlassesManager.disconnectGlasses()
+              }
+              .foregroundColor(.red)
+            } else {
+              Button("Connect Glasses") {
+                metaGlassesManager.connectGlasses()
+              }
+            }
+
+            // Device count
+            if !metaGlassesManager.availableDevices.isEmpty {
+              Text("\(metaGlassesManager.availableDevices.count) device(s) available")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+
+            #if DEBUG
+              // Mock device controls for testing
+              Divider()
+              Text("Testing (Debug Only)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+              if metaGlassesManager.hasMockDevice {
+                Button("Remove Mock Device") {
+                  metaGlassesManager.removeMockDevice()
+                }
+                .foregroundColor(.orange)
+              } else {
+                Button("Add Mock Device") {
+                  metaGlassesManager.addMockDevice()
+                }
+                Text("Uses bundled video file for testing without glasses.")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+            #endif
+
+            // Error display
+            if let error = metaGlassesManager.errorMessage {
+              Text(error)
+                .font(.caption)
+                .foregroundColor(.red)
+            }
+          }
+        }
 
         // MARK: - Developer Options
         Section(header: Text("Developer Options")) {

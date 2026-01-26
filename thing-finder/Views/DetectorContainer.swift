@@ -46,7 +46,8 @@ struct DetectorContainer: View {
       CameraPreviewWrapper(
         isRunning: $isRunning,
         delegate: detectionModel,
-        source: settings.useARMode ? .arKit : .avFoundation
+        source: settings.useMetaGlasses
+          ? .metaGlasses : (settings.useARMode ? .arKit : .avFoundation)
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

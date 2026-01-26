@@ -85,7 +85,7 @@ public final class FramePipelineCoordinator: ObservableObject {
         guard let firstLabel = detection.labels.first else { return false }
         return targetClasses.contains(firstLabel.identifier)
       }, orientation: orientation)
-
+    print("detections: \(detections.count)")
     // 2. Vision tracking updates existing candidates
     tracker.tick(pixelBuffer: pixelBuffer, orientation: orientation, store: store)
 
@@ -142,7 +142,7 @@ public final class FramePipelineCoordinator: ObservableObject {
       // Sample depth at the box centre using the supplied depthAt closure.
       let center: CGPoint
       switch captureType {
-      case .avFoundation, .videoFile:
+      case .avFoundation, .videoFile, .metaGlasses:
         // Convert view-rect back to normalized image rect for AVF buffers
         let (imageRect, _) = imgUtils.unscaledBoundingBoxes(
           for: box,

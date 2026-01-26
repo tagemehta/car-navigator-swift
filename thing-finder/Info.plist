@@ -8,5 +8,10 @@
 	<string>$(OPENAI_API)</string>
 	<key>TRAFFICEYE_API_KEY</key>
 	<string>$(TRAFFICEYE_API_KEY)</string>
+	<key>MWDAT</key>
+	<dict>
+		<key>MetaAppID</key>
+		<string>1931958047695249</string>
+	</dict>
 </dict>
 </plist>

@@ -60,6 +60,9 @@ public class Settings: ObservableObject {
   /// Whether to use AR mode (false = Default/AVFoundation, true = ARKit)
   @AppStorage("use_ar_mode") var useARMode: Bool = false
 
+  /// Whether to use Meta glasses as the camera source
+  @AppStorage("use_meta_glasses") var useMetaGlasses: Bool = false
+
   /// Whether the device has LiDAR for distance estimation
   var hasLiDAR: Bool {
     return ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)
@@ -211,6 +214,7 @@ extension Settings {
 
     // Camera Settings
     useARMode = false
+    useMetaGlasses = false
 
     // Detection Settings
     confidenceThreshold = 0.4

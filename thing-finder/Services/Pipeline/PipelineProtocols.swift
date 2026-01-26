@@ -19,6 +19,8 @@ public enum CaptureSourceType {
   case arKit
   /// Playback from a local movie file via `VideoFileFrameProvider`.
   case videoFile
+  /// Stream from Meta glasses (or MockDevice for testing).
+  case metaGlasses
 }
 
 // MARK: - Object Detection

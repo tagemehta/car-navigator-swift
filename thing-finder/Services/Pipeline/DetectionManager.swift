@@ -49,45 +49,45 @@ class DetectionManager: ObjectDetector {
       cvPixelBuffer: imageBuffer, orientation: orientation,
       options: [:])
     do {
-      //       // MARK: - Process image with Image2Image model
-      //            lazy var visionRequest2: VNCoreMLRequest = {
-      //              do {
-      //                let visionModel = try VNCoreMLModel(for: Image2Image().model)
-      //
-      //                let request = VNCoreMLRequest(
-      //                  model: visionModel,
-      //                  completionHandler: { [weak self] request, error in
-      //                    if let results = request.results as? [VNPixelBufferObservation],
-      //                      let pixelBuffer = results.first?.pixelBuffer
-      //                    {
-      //
-      //                      let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-      //                      let context = CIContext()
-      //
-      //                      if let cgImage = context.createCGImage(ciImage, from: ciImage.extent) {
-      //                        let uiImage = UIImage(cgImage: cgImage)
-      //                        uiImage.saveToPhotoLibrary(completion: { success, error in
-      //                          if success {
-      //                            print("✅ Successfully saved image to photo library")
-      //                          } else if let error = error {
-      //                            print(
-      //                              "❌ Error saving image to photo library: \(error.localizedDescription)")
-      //                          }
-      //                        })
-      //                      }
-      //                    }
-      //                  }
-      //                )
-      //
-      //                request.imageCropAndScaleOption = .scaleFill
-      //                return request
-      //              } catch {
-      //                fatalError("Failed to create VNCoreMLModel: \(error)")
-      //              }
-      //            }()
-      //
-      //            //      // Uncomment the line below to enable image processing and saving
-      //            try handler.perform([visionRequest2])
+      // MARK: - Process image with Image2Image model
+      // lazy var visionRequest2: VNCoreMLRequest = {
+      //   do {
+      //     let visionModel = try VNCoreMLModel(for: Image2Image().model)
+
+      //     let request = VNCoreMLRequest(
+      //       model: visionModel,
+      //       completionHandler: { [weak self] request, error in
+      //         if let results = request.results as? [VNPixelBufferObservation],
+      //           let pixelBuffer = results.first?.pixelBuffer
+      //         {
+
+      //           let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+      //           let context = CIContext()
+
+      //           if let cgImage = context.createCGImage(ciImage, from: ciImage.extent) {
+      //             let uiImage = UIImage(cgImage: cgImage)
+      //             uiImage.saveToPhotoLibrary(completion: { success, error in
+      //               if success {
+      //                 print("✅ Successfully saved image to photo library")
+      //               } else if let error = error {
+      //                 print(
+      //                   "❌ Error saving image to photo library: \(error.localizedDescription)")
+      //               }
+      //             })
+      //           }
+      //         }
+      //       }
+      //     )
+
+      //     request.imageCropAndScaleOption = .scaleFill
+      //     return request
+      //   } catch {
+      //     fatalError("Failed to create VNCoreMLModel: \(error)")
+      //   }
+      // }()
+
+      //      // Uncomment the line below to enable image processing and saving
+      // try handler.perform([visionRequest2])
       try handler.perform([visionRequest])
       guard let results = visionRequest.results as? [VNRecognizedObjectObservation] else {
         return []
