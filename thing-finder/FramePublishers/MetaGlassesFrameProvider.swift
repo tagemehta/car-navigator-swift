@@ -21,6 +21,12 @@ enum MetaGlassesConfig {
   static let mockVideoFileExtension = "mp4"
 }
 
+enum StreamingStatus {
+  case streaming
+  case waiting
+  case stopped
+}
+
 final class MetaGlassesFrameProvider: NSObject, FrameProvider {
 
   // MARK: - FrameProvider Protocol
@@ -38,6 +44,9 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   private var stateListenerToken: AnyListenerToken?
   private var videoFrameListenerToken: AnyListenerToken?
   private var errorListenerToken: AnyListenerToken?
+  private var deviceMonitorTask: Task<Void, Never>?
+  private(set) var hasActiveDevice: Bool = false
+  private(set) var streamingStatus: StreamingStatus = .stopped
 
   // Preview layer for displaying video
   private let previewImageView: UIImageView = {
@@ -62,8 +71,7 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   }
 
   deinit {
-    // Note: Cannot call MainActor-isolated stop() from deinit
-    // The streamSession will be cleaned up automatically
+    deviceMonitorTask?.cancel()
   }
 
   // MARK: - FrameProvider Methods
@@ -101,6 +109,15 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     guard let selector = deviceSelector else { return }
     streamSession = StreamSession(streamSessionConfig: config, deviceSelector: selector)
 
+    // Monitor device availability
+    deviceMonitorTask = Task { @MainActor [weak self] in
+      guard let self else { return }
+      for await device in selector.activeDeviceStream() {
+        self.hasActiveDevice = device != nil
+        print("[MetaGlassesFrameProvider] Active device: \(device?.description ?? "none")")
+      }
+    }
+
     // Subscribe to video frames
     videoFrameListenerToken = streamSession?.videoFramePublisher.listen { [weak self] videoFrame in
       Task { @MainActor [weak self] in
@@ -113,23 +130,22 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     stateListenerToken = streamSession?.statePublisher.listen { [weak self] state in
       Task { @MainActor [weak self] in
         guard let self else { return }
-        print("[MetaGlassesFrameProvider] State changed: \(state)")
-        switch state {
-        case .streaming:
-          self.isRunning = true
-        case .stopped:
-          self.isRunning = false
-        default:
-          break
-        }
+        self.updateStatusFromState(state)
       }
     }
 
     // Subscribe to errors
-    errorListenerToken = streamSession?.errorPublisher.listen { error in
-      Task { @MainActor in
-        print("[MetaGlassesFrameProvider] Stream error: \(error)")
+    errorListenerToken = streamSession?.errorPublisher.listen { [weak self] error in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        let message = self.formatStreamingError(error)
+        print("[MetaGlassesFrameProvider] Stream error: \(message)")
       }
+    }
+
+    // Set initial state
+    if let session = streamSession {
+      updateStatusFromState(session.state)
     }
   }
 
@@ -140,36 +156,33 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     Task { @MainActor [weak self] in
       guard let self else { return }
       defer { self.isStarting = false }
-      // Check if we have any devices available
-      let devices = Wearables.shared.devices
-      print("[MetaGlassesFrameProvider] Available devices: \(devices)")
 
-      if !devices.isEmpty {
-        // Only check permissions if we have a real device
-        do {
-          let permission = Permission.camera
-          let status = try await Wearables.shared.checkPermissionStatus(permission)
-          print("[MetaGlassesFrameProvider] Permission status: \(status)")
-
-          if status != .granted {
-            let requestStatus = try await Wearables.shared.requestPermission(permission)
-            guard requestStatus == .granted else {
-              print("[MetaGlassesFrameProvider] Camera permission denied")
-              return
-            }
-          }
-        } catch {
-          print("[MetaGlassesFrameProvider] Permission check failed: \(error)")
-          // Continue anyway - AutoDeviceSelector will wait for device
+      // Handle permissions - check first, request if needed
+      let permission = Permission.camera
+      do {
+        let status = try await Wearables.shared.checkPermissionStatus(permission)
+        print("[MetaGlassesFrameProvider] Permission status: \(status)")
+        if status == .granted {
+          await self.startSession()
+          return
         }
-      } else {
-        print("[MetaGlassesFrameProvider] No devices yet, starting session (will wait for device)")
+        let requestStatus = try await Wearables.shared.requestPermission(permission)
+        if requestStatus == .granted {
+          await self.startSession()
+          return
+        }
+        print("[MetaGlassesFrameProvider] Camera permission denied")
+      } catch {
+        print("[MetaGlassesFrameProvider] Permission error: \(error)")
+        // Still try to start - AutoDeviceSelector will wait for device
+        await self.startSession()
       }
-
-      // Start the session - AutoDeviceSelector will wait for a device if none available
-      await streamSession?.start()
-      print("[MetaGlassesFrameProvider] Session started")
     }
+  }
+
+  private func startSession() async {
+    await streamSession?.start()
+    print("[MetaGlassesFrameProvider] Session started")
   }
 
   func stop() {
@@ -194,6 +207,44 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     let sampleBuffer = videoFrame.sampleBuffer
     if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
       delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
+    }
+  }
+
+  // MARK: - State Management
+
+  @MainActor
+  private func updateStatusFromState(_ state: StreamSessionState) {
+    print("[MetaGlassesFrameProvider] State changed: \(state)")
+    switch state {
+    case .stopped:
+      streamingStatus = .stopped
+      isRunning = false
+    case .waitingForDevice, .starting, .stopping, .paused:
+      streamingStatus = .waiting
+    case .streaming:
+      streamingStatus = .streaming
+      isRunning = true
+    }
+  }
+
+  private func formatStreamingError(_ error: StreamSessionError) -> String {
+    switch error {
+    case .internalError:
+      return "An internal error occurred. Please try again."
+    case .deviceNotFound:
+      return "Device not found. Please ensure your device is connected."
+    case .deviceNotConnected:
+      return "Device not connected. Please check your connection and try again."
+    case .timeout:
+      return "The operation timed out. Please try again."
+    case .videoStreamingError:
+      return "Video streaming failed. Please try again."
+    case .audioStreamingError:
+      return "Audio streaming failed. Please try again."
+    case .permissionDenied:
+      return "Camera permission denied. Please grant permission in Settings."
+    @unknown default:
+      return "An unknown streaming error occurred."
     }
   }
 }

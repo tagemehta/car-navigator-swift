@@ -1,4 +1,5 @@
 // MARK: - App Entry
+import MWDATCore
 import SwiftUI
 
 @main
@@ -6,7 +7,22 @@ struct ThingFinderApp: App {
   var body: some Scene {
     WindowGroup {
       MainTabView()
-      //      ContentView(description: "always return false", searchMode: .objectFinder, targetClasses: ["laptop"])
+        // Handle callback URLs from Meta AI app for DAT SDK registration/permission flows
+        .onOpenURL { url in
+          guard
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            components.queryItems?.contains(where: { $0.name == "metaWearablesAction" }) == true
+          else {
+            return
+          }
+          Task {
+            do {
+              _ = try await Wearables.shared.handleUrl(url)
+            } catch {
+              print("[ThingFinderApp] Registration URL handling error: \(error)")
+            }
+          }
+        }
     }
   }
 }
