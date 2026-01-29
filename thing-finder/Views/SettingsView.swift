@@ -8,6 +8,16 @@ struct SettingsView: View {
       List {
         // MARK: - Navigation Feedback
         Section(header: Text("Navigation Feedback")) {
+          Toggle("Audio Beeps", isOn: $settings.enableBeeps)
+          Text("Enable or disable audio beeps for feedback.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+          Toggle("Speech Guidance", isOn: $settings.enableSpeech)
+          Toggle("Haptic Feedback", isOn: $settings.enableHaptics)
+          Text("Enable or disable haptic pulses for feedback.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+
           Toggle("Navigate Before Plate Match", isOn: $settings.allowPartialNavigation)
           Text("Start navigation before a license plate match is confirmed.")
             .font(.caption)
@@ -27,13 +37,6 @@ struct SettingsView: View {
           Text("Announce 'Waiting for verification' messages.")
             .font(.caption)
             .foregroundColor(.secondary)
-
-          Toggle("Audio Beeps", isOn: $settings.enableBeeps)
-          Text("Enable or disable audio beeps for feedback.")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          //          Toggle("Speech Guidance", isOn: $settings.enableSpeech)
-          //          Toggle("Haptic Feedback", isOn: $settings.enableHaptics)
 
           VStack(alignment: .leading) {
             Text("Speech Rate: \(String(format: "%.1f", settings.speechRate))")
@@ -55,7 +58,7 @@ struct SettingsView: View {
             Slider(value: $settings.directionLeftThreshold, in: 0.1...0.4, step: 0.01)
               .accessibilityLabel("Left Threshold")
           }
-
+          
           VStack(alignment: .leading) {
             Text("Right Threshold: \(Int(settings.directionRightThreshold * 100))%")
             Text("How far right the target must be before announcing 'right'.")
@@ -91,10 +94,10 @@ struct SettingsView: View {
         }
 
         // MARK: - Beep Settings
-        Section(header: Text("Beep Settings")) {
+        Section(header: Text("Haptic/Beep Settings")) {
           VStack(alignment: .leading) {
             Text("Min Interval: \(String(format: "%.2f", settings.beepIntervalMin))s")
-            Text("Shortest time between beeps when target is centered.")
+            Text("Shortest time between beeps/pulses when target is centered.")
               .font(.caption)
               .foregroundColor(.secondary)
             Slider(value: $settings.beepIntervalMin, in: 0.05...0.5, step: 0.01)
@@ -103,7 +106,7 @@ struct SettingsView: View {
 
           VStack(alignment: .leading) {
             Text("Max Interval: \(String(format: "%.1f", settings.beepIntervalMax))s")
-            Text("Longest time between beeps when target is at the edge.")
+            Text("Longest time between beeps/pulses when target is at the edge.")
               .font(.caption)
               .foregroundColor(.secondary)
             Slider(value: $settings.beepIntervalMax, in: 0.5...2.0, step: 0.1)
@@ -137,19 +140,19 @@ struct SettingsView: View {
               Text(curve.rawValue).tag(curve)
             }
           }
-
+        
           VStack(alignment: .leading) {
             Text("Min Distance: \(String(format: "%.1f", settings.distanceMin))m")
             Slider(value: $settings.distanceMin, in: 0.1...1.0, step: 0.1)
               .accessibilityLabel("Minimum Distance")
           }
-
+        
           VStack(alignment: .leading) {
             Text("Max Distance: \(String(format: "%.1f", settings.distanceMax))m")
             Slider(value: $settings.distanceMax, in: 1.0...20.0, step: 0.5)
               .accessibilityLabel("Maximum Distance")
           }
-
+        
           VStack(alignment: .leading) {
             Text("Min Volume: \(Int(settings.volumeMin * 100))%")
             Slider(value: $settings.volumeMin, in: 0.0...0.5, step: 0.05)

@@ -13,6 +13,7 @@ final class NavAnnouncer {
   private let cache: AnnouncementCache
   private let config: NavigationFeedbackConfig
   private let speaker: SpeechOutput
+  private let hapticManager: HapticManagerProtocol
   private let settings: Settings
 
   // Track last seen status per candidate so we only announce transitions.
@@ -25,11 +26,13 @@ final class NavAnnouncer {
     cache: AnnouncementCache,
     config: NavigationFeedbackConfig,
     speaker: SpeechOutput,
+    hapticManager: HapticManagerProtocol? = nil,
     settings: Settings
   ) {
     self.cache = cache
     self.config = config
     self.speaker = speaker
+    self.hapticManager = hapticManager ?? HapticManager(settings: settings)
     self.settings = settings
   }
 
@@ -129,10 +132,23 @@ final class NavAnnouncer {
     else { return }
 
     // Skip if status unchanged for candidate (except lost which can repeat with direction)
-    if lastStatus[candidate.id] == candidate.matchStatus && candidate.matchStatus != .lost {
+    let previousStatus = lastStatus[candidate.id]
+    if previousStatus == candidate.matchStatus && candidate.matchStatus != .lost {
       return
     }
     lastStatus[candidate.id] = candidate.matchStatus
+
+    // Trigger haptic feedback on status transitions (when haptics enabled)
+    if settings.enableHaptics && previousStatus != candidate.matchStatus {
+      switch candidate.matchStatus {
+      case .full, .partial:
+        hapticManager.playSuccess()
+      case .rejected:
+        hapticManager.playFailure()
+      default:
+        break
+      }
+    }
 
     // Global repeat suppression.
     if let g = cache.lastGlobal,

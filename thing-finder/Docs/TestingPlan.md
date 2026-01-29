@@ -198,6 +198,9 @@ Comprehensive testing strategy for Thing Finder, starting from scratch. Prioriti
 | `test_tick_stopsBeepWhenTargetLost` | No target → beeper stopped |
 | `test_tick_adjustsIntervalByCentering` | Centered target → shorter interval |
 | `test_tick_respectsEnableBeepsSetting` | Disabled → no beeps |
+| `test_tick_startsHapticsWhenTargetPresent` | Target box + enable haptics → haptic pulsing started |
+| `test_tick_stopsHapticsWhenTargetLost` | No target + enable haptics → haptic pulsing stopped |
+| `test_tick_respectsEnableHapticsSetting` | Disabled → no haptic pulses |
 
 ### 4.3 `MatchStatusSpeech` Tests
 **File:** `MatchStatusSpeechTests.swift`
@@ -291,6 +294,7 @@ Comprehensive testing strategy for Thing Finder, starting from scratch. Prioriti
 | `NavigationSpeaker` | `MockNavigationSpeaker` | Record tick calls |
 | `SpeechOutput` | `MockSpeaker` | Record spoken phrases |
 | `Beeper` | `MockBeeper` | Record start/stop calls |
+| `HapticManagerProtocol` | `MockHapticManager` | Record pulsing interval and success/failure calls |
 | `CandidateLifecycleServiceProtocol` | `MockLifecycle` | Controlled candidate creation |
 | `FrameProvider` | `MockFrameProvider` | Pump test frames |
 | `OCREngine` | `MockOCREngine` | Return canned plate text |

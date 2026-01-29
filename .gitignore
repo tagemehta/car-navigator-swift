@@ -10,3 +10,4 @@ results/*
 # Secrets
 thing-finder/Secrets.xcconfig
 **.JPG
+**.mp4
