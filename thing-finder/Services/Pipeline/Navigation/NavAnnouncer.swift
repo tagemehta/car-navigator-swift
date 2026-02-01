@@ -38,10 +38,6 @@ final class NavAnnouncer {
 
   /// Called once per frame with the latest candidate snapshot.
   func tick(candidates: [Candidate], timestamp: Date) {
-    guard settings.enableSpeech else {
-      return
-    }
-
     // Clutter suppression: prefer full matches, else partial, else rejected cars.
     let full = candidates.filter { $0.matchStatus == .full }
     let partial = candidates.filter { $0.matchStatus == .partial }
@@ -62,9 +58,11 @@ final class NavAnnouncer {
       handleCandidate(candidate, now: timestamp)
     }
 
-    // Handle waiting and retry messages independently of car announcements
-    for candidate in candidates {
-      handleWaitingAndRetry(candidate, now: timestamp)
+    // Handle waiting and retry messages independently of car announcements (speech only)
+    if settings.enableSpeech {
+      for candidate in candidates {
+        handleWaitingAndRetry(candidate, now: timestamp)
+      }
     }
   }
 
@@ -149,6 +147,9 @@ final class NavAnnouncer {
         break
       }
     }
+
+    // Skip speech if disabled, but haptics already fired above
+    guard settings.enableSpeech else { return }
 
     // Global repeat suppression.
     if let g = cache.lastGlobal,
