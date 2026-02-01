@@ -142,9 +142,9 @@ Thing Finder is an assistive technology iOS app for blind users that helps ident
 |------|---------|
 | `NavigationProtocol.swift` | Protocols: `SpeechOutput`, `Beeper`, `NavigationSpeaker`. Config struct for timing thresholds. |
 | `NavigationManager.swift` | `FrameNavigationManager` façade. Composes `NavAnnouncer`, `DirectionSpeechController`, `HapticBeepController`. Single `tick()` call per frame. |
-| `NavAnnouncer.swift` | Phrase selection engine. Handles status transitions, retry announcements, cooldown suppression. |
+| `NavAnnouncer.swift` | Phrase selection engine. Handles status transitions, retry announcements, cooldown suppression. Triggers success/failure haptics on match/reject when enabled. |
 | `DirectionSpeechController.swift` | Speaks "left/right/straight ahead" based on target position. |
-| `HapticBeepController.swift` | Maps target centering → beep interval. Drives `SmoothBeeper`. |
+| `HapticBeepController.swift` | Maps target centering → beep interval. Drives `SmoothBeeper`. Also drives haptic pulses when enabled. |
 | `AnnouncementCache.swift` | Shared state for phrase throttling across controllers. |
 
 #### `Services/Pipeline/Verification/`
@@ -201,6 +201,7 @@ Thing Finder is an assistive technology iOS app for blind users that helps ident
 |------|---------|
 | `Speaker.swift` | `SpeechOutput` impl using `AVSpeechSynthesizer`. |
 | `SmoothBeeper.swift` | `Beeper` impl. Generates click sounds, smoothly adjusts interval via EMA. Handles background/foreground transitions. |
+| `HapticManager.swift` | Haptic feedback manager. Provides interval-based pulses and one-shot success/failure haptics. |
 | `AudioControl.swift` | Notification-based pause mechanism for all audio. |
 
 #### `Utilities/CoreML/`
@@ -309,6 +310,7 @@ unknown → waiting → partial (vehicle matched, plate pending)
 ### Navigation Feedback
 - **Speech**: Status announcements, directional cues, retry explanations
 - **Beeps**: Interval varies with target centering (faster = more centered)
+- **Haptics**: Optional pulse feedback matching beep interval, plus success/failure haptics on match/reject
 - **Compass**: Lost targets announced with compass direction
 
 ---

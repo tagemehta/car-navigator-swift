@@ -13,6 +13,7 @@ final class NavAnnouncer {
   private let cache: AnnouncementCache
   private let config: NavigationFeedbackConfig
   private let speaker: SpeechOutput
+  private let hapticManager: HapticManagerProtocol
   private let settings: Settings
 
   // Track last seen status per candidate so we only announce transitions.
@@ -25,20 +26,18 @@ final class NavAnnouncer {
     cache: AnnouncementCache,
     config: NavigationFeedbackConfig,
     speaker: SpeechOutput,
+    hapticManager: HapticManagerProtocol? = nil,
     settings: Settings
   ) {
     self.cache = cache
     self.config = config
     self.speaker = speaker
+    self.hapticManager = hapticManager ?? HapticManager(settings: settings)
     self.settings = settings
   }
 
   /// Called once per frame with the latest candidate snapshot.
   func tick(candidates: [Candidate], timestamp: Date) {
-    guard settings.enableSpeech else {
-      return
-    }
-
     // Clutter suppression: prefer full matches, else partial, else rejected cars.
     let full = candidates.filter { $0.matchStatus == .full }
     let partial = candidates.filter { $0.matchStatus == .partial }
@@ -59,9 +58,11 @@ final class NavAnnouncer {
       handleCandidate(candidate, now: timestamp)
     }
 
-    // Handle waiting and retry messages independently of car announcements
-    for candidate in candidates {
-      handleWaitingAndRetry(candidate, now: timestamp)
+    // Handle waiting and retry messages independently of car announcements (speech only)
+    if settings.enableSpeech {
+      for candidate in candidates {
+        handleWaitingAndRetry(candidate, now: timestamp)
+      }
     }
   }
 
@@ -129,10 +130,26 @@ final class NavAnnouncer {
     else { return }
 
     // Skip if status unchanged for candidate (except lost which can repeat with direction)
-    if lastStatus[candidate.id] == candidate.matchStatus && candidate.matchStatus != .lost {
+    let previousStatus = lastStatus[candidate.id]
+    if previousStatus == candidate.matchStatus && candidate.matchStatus != .lost {
       return
     }
     lastStatus[candidate.id] = candidate.matchStatus
+
+    // Trigger haptic feedback on status transitions (when haptics enabled)
+    if settings.enableHaptics && previousStatus != candidate.matchStatus {
+      switch candidate.matchStatus {
+      case .full, .partial:
+        hapticManager.playSuccess()
+      case .rejected:
+        hapticManager.playFailure()
+      default:
+        break
+      }
+    }
+
+    // Skip speech if disabled, but haptics already fired above
+    guard settings.enableSpeech else { return }
 
     // Global repeat suppression.
     if let g = cache.lastGlobal,
