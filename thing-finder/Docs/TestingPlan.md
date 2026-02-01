@@ -436,3 +436,178 @@ Examples:
 - `test_upsert_duplicateDetection_returnsNil`
 - `test_tick_missCountExceedsThreshold_removesCandidate`
 - `test_verify_blurryImage_rejectsWithUnclearReason`
+
+---
+
+## 13. Phase 6 Integration Tests - Detailed Plan
+
+### 13.1 Overview
+
+Phase 6 tests the **full pipeline flow** with real (or realistic) dependencies. Unlike unit tests that mock everything, integration tests verify that services work together correctly.
+
+### 13.2 Test Assets Required
+
+#### Images (for Embedding/Vision tests)
+| Asset | Description | Size | Purpose |
+|-------|-------------|------|---------|
+| `test_car_red_front.jpg` | Red car, front view | 500x500 | Embedding similarity baseline |
+| `test_car_red_side.jpg` | Same red car, side view | 500x500 | Same-car different-angle similarity |
+| `test_car_blue_front.jpg` | Blue car, front view | 500x500 | Different-car similarity (should be lower) |
+| `test_truck_white.jpg` | White truck | 500x500 | Different-class similarity (should be very low) |
+
+#### Videos (for Pipeline integration)
+| Asset | Description | Duration | Purpose |
+|-------|-------------|----------|---------|
+| `test_tracking_simple.mov` | Single car enters, stays, exits | 5-10s | Basic detection → tracking → lost flow |
+| `test_tracking_occlusion.mov` | Car partially occluded mid-video | 5-10s | Drift repair recovery testing |
+| `test_multiple_cars.mov` | 2-3 cars in frame | 5-10s | Multi-candidate handling |
+
+#### Recording Guidelines
+- **Resolution**: 1080p or 720p
+- **Frame rate**: 30fps
+- **Lighting**: Good daylight, minimal shadows
+- **Distance**: Car fills 20-50% of frame
+- **Movement**: Slow, steady camera movement
+
+### 13.3 FramePipelineCoordinatorIntegrationTests
+
+**File:** `thing-finderTests/Integration/FramePipelineCoordinatorIntegrationTests.swift`
+
+#### Test Strategy
+Use `VideoFileFrameProvider` to pump pre-recorded frames through the real pipeline with:
+- Real `DetectionManager` (with mock model OR real model on CI with test video)
+- Real `TrackingManager`
+- Real `DriftRepairService` with `MockEmbeddingProvider`
+- Mock `VerifierService` (to avoid network calls)
+- Mock `NavigationManager`
+
+#### Test Cases
+
+| Test Case | Setup | Verification |
+|-----------|-------|--------------|
+| `test_pipeline_detectsNewObject` | Video with car entering frame | Candidate created with `.unknown` status |
+| `test_pipeline_tracksObjectAcrossFrames` | Video with car moving | Candidate bbox updates each frame |
+| `test_pipeline_handlesObjectExit` | Video with car leaving | Candidate marked `.lost` or removed |
+| `test_pipeline_publishesFramePresentation` | Any video | `FramePresentation` published for each frame |
+| `test_pipeline_respectsTargetClasses` | Video with car + person | Only car candidates created |
+
+#### Mock Configuration
+```swift
+// MockVerifierService - returns canned results based on candidate ID
+mockVerifier.cannedResults = [
+  candidateId1: .success(.full),
+  candidateId2: .success(.rejected(.wrongModelOrColor))
+]
+
+// MockNavigationManager - records calls for verification
+mockNavigation.tickCalls // Array of (candidates, targetBox, distance)
+```
+
+### 13.4 AppContainerIntegrationTests
+
+**File:** `thing-finderTests/Integration/AppContainerIntegrationTests.swift`
+
+#### Test Strategy
+Verify that `AppContainer` correctly wires all dependencies without actually running the pipeline.
+
+#### Test Cases
+
+| Test Case | Verification |
+|-----------|--------------|
+| `test_makePipeline_allServicesNonNil` | Pipeline has detector, tracker, verifier, etc. |
+| `test_makePipeline_settingsInjected` | Services receive shared Settings instance |
+| `test_makePipeline_storeShared` | All services share same CandidateStore |
+| `test_makePipeline_embeddingProviderInjected` | DriftRepairService has VisionEmbeddingProvider |
+
+### 13.5 EmbeddingComputer Integration Tests
+
+**File:** `thing-finderTests/Integration/EmbeddingIntegrationTests.swift`
+
+**Requires:** Real test images (see 13.2)
+
+| Test Case | Setup | Expected |
+|-----------|-------|----------|
+| `test_embedding_sameCarDifferentAngle_highSimilarity` | red_front vs red_side | similarity > 0.85 |
+| `test_embedding_differentCars_lowerSimilarity` | red_front vs blue_front | similarity < 0.80 |
+| `test_embedding_differentClasses_veryLowSimilarity` | red_car vs white_truck | similarity < 0.60 |
+| `test_embedding_croppedRegion_matchesFullImage` | Full image vs cropped bbox | similarity > 0.90 |
+
+### 13.6 Implementation Order
+
+1. **Collect test assets** (images first, videos later)
+2. **Add images to test bundle** (`thing-finderTests/Resources/`)
+3. **Implement EmbeddingIntegrationTests** (validates Vision works)
+4. **Implement AppContainerIntegrationTests** (validates wiring)
+5. **Implement FramePipelineCoordinatorIntegrationTests** (full flow)
+
+---
+
+## 14. Phase 7+ Future Improvements
+
+### 14.1 Snapshot Tests (UI Consistency)
+
+**Purpose:** Catch unintended UI changes
+
+| View | Snapshots Needed |
+|------|------------------|
+| `CameraOverlayView` | Empty, single candidate, multiple candidates, matched |
+| `BoundingBoxView` | Each MatchStatus color |
+| `SettingsView` | Default state, all toggles on/off |
+
+**Tool:** `swift-snapshot-testing` or XCTest attachments
+
+### 14.2 Performance Tests
+
+| Test | Metric | Threshold |
+|------|--------|-----------|
+| `test_detection_latency` | Time per frame | < 50ms |
+| `test_embedding_computation` | Time per crop | < 100ms |
+| `test_fullPipeline_fps` | Frames per second | > 25fps |
+
+### 14.3 End-to-End Tests (Manual Checklist)
+
+| Scenario | Steps | Expected |
+|----------|-------|----------|
+| Find matching car | Point at target car | Speech announces "Found [description]" |
+| Reject wrong car | Point at non-matching car | Speech announces rejection reason |
+| Track through occlusion | Car goes behind obstacle | Tracking resumes after occlusion |
+| Handle low light | Test in dim environment | Graceful degradation, no crashes |
+
+---
+
+## 15. Test Asset Collection Checklist
+
+### Images Needed (Priority: High)
+- [ ] `test_car_red_front.jpg` - Red sedan, front view, 500x500
+- [ ] `test_car_red_side.jpg` - Same red sedan, side view, 500x500
+- [ ] `test_car_blue_front.jpg` - Blue sedan, front view, 500x500
+- [ ] `test_truck_white.jpg` - White pickup truck, 500x500
+
+### Videos Needed (Priority: Medium)
+- [ ] `test_tracking_simple.mov` - Single car, 5-10s, 1080p 30fps
+- [ ] `test_tracking_occlusion.mov` - Car with partial occlusion, 5-10s
+- [ ] `test_multiple_cars.mov` - 2-3 cars in frame, 5-10s
+
+### Recording Tips
+1. Use iPhone in landscape mode
+2. Hold steady or use tripod
+3. Ensure good lighting (outdoor daylight ideal)
+4. Car should be clearly visible, not too far
+5. Avoid motion blur - move camera slowly
+
+### Adding Assets to Test Bundle
+```
+thing-finderTests/
+└── Resources/
+    ├── Images/
+    │   ├── test_car_red_front.jpg
+    │   ├── test_car_red_side.jpg
+    │   ├── test_car_blue_front.jpg
+    │   └── test_truck_white.jpg
+    └── Videos/
+        ├── test_tracking_simple.mov
+        ├── test_tracking_occlusion.mov
+        └── test_multiple_cars.mov
+```
+
+Add to Xcode: Drag into `thing-finderTests` target, ensure "Copy items if needed" and target membership is `thing-finderTests`.

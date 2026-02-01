@@ -17,12 +17,16 @@ final class FrameNavigationManager: NavigationSpeaker {
     // Shared cache across controllers to coordinate phrase throttling.
     let cache = AnnouncementCache()
     self.settings = settings
-    let config = NavigationFeedbackConfig(speechRepeatInterval: settings.speechRepeatInterval, directionChangeInterval: settings.speechChangeInterval, waitingPhraseCooldown: settings.waitingPhraseCooldown, retryPhraseCooldown: 6)
+    let config = NavigationFeedbackConfig(
+      speechRepeatInterval: settings.speechRepeatInterval,
+      directionChangeInterval: settings.speechChangeInterval,
+      waitingPhraseCooldown: settings.waitingPhraseCooldown, retryPhraseCooldown: 6)
     self.announcer = NavAnnouncer(
       cache: cache, config: config, speaker: speaker, settings: settings)
     self.dirController = DirectionSpeechController(
       config: config, speaker: speaker, settings: settings)
-    let actualBeeper = beeper ?? SmoothBeeper(settings: settings)
+    let actualBeeper: SmoothBeeperProtocol =
+      beeper as? SmoothBeeperProtocol ?? SmoothBeeper(settings: settings)
     self.beepController = HapticBeepController(beeper: actualBeeper, settings: settings)
   }
 

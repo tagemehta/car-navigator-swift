@@ -23,7 +23,7 @@ import Vision
 class DetectionManager: ObjectDetector {
   private var mlModel: VNCoreMLModel
   // last processed frame
-  private var lastDetections: [VNRecognizedObjectObservation] = []
+  private var lastDetections: [Detection] = []
   /// Stores consecutive-frame counts as a cache
   private var detectionStability: [CGRect: Int] = [:]
   private lazy var visionRequest: VNCoreMLRequest = {
@@ -41,9 +41,9 @@ class DetectionManager: ObjectDetector {
 
   public func detect(
     _ imageBuffer: CVPixelBuffer,
-    filter detectionFilterFn: (VNRecognizedObjectObservation) -> Bool,
+    filter detectionFilterFn: (Detection) -> Bool,
     orientation: CGImagePropertyOrientation
-  ) -> [VNRecognizedObjectObservation] {
+  ) -> [Detection] {
 
     let handler = VNImageRequestHandler(
       cvPixelBuffer: imageBuffer, orientation: orientation,
@@ -92,7 +92,9 @@ class DetectionManager: ObjectDetector {
       guard let results = visionRequest.results as? [VNRecognizedObjectObservation] else {
         return []
       }
-      let filteredResults = results.filter(detectionFilterFn)
+      // Convert Vision observations to Detection wrappers
+      let detections = results.map { Detection(from: $0) }
+      let filteredResults = detections.filter(detectionFilterFn)
       self.lastDetections = filteredResults
       return filteredResults
     } catch {
@@ -109,12 +111,12 @@ class DetectionManager: ObjectDetector {
   public func stableDetections(
     iouThreshold: CGFloat = 0.8,
     requiredConsecutiveFrames: Int = 4
-  ) -> [VNRecognizedObjectObservation] {
+  ) -> [Detection] {
 
     // Compute required consecutive frames (≥ 1).
     // Build a fresh stability map for **this** frame.
     var newStability: [CGRect: Int] = [:]
-    var stableObservations: [VNRecognizedObjectObservation] = []
+    var stableObservations: [Detection] = []
 
     for detection in lastDetections {
       var consecutive = 1  // At minimum it is present in the current frame.
@@ -142,8 +144,8 @@ class DetectionManager: ObjectDetector {
   }
 
   public func findBestCandidate(
-    from detections: [VNRecognizedObjectObservation], target: CGRect
-  ) -> VNRecognizedObjectObservation? {
+    from detections: [Detection], target: CGRect
+  ) -> Detection? {
     return detections.max(
       by: { $0.boundingBox.iou(with: target) < $1.boundingBox.iou(with: target) }
     )
@@ -165,22 +167,22 @@ class DetectionManager: ObjectDetector {
 
 }
 
- extension UIImage {
-   func saveToPhotoLibrary(completion: @escaping (Bool, Error?) -> Void) {
-     PHPhotoLibrary.requestAuthorization { status in
-       guard status == .authorized else {
-         completion(
-           false,
-           NSError(
-             domain: "PhotoLibrary", code: 1,
-             userInfo: [NSLocalizedDescriptionKey: "No permission to access photo library"]))
-         return
-       }
+extension UIImage {
+  func saveToPhotoLibrary(completion: @escaping (Bool, Error?) -> Void) {
+    PHPhotoLibrary.requestAuthorization { status in
+      guard status == .authorized else {
+        completion(
+          false,
+          NSError(
+            domain: "PhotoLibrary", code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "No permission to access photo library"]))
+        return
+      }
 
-       PHPhotoLibrary.shared().performChanges(
-         {
-           PHAssetChangeRequest.creationRequestForAsset(from: self)
-         }, completionHandler: completion)
-     }
-   }
- }
+      PHPhotoLibrary.shared().performChanges(
+        {
+          PHAssetChangeRequest.creationRequestForAsset(from: self)
+        }, completionHandler: completion)
+    }
+  }
+}

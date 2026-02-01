@@ -206,7 +206,7 @@ public class VerificationStrategyManager {
 /// - ``noSuitableStrategy``
 /// - ``strategyFailed(_:)``
 /// - ``timeout``
-public enum VerificationError: Error, LocalizedError {
+public enum VerificationError: Error, LocalizedError, Equatable {
   /// No suitable strategy was found for the candidate.
   case noSuitableStrategy
 

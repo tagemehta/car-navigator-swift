@@ -19,13 +19,14 @@ import Vision
 public typealias CandidateID = UUID
 
 /// Vision + verification candidate tracked across frames.
-public struct Candidate: Identifiable, Equatable {
+public struct Candidate: Identifiable {
   // MARK: Core identity
   public let id: CandidateID
 
   // MARK: Tracking
-  /// Vision tracking request responsible for updating `lastBoundingBox` frame-to-frame.
-  public var trackingRequest: VNTrackObjectRequest
+  /// Tracking request responsible for updating `lastBoundingBox` frame-to-frame.
+  /// Uses `TrackingRequest` wrapper struct for testability.
+  public var trackingRequest: TrackingRequest
 
   /// Last known axis-aligned bounding box in **image** coordinates (0-1).
   public var lastBoundingBox: CGRect
@@ -40,8 +41,8 @@ public struct Candidate: Identifiable, Equatable {
 
   // MARK: Verification & drift repair
   /// Feature-print embedding generated via `VNGenerateImageFeaturePrintRequest` on the
-  /// same crop sent to the verifier.  Length is typically 128 floats.
-  public var embedding: VNFeaturePrintObservation?
+  /// same crop sent to the verifier. Uses protocol type for testability.
+  public var embedding: (any EmbeddingProtocol)?
 
   /// Verification progress for this candidate.
   public var matchStatus: MatchStatus = .unknown
@@ -102,14 +103,29 @@ public struct Candidate: Identifiable, Equatable {
   // MARK: Init
   public init(
     id: CandidateID = UUID(),
-    trackingRequest: VNTrackObjectRequest,
+    trackingRequest: TrackingRequest,
     boundingBox: CGRect,
-    embedding: VNFeaturePrintObservation? = nil
+    embedding: (any EmbeddingProtocol)? = nil
   ) {
     self.id = id
     self.trackingRequest = trackingRequest
     self.lastBoundingBox = boundingBox
     self.embedding = embedding
+  }
+}
+
+// MARK: - Equatable
+
+extension Candidate: Equatable {
+  public static func == (lhs: Candidate, rhs: Candidate) -> Bool {
+    lhs.id == rhs.id
+      && lhs.trackingRequest == rhs.trackingRequest
+      && lhs.lastBoundingBox == rhs.lastBoundingBox
+      && lhs.matchStatus == rhs.matchStatus
+      && lhs.missCount == rhs.missCount
+      && lhs.verificationTracker == rhs.verificationTracker
+      && lhs.view == rhs.view
+      && lhs.viewScore == rhs.viewScore
   }
 }
 

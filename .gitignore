@@ -9,3 +9,4 @@ datasets/*
 results/*
 # Secrets
 thing-finder/Secrets.xcconfig
+**.JPG

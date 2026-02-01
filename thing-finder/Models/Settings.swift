@@ -16,7 +16,7 @@ public class Settings: ObservableObject {
   // MARK: - Navigation Settings
   /// Speech rate (-1.0 to 1.0, where 0 is normal)
   @AppStorage("speech_rate") var speechRate: Double = 0.5
-  
+
   /// Minimum interval between beeps when target is centered (seconds)
   @AppStorage("beep_interval_min") var beepIntervalMin: Double = 0.1
 
@@ -103,12 +103,18 @@ public class Settings: ObservableObject {
   /// Announce all detected cars (rejected candidates as well)
   @AppStorage("announce_rejected") var announceRejected: Bool = true
 
+  /// Announce retry messages (e.g., "Picture too blurry, trying again")
+  @AppStorage("announce_retry_messages") var announceRetryMessages: Bool = true
+
+  /// Announce waiting messages (e.g., "Waiting for verification")
+  @AppStorage("announce_waiting_messages") var announceWaitingMessages: Bool = true
+
   /// Smoothing factor for exponential moving average (0.0-1.0)
   @AppStorage("smoothing_alpha") var smoothingAlpha: Double = 0.2
 
   /// Enable developer mode with additional settings
   @AppStorage("developer_mode") var developerMode: Bool = false
-  
+
   /// Enable debug overlay with verification messages
   @AppStorage("debug_overlay_enabled") var debugOverlayEnabled: Bool = false
 }
@@ -192,6 +198,9 @@ extension Settings {
     speechChangeInterval = 2.0
     allowPartialNavigation = true
     announceRejected = true
+    announceRetryMessages = true
+    announceWaitingMessages = true
+    waitingPhraseCooldown = 10.0
 
     // Distance Feedback Settings
     distanceMin = 0.2
@@ -219,7 +228,6 @@ extension Settings {
     smoothingAlpha = 0.2
     developerMode = false
     debugOverlayEnabled = false
-    
 
     // Force UserDefaults to synchronize changes
     UserDefaults.standard.synchronize()

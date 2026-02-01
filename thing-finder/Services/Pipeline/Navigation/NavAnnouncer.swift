@@ -35,10 +35,11 @@ final class NavAnnouncer {
 
   /// Called once per frame with the latest candidate snapshot.
   func tick(candidates: [Candidate], timestamp: Date) {
-    // Clutter suppression: prefer full matches, else partial, else everything.
     guard settings.enableSpeech else {
       return
     }
+
+    // Clutter suppression: prefer full matches, else partial, else rejected cars.
     let full = candidates.filter { $0.matchStatus == .full }
     let partial = candidates.filter { $0.matchStatus == .partial }
 
@@ -48,71 +49,86 @@ final class NavAnnouncer {
     } else if !partial.isEmpty {
       active = partial
     } else if settings.announceRejected {
-      active = candidates
+      active = candidates.filter { $0.matchStatus == .rejected }
     } else {
-      return
+      active = []
     }
 
+    // Process high-priority candidates (full/partial/rejected)
     for candidate in active {
       handleCandidate(candidate, now: timestamp)
+    }
+
+    // Handle waiting and retry messages independently of car announcements
+    for candidate in candidates {
+      handleWaitingAndRetry(candidate, now: timestamp)
     }
   }
 
   // MARK: – Internal helpers
-  private func handleCandidate(_ candidate: Candidate, now: Date) {
-    // Check for retry announcements first
-    if candidate.matchStatus == .unknown,
+
+  /// Handles waiting and retry messages, controlled by their own settings.
+  private func handleWaitingAndRetry(_ candidate: Candidate, now: Date) {
+    // Handle retry announcements for unknown status with retryable reason
+    if settings.announceRetryMessages,
+      candidate.matchStatus == .unknown,
       let reason = candidate.rejectReason,
       reason.isRetryable,
       lastRetryReasonSpoken[candidate.id] != reason
     {
-
       // Global retry cooldown
       let elapsedRetry = now.timeIntervalSince(cache.lastRetryTime)
       if elapsedRetry < config.retryPhraseCooldown {
         return
       }
       // Create retry phrase
-      let retryPhrase: String
-      switch reason {
-      case .unclearImage: retryPhrase = "Picture too blurry, trying again"
-      case .insufficientInfo: retryPhrase = "Need a better view, retrying"
-      case .lowConfidence: retryPhrase = "Not sure yet, taking another shot"
-      case .apiError: retryPhrase = "Detection error, retrying"
-      case .licensePlateNotVisible: retryPhrase = "Can't see the plate, retrying"
-      case .ambiguous: retryPhrase = "Results unclear, retrying"
-      default: return  // No speech for non-retryable reasons
-      }
+      guard let retryPhrase = MatchStatusSpeech.retryPhrase(for: reason) else { return }
 
       // Speak and record
       speaker.speak(retryPhrase)
       cache.lastRetryTime = now
       lastRetryReasonSpoken[candidate.id] = reason
-      return  // Skip normal status phrase this frame
+      return
+    }
+
+    // Handle waiting announcements
+    if settings.announceWaitingMessages,
+      candidate.matchStatus == .waiting
+    {
+      // Global waiting cooldown
+      let elapsed = now.timeIntervalSince(cache.lastWaitingTime)
+      if elapsed < config.waitingPhraseCooldown {
+        return
+      }
+
+      // Skip if already announced waiting for this candidate
+      if lastStatus[candidate.id] == .waiting {
+        return
+      }
+      lastStatus[candidate.id] = .waiting
+
+      speaker.speak("Waiting for verification")
+      cache.lastWaitingTime = now
     }
 
     // Reset retry tracking when candidate is matched or hard rejected
     if candidate.isMatched || candidate.matchStatus == .rejected {
       lastRetryReasonSpoken[candidate.id] = nil
     }
+  }
 
-    // Build regular status phrase
+  /// Handles status announcements for full/partial/rejected candidates.
+  private func handleCandidate(_ candidate: Candidate, now: Date) {
+    // Build regular status phrase (excludes waiting/unknown which are handled separately)
     guard
       let phrase = MatchStatusSpeech.phrase(
         for: candidate.matchStatus, recognisedText: candidate.ocrText,
         detectedDescription: candidate.detectedDescription, rejectReason: candidate.rejectReason,
-        normalizedXPosition: candidate.lastBoundingBox.midX, settings: settings, lastDirection: candidate.degrees)
+        normalizedXPosition: candidate.lastBoundingBox.midX, settings: settings,
+        lastDirection: candidate.degrees)
     else { return }
 
-    // Waiting-specific global cooldown guard.
-    if candidate.matchStatus == .waiting {
-      let elapsed = now.timeIntervalSince(cache.lastWaitingTime)
-      if elapsed < config.waitingPhraseCooldown {
-        return  // skip if spoken too recently
-      }
-    }
-
-    // Skip if status unchanged for candidate or its a lost candidate.
+    // Skip if status unchanged for candidate (except lost which can repeat with direction)
     if lastStatus[candidate.id] == candidate.matchStatus && candidate.matchStatus != .lost {
       return
     }
@@ -135,9 +151,6 @@ final class NavAnnouncer {
 
     // Speak and record.
     speaker.speak(phrase)
-    if candidate.matchStatus == .waiting {
-      cache.lastWaitingTime = now
-    }
     cache.lastByCandidate[candidate.id] = (phrase, now)
     cache.lastGlobal = (phrase, now)
   }

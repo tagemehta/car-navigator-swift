@@ -10,7 +10,6 @@
 import CoreGraphics
 import CoreMedia
 import Foundation
-import CoreGraphics
 import Vision
 
 // MARK: - CaptureType
@@ -25,13 +24,13 @@ public enum CaptureSourceType {
 // MARK: - Object Detection
 
 public protocol ObjectDetector {
-  /// Run detection on the passed pixel buffer, returning Vision observations.
+  /// Run detection on the passed pixel buffer, returning abstract `Detection` objects.
   /// - Parameter filter: Optional closure to select relevant observations.
   func detect(
     _ pixelBuffer: CVPixelBuffer,
-    filter: (VNRecognizedObjectObservation) -> Bool,
+    filter: (Detection) -> Bool,
     orientation: CGImagePropertyOrientation
-  ) -> [VNRecognizedObjectObservation]
+  ) -> [Detection]
 }
 
 // MARK: - Vision Tracking
@@ -58,15 +57,34 @@ public protocol VerifierServiceProtocol {
 
 // MARK: - Drift Repair
 
+/// Protocol for drift repair services that re-associate candidates with detections
 public protocol DriftRepairServiceProtocol {
   func tick(
     pixelBuffer: CVPixelBuffer,
     orientation: CGImagePropertyOrientation,
     imageSize: CGSize,
     viewBounds: CGRect,
-    detections: [VNRecognizedObjectObservation],
+    detections: [Detection],
     store: CandidateStore
   )
+}
+
+// MARK: - EmbeddingProvider Protocol
+
+/// Protocol for computing embeddings from image regions.
+/// Allows injection of mock implementations for testing.
+public protocol EmbeddingProvider {
+  /// Computes an embedding for the specified region of an image.
+  /// - Parameters:
+  ///   - cgImage: The full image
+  ///   - boundingBox: Normalized bounding box (0-1) specifying the region
+  ///   - orientation: Image orientation
+  /// - Returns: An embedding if computation succeeds, nil otherwise
+  func computeEmbedding(
+    from cgImage: CGImage,
+    boundingBox: CGRect,
+    orientation: CGImagePropertyOrientation
+  ) -> (any EmbeddingProtocol)?
 }
 
 // MARK: - Depth Provider (ray-cast / LiDAR)
