@@ -45,6 +45,8 @@ struct ContentView: View {
             Button(action: {
               if isCameraRunning {
                 AudioControl.pauseAll()
+              } else {
+                AudioControl.resumeAll()
               }
               isCameraRunning.toggle()
             }) {
