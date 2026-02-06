@@ -2,13 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>OPENAI_API</key>
-	<string>$(OPENAI_API)</string>
-	<key>TRAFFICEYE_API_KEY</key>
-	<string>$(TRAFFICEYE_API_KEY)</string>
-	<!-- URL scheme for Meta AI app callbacks during registration -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -22,33 +15,33 @@
 			</array>
 		</dict>
 	</array>
-	<!-- Meta Wearables Device Access Toolkit Configuration -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fb-viewapp</string>
+	</array>	
 	<key>MWDAT</key>
 	<dict>
 		<key>AppLinkURLScheme</key>
 		<string>thingfinder://</string>
-		<key>MetaAppID</key>
-		<string>1931958047695249</string>
 		<key>ClientToken</key>
-		<string>$(CLIENT_TOKEN)</string>
+		<string>$(META_CLIENT_TOKEN)</string>
+		<key>MetaAppID</key>
+		<string>$(META_APP_ID)</string>
 		<key>TeamID</key>
 		<string>$(DEVELOPMENT_TEAM)</string>
 	</dict>
-	<!-- Required background modes for Meta glasses connection -->
+	<key>OPENAI_API</key>
+	<string>$(OPENAI_API)</string>
+	<key>TRAFFICEYE_API_KEY</key>
+	<string>$(TRAFFICEYE_API_KEY)</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-peripheral</string>
 		<string>external-accessory</string>
 	</array>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Needed to connect to Meta AI Glasses</string>
 	<key>UISupportedExternalAccessoryProtocols</key>
 	<array>
 		<string>com.meta.ar.wearable</string>
-	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>fb-viewapp</string>
 	</array>
 </dict>
 </plist>

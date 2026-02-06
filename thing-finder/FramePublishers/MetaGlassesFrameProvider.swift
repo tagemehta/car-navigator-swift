@@ -198,6 +198,9 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
 
   @MainActor
   private func handleVideoFrame(_ videoFrame: VideoFrame) {
+    // Stop forwarding frames when glasses are not streaming, hacky pause
+    guard streamingStatus == .streaming else { return }
+
     // Update preview
     if let uiImage = videoFrame.makeUIImage() {
       previewImageView.image = uiImage
@@ -307,18 +310,26 @@ class MetaGlassesManager: ObservableObject {
     }
     guard Wearables.shared.registrationState != .registering else { return }
 
-    do {
-      try Wearables.shared.startRegistration()
-    } catch {
-      errorMessage = "Failed to start registration: \(error)"
+    Task { @MainActor in
+      do {
+        try await Wearables.shared.startRegistration()
+      } catch let error as RegistrationError {
+        self.errorMessage = error.description
+      } catch {
+        self.errorMessage = error.localizedDescription
+      }
     }
   }
 
   func disconnectGlasses() {
-    do {
-      try Wearables.shared.startUnregistration()
-    } catch {
-      errorMessage = "Failed to disconnect: \(error)"
+    Task { @MainActor in
+      do {
+        try await Wearables.shared.startUnregistration()
+      } catch let error as UnregistrationError {
+        self.errorMessage = error.description
+      } catch {
+        self.errorMessage = error.localizedDescription
+      }
     }
   }
 

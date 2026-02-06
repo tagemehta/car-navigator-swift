@@ -56,7 +56,7 @@ struct SettingsView: View {
             Slider(value: $settings.directionLeftThreshold, in: 0.1...0.4, step: 0.01)
               .accessibilityLabel("Left Threshold")
           }
-
+          
           VStack(alignment: .leading) {
             Text("Right Threshold: \(Int(settings.directionRightThreshold * 100))%")
             Text("How far right the target must be before announcing 'right'.")
@@ -138,19 +138,19 @@ struct SettingsView: View {
               Text(curve.rawValue).tag(curve)
             }
           }
-
+        
           VStack(alignment: .leading) {
             Text("Min Distance: \(String(format: "%.1f", settings.distanceMin))m")
             Slider(value: $settings.distanceMin, in: 0.1...1.0, step: 0.1)
               .accessibilityLabel("Minimum Distance")
           }
-
+        
           VStack(alignment: .leading) {
             Text("Max Distance: \(String(format: "%.1f", settings.distanceMax))m")
             Slider(value: $settings.distanceMax, in: 1.0...20.0, step: 0.5)
               .accessibilityLabel("Maximum Distance")
           }
-
+        
           VStack(alignment: .leading) {
             Text("Min Volume: \(Int(settings.volumeMin * 100))%")
             Slider(value: $settings.volumeMin, in: 0.0...0.5, step: 0.05)
