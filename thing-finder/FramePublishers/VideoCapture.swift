@@ -166,7 +166,7 @@ class VideoCapture: NSObject, FrameProvider {
   /// Perform all AVFoundation plumbing. Call once after construction
   public func setupSession() {
     captureSession.beginConfiguration()
-    captureSession.sessionPreset = .photo
+    captureSession.sessionPreset = .inputPriority
 
     // MARK: Inputs
     let videoInput = try! AVCaptureDeviceInput(device: captureDevice)
@@ -182,24 +182,10 @@ class VideoCapture: NSObject, FrameProvider {
       outputs.append(videoOutput)
     }
 
-    if !captureDevice.formats.filter({ format in
-      !format.supportedDepthDataFormats.isEmpty
-    }).isEmpty {
-      if captureSession.canAddOutput(depthOutput) {
-        depthOutput.isFilteringEnabled = true
-        depthOutput.alwaysDiscardsLateDepthData = true
-        captureSession.addOutput(depthOutput)
-        if depthOutput.connection(with: .depthData) != nil {
-          outputs.append(depthOutput)
-        } else {
-          print("Warning: Depth output added but no valid connection")
-        }
-      } else {
-        print("Warning: cannot add depth output")
-      }
-    }
-
     // MARK: Device configuration
+    // Configure format BEFORE adding depth output so the connection check
+    // runs against the correct active format.
+    var depthConfigured = false
     do {
       try captureDevice.lockForConfiguration()
       captureDevice.focusMode = .continuousAutoFocus
@@ -207,10 +193,14 @@ class VideoCapture: NSObject, FrameProvider {
       captureDevice.exposureMode = .continuousAutoExposure
 
       // Configure depth format for best depth data quality
-      // Find a format that supports depth data
-      let depthFormats = captureDevice.formats.filter { format in
-        !format.supportedDepthDataFormats.isEmpty
-      }
+      // Find formats that support depth data, sorted by video resolution (highest first)
+      let depthFormats = captureDevice.formats
+        .filter { !$0.supportedDepthDataFormats.isEmpty }
+        .sorted { a, b in
+          let aRes = CMVideoFormatDescriptionGetDimensions(a.formatDescription)
+          let bRes = CMVideoFormatDescriptionGetDimensions(b.formatDescription)
+          return Int(aRes.width) * Int(aRes.height) > Int(bRes.width) * Int(bRes.height)
+        }
 
       if let bestFormat = depthFormats.first {
         // Select the best depth format (prefer DepthFloat32 > DepthFloat16)
@@ -224,6 +214,10 @@ class VideoCapture: NSObject, FrameProvider {
         if let depthFormat = depthFormat {
           captureDevice.activeFormat = bestFormat
           captureDevice.activeDepthDataFormat = depthFormat
+          depthConfigured = true
+
+          let videoRes = CMVideoFormatDescriptionGetDimensions(bestFormat.formatDescription)
+          print("Selected video format: \(videoRes.width)x\(videoRes.height)")
 
           let depthType = depthFormat.formatDescription.mediaSubType.rawValue
           let depthTypeName: String
@@ -268,6 +262,24 @@ class VideoCapture: NSObject, FrameProvider {
       captureDevice.unlockForConfiguration()
     } catch {
       fatalError("Unable to configure the capture device.")
+    }
+
+    // MARK: Depth output
+    // Add depth output AFTER format configuration so the connection check
+    // reflects the actual active depth format.
+    if depthConfigured {
+      if captureSession.canAddOutput(depthOutput) {
+        depthOutput.isFilteringEnabled = true
+        depthOutput.alwaysDiscardsLateDepthData = true
+        captureSession.addOutput(depthOutput)
+        if depthOutput.connection(with: .depthData) != nil {
+          outputs.append(depthOutput)
+        } else {
+          print("Warning: Depth output added but no valid connection")
+        }
+      } else {
+        print("Warning: cannot add depth output")
+      }
     }
 
     captureSession.commitConfiguration()
