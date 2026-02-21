@@ -122,8 +122,6 @@ struct InputView: View {
             if let clipboardText = UIPasteboard.general.string, !clipboardText.isEmpty {
               description = clipboardText
               showPlaceholder = false
-              pasteAlertMessage = "Pasted from clipboard"
-              showPasteAlert = true
             } else {
               pasteAlertMessage = "Clipboard is empty"
               showPasteAlert = true
