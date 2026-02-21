@@ -34,6 +34,8 @@ struct InputView: View {
   @State private var description: String = ""
   @State private var isShowingCamera = false
   @State private var showPlaceholder = true
+  @State private var showPasteAlert = false
+  @State private var pasteAlertMessage = ""
   @FocusState private var isInputFocused: Bool
   // Vehicle classes for Uber Finder
   private let vehicleClasses = ["car", "truck", "bus"]
@@ -116,23 +118,26 @@ struct InputView: View {
           }
           .frame(minHeight: 80)
 
-          if UIPasteboard.general.hasStrings {
-            Button {
-              if let clipboardText = UIPasteboard.general.string {
-                description = clipboardText
-                showPlaceholder = false
-              }
-            } label: {
-              HStack {
-                Image(systemName: "doc.on.clipboard")
-                Text("Paste from Clipboard")
-              }
-              .frame(maxWidth: .infinity)
+          Button {
+            if let clipboardText = UIPasteboard.general.string, !clipboardText.isEmpty {
+              description = clipboardText
+              showPlaceholder = false
+              pasteAlertMessage = "Pasted from clipboard"
+              showPasteAlert = true
+            } else {
+              pasteAlertMessage = "Clipboard is empty"
+              showPasteAlert = true
             }
-            .buttonStyle(.bordered)
-            .accessibilityLabel("Paste from clipboard")
-            .accessibilityHint("Pastes text from clipboard into the description field")
+          } label: {
+            HStack {
+              Image(systemName: "doc.on.clipboard")
+              Text("Paste from Clipboard")
+            }
+            .frame(maxWidth: .infinity)
           }
+          .buttonStyle(.bordered)
+          .accessibilityLabel("Paste from clipboard")
+          .accessibilityHint("Pastes text from clipboard into the description field")
         }
 
         Section {
@@ -187,6 +192,9 @@ struct InputView: View {
       }
       .scrollDismissesKeyboard(.immediately)
       .navigationTitle("Find My Car")
+      .alert(pasteAlertMessage, isPresented: $showPasteAlert) {
+        Button("OK", role: .cancel) {}
+      }
       .onAppear {
         hideKeyboard()
       }
