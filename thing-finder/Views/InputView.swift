@@ -10,13 +10,33 @@ extension InputView {
 }
 
 struct InputView: View {
+
+  @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
+
+  private var historyItems: [String] {
+    (try? JSONDecoder().decode([String].self, from: Data(searchHistoryData.utf8))) ?? []
+  }
+
+  private func saveToHistory(_ entry: String) {
+    let trimmed = entry.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+    var items = historyItems.filter { $0 != trimmed }
+    items.insert(trimmed, at: 0)
+    if items.count > 5 { items = Array(items.prefix(5)) }
+    if let data = try? JSONEncoder().encode(items),
+      let json = String(data: data, encoding: .utf8)
+    {
+      searchHistoryData = json
+    }
+  }
   @State private var searchMode: SearchMode = .uberFinder
   @State private var selectedClass: String = "car"
   @State private var description: String = ""
   @State private var isShowingCamera = false
   @State private var showPlaceholder = true
+  @State private var showPasteAlert = false
+  @State private var pasteAlertMessage = ""
   @FocusState private var isInputFocused: Bool
-
   // Vehicle classes for Uber Finder
   private let vehicleClasses = ["car", "truck", "bus"]
 
@@ -76,7 +96,7 @@ struct InputView: View {
           ZStack(alignment: .topLeading) {
             TextField("", text: $description, axis: .vertical)
               .textFieldStyle(RoundedBorderTextFieldStyle())
-              .lineLimit(3, reservesSpace: true)
+              .lineLimit(2, reservesSpace: true)
               .focused($isInputFocused)
               .onChange(of: isInputFocused) { oldValue, newValue in
                 if newValue {
@@ -97,10 +117,32 @@ struct InputView: View {
             }
           }
           .frame(minHeight: 80)
+
+          Button {
+            if let clipboardText = UIPasteboard.general.string, !clipboardText.isEmpty {
+              description = clipboardText
+              showPlaceholder = false
+              pasteAlertMessage = "Pasted from clipboard"
+              showPasteAlert = true
+            } else {
+              pasteAlertMessage = "Clipboard is empty"
+              showPasteAlert = true
+            }
+          } label: {
+            HStack {
+              Image(systemName: "doc.on.clipboard")
+              Text("Paste from Clipboard")
+            }
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.bordered)
+          .accessibilityLabel("Paste from clipboard")
+          .accessibilityHint("Pastes text from clipboard into the description field")
         }
 
         Section {
           Button(searchMode == .uberFinder ? "Find My Ride" : "Start Searching") {
+            saveToHistory(description)
             isShowingCamera = true
           }
           .frame(maxWidth: .infinity, alignment: .center)
@@ -110,8 +152,49 @@ struct InputView: View {
               ? description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
               : false)
         }
+
+        if !historyItems.isEmpty {
+          Section(
+            header: HStack {
+              Text("Recent Searches")
+                .font(.headline)
+              Spacer()
+              Button("Clear All") {
+                searchHistoryData = "[]"
+              }
+              .font(.subheadline)
+              .foregroundColor(.blue)
+            }
+          ) {
+            ForEach(historyItems.prefix(5), id: \.self) { item in
+              Button {
+                description = item
+                showPlaceholder = false
+                saveToHistory(item)
+                isShowingCamera = true
+              } label: {
+                HStack {
+                  Image(systemName: "clock.arrow.circlepath")
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+                  Text(item)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+              }
+              .accessibilityLabel("Recent search: \(item)")
+              .accessibilityHint("Double tap to search with this description")
+            }
+          }
+        }
       }
+      .scrollDismissesKeyboard(.immediately)
       .navigationTitle("Find My Car")
+      .alert(pasteAlertMessage, isPresented: $showPasteAlert) {
+        Button("OK", role: .cancel) {}
+      }
       .onAppear {
         hideKeyboard()
       }
@@ -126,11 +209,6 @@ struct InputView: View {
         )
       }
     }
-    .simultaneousGesture(
-      TapGesture().onEnded {
-        isInputFocused = false
-      }
-    )
   }
 }
 
