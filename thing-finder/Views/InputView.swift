@@ -115,6 +115,24 @@ struct InputView: View {
             }
           }
           .frame(minHeight: 80)
+
+          if UIPasteboard.general.hasStrings {
+            Button {
+              if let clipboardText = UIPasteboard.general.string {
+                description = clipboardText
+                showPlaceholder = false
+              }
+            } label: {
+              HStack {
+                Image(systemName: "doc.on.clipboard")
+                Text("Paste from Clipboard")
+              }
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Paste from clipboard")
+            .accessibilityHint("Pastes text from clipboard into the description field")
+          }
         }
 
         Section {
