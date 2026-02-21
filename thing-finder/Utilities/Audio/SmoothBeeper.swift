@@ -24,7 +24,7 @@ final class SmoothBeeper: SmoothBeeperProtocol {
   private var smoothedInterval: TimeInterval = 1.0
   private var volume: Float = 0.5
   private var isBeeping = false
-  private var wasPlayingBeforeBackground = false
+  private var wasPlayingBeforePause = false
 
   // MARK: – Init / Deinit
   init(settings: Settings = Settings()) {
@@ -52,6 +52,12 @@ final class SmoothBeeper: SmoothBeeperProtocol {
       self,
       selector: #selector(handlePauseAllAudio),
       name: AudioControl.pauseAllNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleResumeAllAudio),
+      name: AudioControl.resumeAllNotification,
       object: nil
     )
   }
@@ -156,19 +162,26 @@ final class SmoothBeeper: SmoothBeeperProtocol {
   }
 
   @objc private func handleAppDidEnterBackground() {
-    wasPlayingBeforeBackground = (timer != nil)
+    wasPlayingBeforePause = (timer != nil)
     stop()
   }
 
   @objc private func handleWillEnterForeground() {
-    if wasPlayingBeforeBackground {
-      // Restart with the same interval
+    if wasPlayingBeforePause {
       start(interval: targetInterval)
     }
   }
 
   @objc private func handlePauseAllAudio() {
+    wasPlayingBeforePause = (timer != nil)
     stop()
+  }
+
+  @objc private func handleResumeAllAudio() {
+    if wasPlayingBeforePause {
+      wasPlayingBeforePause = false
+      start(interval: targetInterval)
+    }
   }
 
   private func generateClickSound() {
