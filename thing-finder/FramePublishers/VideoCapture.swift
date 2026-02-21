@@ -182,9 +182,19 @@ class VideoCapture: NSObject, FrameProvider {
       outputs.append(videoOutput)
     }
 
+    // MARK: Depth output (add early)
+    // Apple requires AVCaptureDepthDataOutput to be connected to the session
+    // BEFORE setting activeDepthDataFormat on the device.
+    let hasDepthFormats = captureDevice.formats.contains { !$0.supportedDepthDataFormats.isEmpty }
+    var depthOutputAdded = false
+    if hasDepthFormats, captureSession.canAddOutput(depthOutput) {
+      depthOutput.isFilteringEnabled = true
+      depthOutput.alwaysDiscardsLateDepthData = true
+      captureSession.addOutput(depthOutput)
+      depthOutputAdded = true
+    }
+
     // MARK: Device configuration
-    // Configure format BEFORE adding depth output so the connection check
-    // runs against the correct active format.
     var depthConfigured = false
     do {
       try captureDevice.lockForConfiguration()
@@ -193,9 +203,18 @@ class VideoCapture: NSObject, FrameProvider {
       captureDevice.exposureMode = .continuousAutoExposure
 
       // Configure depth format for best depth data quality
-      // Find formats that support depth data, sorted by video resolution (highest first)
-      let depthFormats = captureDevice.formats
+      // Find formats that support depth data, preferring video-suitable resolutions.
+      // Photo-still formats (e.g. 4032x3024) support depth on paper but don't
+      // reliably deliver it at video frame rates, so cap at 1920px wide.
+      let maxVideoWidth: Int32 = 1920
+      let allDepthFormats = captureDevice.formats
         .filter { !$0.supportedDepthDataFormats.isEmpty }
+      let videoSuitable =
+        allDepthFormats
+        .filter {
+          CMVideoFormatDescriptionGetDimensions($0.formatDescription).width <= maxVideoWidth
+        }
+      let depthFormats = (videoSuitable.isEmpty ? allDepthFormats : videoSuitable)
         .sorted { a, b in
           let aRes = CMVideoFormatDescriptionGetDimensions(a.formatDescription)
           let bRes = CMVideoFormatDescriptionGetDimensions(b.formatDescription)
@@ -264,22 +283,16 @@ class VideoCapture: NSObject, FrameProvider {
       fatalError("Unable to configure the capture device.")
     }
 
-    // MARK: Depth output
-    // Add depth output AFTER format configuration so the connection check
-    // reflects the actual active depth format.
-    if depthConfigured {
-      if captureSession.canAddOutput(depthOutput) {
-        depthOutput.isFilteringEnabled = true
-        depthOutput.alwaysDiscardsLateDepthData = true
-        captureSession.addOutput(depthOutput)
-        if depthOutput.connection(with: .depthData) != nil {
-          outputs.append(depthOutput)
-        } else {
-          print("Warning: Depth output added but no valid connection")
-        }
+    // MARK: Depth output connection check
+    // Verify the connection now that the active format supports depth.
+    if depthOutputAdded && depthConfigured {
+      if depthOutput.connection(with: .depthData) != nil {
+        outputs.append(depthOutput)
       } else {
-        print("Warning: cannot add depth output")
+        print("Warning: Depth output added but no valid connection after format configuration")
       }
+    } else if hasDepthFormats && !depthOutputAdded {
+      print("Warning: cannot add depth output")
     }
 
     captureSession.commitConfiguration()
