@@ -19,10 +19,18 @@ import UIKit
 
 // Identifies the best available camera device based on user preferences and device capabilities.
 func bestCaptureDevice() -> AVCaptureDevice {
+  // Prioritize LiDAR depth camera for best depth quality
+  if let lidarDevice = AVCaptureDevice.default(
+    .builtInLiDARDepthCamera, for: .video, position: .back)
+  {
+    print("Selected LiDAR depth camera for enhanced depth sensing")
+    return lidarDevice
+  }
+
+  // Fall back to other camera types if LiDAR unavailable
   let deviceTypes: [AVCaptureDevice.DeviceType] = [
     .builtInTripleCamera,
     .builtInDualWideCamera,
-    .builtInLiDARDepthCamera,
     .builtInDualCamera,
     .builtInWideAngleCamera,
   ]
@@ -31,6 +39,7 @@ func bestCaptureDevice() -> AVCaptureDevice {
   guard let selectedDevice = discoverySession.devices.first else {
     fatalError("Expected back camera device is not available.")
   }
+  print("Selected camera device: \(selectedDevice.deviceType.rawValue)")
   return selectedDevice
 }
 
@@ -157,7 +166,7 @@ class VideoCapture: NSObject, FrameProvider {
   /// Perform all AVFoundation plumbing. Call once after construction
   public func setupSession() {
     captureSession.beginConfiguration()
-    captureSession.sessionPreset = .photo
+    captureSession.sessionPreset = .inputPriority
 
     // MARK: Inputs
     let videoInput = try! AVCaptureDeviceInput(device: captureDevice)
@@ -173,29 +182,62 @@ class VideoCapture: NSObject, FrameProvider {
       outputs.append(videoOutput)
     }
 
-    if !captureDevice.formats.filter({ format in
-      !format.supportedDepthDataFormats.isEmpty
-    }).isEmpty {
-      if captureSession.canAddOutput(depthOutput) {
-        depthOutput.isFilteringEnabled = true
-        depthOutput.alwaysDiscardsLateDepthData = true
-        captureSession.addOutput(depthOutput)
-        if depthOutput.connection(with: .depthData) != nil {
-          outputs.append(depthOutput)
-        } else {
-          print("Warning: Depth output added but no valid connection")
-        }
-      } else {
-        print("Warning: cannot add depth output")
-      }
-    }
-
     // MARK: Device configuration
+    // Configure format BEFORE adding depth output so the connection check
+    // runs against the correct active format.
+    var depthConfigured = false
     do {
       try captureDevice.lockForConfiguration()
       captureDevice.focusMode = .continuousAutoFocus
       captureDevice.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
       captureDevice.exposureMode = .continuousAutoExposure
+
+      // Configure depth format for best depth data quality
+      // Find formats that support depth data, sorted by video resolution (highest first)
+      let depthFormats = captureDevice.formats
+        .filter { !$0.supportedDepthDataFormats.isEmpty }
+        .sorted { a, b in
+          let aRes = CMVideoFormatDescriptionGetDimensions(a.formatDescription)
+          let bRes = CMVideoFormatDescriptionGetDimensions(b.formatDescription)
+          return Int(aRes.width) * Int(aRes.height) > Int(bRes.width) * Int(bRes.height)
+        }
+
+      if let bestFormat = depthFormats.first {
+        // Select the best depth format (prefer DepthFloat32 > DepthFloat16)
+        let depthFormat =
+          bestFormat.supportedDepthDataFormats.first { format in
+            format.formatDescription.mediaSubType.rawValue == kCVPixelFormatType_DepthFloat32
+          } ?? bestFormat.supportedDepthDataFormats.first { format in
+            format.formatDescription.mediaSubType.rawValue == kCVPixelFormatType_DepthFloat16
+          } ?? bestFormat.supportedDepthDataFormats.first
+
+        if let depthFormat = depthFormat {
+          captureDevice.activeFormat = bestFormat
+          captureDevice.activeDepthDataFormat = depthFormat
+          depthConfigured = true
+
+          let videoRes = CMVideoFormatDescriptionGetDimensions(bestFormat.formatDescription)
+          print("Selected video format: \(videoRes.width)x\(videoRes.height)")
+
+          let depthType = depthFormat.formatDescription.mediaSubType.rawValue
+          let depthTypeName: String
+          switch depthType {
+          case kCVPixelFormatType_DepthFloat32:
+            depthTypeName = "DepthFloat32"
+          case kCVPixelFormatType_DepthFloat16:
+            depthTypeName = "DepthFloat16"
+          case kCVPixelFormatType_DisparityFloat32:
+            depthTypeName = "DisparityFloat32"
+          case kCVPixelFormatType_DisparityFloat16:
+            depthTypeName = "DisparityFloat16"
+          default:
+            depthTypeName = "Unknown(\(depthType))"
+          }
+          print("Configured depth format: \(depthTypeName)")
+        }
+      } else {
+        print("Warning: No depth-capable formats found on this device")
+      }
 
       // Set explicit frame rate to 30fps
       if captureDevice.activeFormat.videoSupportedFrameRateRanges.first != nil {
@@ -220,6 +262,24 @@ class VideoCapture: NSObject, FrameProvider {
       captureDevice.unlockForConfiguration()
     } catch {
       fatalError("Unable to configure the capture device.")
+    }
+
+    // MARK: Depth output
+    // Add depth output AFTER format configuration so the connection check
+    // reflects the actual active depth format.
+    if depthConfigured {
+      if captureSession.canAddOutput(depthOutput) {
+        depthOutput.isFilteringEnabled = true
+        depthOutput.alwaysDiscardsLateDepthData = true
+        captureSession.addOutput(depthOutput)
+        if depthOutput.connection(with: .depthData) != nil {
+          outputs.append(depthOutput)
+        } else {
+          print("Warning: Depth output added but no valid connection")
+        }
+      } else {
+        print("Warning: cannot add depth output")
+      }
     }
 
     captureSession.commitConfiguration()
