@@ -30,10 +30,10 @@ public class Settings: ObservableObject {
   @AppStorage("direction_right_threshold") var directionRightThreshold: Double = 0.66
 
   /// Minimum time between repeating the same direction (seconds)
-  @AppStorage("speech_repeat_interval") var speechRepeatInterval: Double = 4.0
+  @AppStorage("speech_repeat_interval") var speechRepeatInterval: Double = 6.0
 
   /// Minimum time between announcing direction changes (seconds)
-  @AppStorage("speech_change_interval") var speechChangeInterval: Double = 2.0
+  @AppStorage("speech_change_interval") var speechChangeInterval: Double = 4.0
 
   /// Cooldown time for waiting phrases (seconds)
   @AppStorage("waiting_phrase_cooldown") var waitingPhraseCooldown: Double = 10.0
@@ -194,8 +194,8 @@ extension Settings {
     beepIntervalMax = 1.0
     directionLeftThreshold = 0.33
     directionRightThreshold = 0.66
-    speechRepeatInterval = 4.0
-    speechChangeInterval = 2.0
+    speechRepeatInterval = 6.0
+    speechChangeInterval = 4.0
     allowPartialNavigation = true
     announceRejected = true
     announceRetryMessages = true

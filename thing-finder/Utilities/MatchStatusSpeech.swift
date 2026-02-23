@@ -18,7 +18,8 @@ enum MatchStatusSpeech {
   static func phrase(
     for status: MatchStatus, recognisedText: String? = nil, detectedDescription: String? = nil,
     rejectReason: RejectReason? = nil, normalizedXPosition: CGFloat? = nil,
-    settings: Settings? = nil, lastDirection: Double = -1
+    settings: Settings? = nil, lastDirection: Double = -1,
+    currentHeading: Double = -1
   ) -> String? {
     switch status {
     case .waiting:
@@ -55,7 +56,7 @@ enum MatchStatusSpeech {
       // Too small = frequent interruptions as user naturally moves.
       // Too large = user never gets helpful directional info.
       // 60° represents a meaningful change worth announcing.
-      let angle = round(compareAngles(lastDirection, CompassHeading.shared.degrees))
+      let angle = round(compareAngles(lastDirection, currentHeading))
       if abs(angle) > 60.0 {
         if angle > 0 {
           return "car was last seen \(Int((abs(angle) / 30).rounded()*30)) degrees to the right"

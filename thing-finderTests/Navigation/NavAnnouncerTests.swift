@@ -10,6 +10,8 @@ import XCTest
 final class NavAnnouncerTests: XCTestCase {
 
   private var mockSpeaker: MockSpeechOutput!
+  private var mockHaptics: MockHapticManager!
+  private var mockCompass: MockCompassProvider!
   private var cache: AnnouncementCache!
   private var settings: Settings!
   private var config: NavigationFeedbackConfig!
@@ -17,6 +19,8 @@ final class NavAnnouncerTests: XCTestCase {
   override func setUp() {
     super.setUp()
     mockSpeaker = MockSpeechOutput()
+    mockHaptics = MockHapticManager()
+    mockCompass = MockCompassProvider(degrees: 0.0)
     cache = AnnouncementCache()
     settings = TestSettings.makeDefault()
     config = NavigationFeedbackConfig(
@@ -29,6 +33,8 @@ final class NavAnnouncerTests: XCTestCase {
 
   override func tearDown() {
     mockSpeaker = nil
+    mockHaptics = nil
+    mockCompass = nil
     cache = nil
     settings = nil
     config = nil
@@ -40,6 +46,8 @@ final class NavAnnouncerTests: XCTestCase {
       cache: cache,
       config: config,
       speaker: mockSpeaker,
+      hapticManager: mockHaptics,
+      compass: mockCompass,
       settings: settings
     )
   }
@@ -330,5 +338,141 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [], timestamp: Date())
 
     XCTAssertEqual(mockSpeaker.speakCallCount, 0)
+  }
+
+  // MARK: - Lost Candidate Routing
+
+  func test_tick_announcesLostCandidateWithSignificantAngle() {
+    // Candidate was last seen at heading 0°, user has turned 90° right
+    mockCompass.degrees = 90.0
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.makeLost()
+    candidate.degrees = 0.0  // heading when car was last seen
+
+    announcer.tick(candidates: [candidate], timestamp: Date())
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("degrees to the right"))
+  }
+
+  func test_tick_doesNotAnnounceLostWithSmallAngle() {
+    // Candidate was last seen at heading 0°, user only turned 30°
+    mockCompass.degrees = 30.0
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.makeLost()
+    candidate.degrees = 0.0
+
+    announcer.tick(candidates: [candidate], timestamp: Date())
+
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
+  }
+
+  func test_tick_lostCandidatesAlwaysEligibleRegardlessOfPriority() {
+    // Even when full matches exist, lost candidates should still be processed
+    mockCompass.degrees = 120.0
+    let announcer = makeAnnouncer()
+
+    var fullCandidate = TestCandidates.make(id: UUID())
+    fullCandidate.matchStatus = .full
+    fullCandidate.ocrText = "ABC123"
+
+    var lostCandidate = TestCandidates.makeLost(id: UUID())
+    lostCandidate.degrees = 0.0
+
+    announcer.tick(
+      candidates: [fullCandidate, lostCandidate],
+      timestamp: Date())
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("ABC123"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("degrees"))
+  }
+
+  // MARK: - Haptic Transitions
+
+  func test_tick_playsSuccessHapticOnFullMatch() {
+    settings.enableHaptics = true
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.make()
+    candidate.matchStatus = .full
+
+    announcer.tick(candidates: [candidate], timestamp: Date())
+
+    XCTAssertEqual(mockHaptics.successCallCount, 1)
+  }
+
+  func test_tick_playsFailureHapticOnRejection() {
+    settings.enableHaptics = true
+    settings.announceRejected = true
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.make()
+    candidate.matchStatus = .rejected
+    candidate.rejectReason = .wrongModelOrColor
+    candidate.detectedDescription = "red Toyota"
+
+    announcer.tick(candidates: [candidate], timestamp: Date())
+
+    XCTAssertEqual(mockHaptics.failureCallCount, 1)
+  }
+
+  func test_tick_noHapticsWhenDisabled() {
+    settings.enableHaptics = false
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.make()
+    candidate.matchStatus = .full
+
+    announcer.tick(candidates: [candidate], timestamp: Date())
+
+    XCTAssertEqual(mockHaptics.successCallCount, 0)
+    XCTAssertEqual(mockHaptics.failureCallCount, 0)
+  }
+
+  // MARK: - Candidate Eviction
+
+  func test_tick_prunesStaleTrackingState() {
+    let announcer = makeAnnouncer()
+    let candidateId = UUID()
+
+    var candidate = TestCandidates.make(id: candidateId)
+    candidate.matchStatus = .full
+
+    let now = Date()
+    announcer.tick(candidates: [candidate], timestamp: now)
+    XCTAssertNotNil(cache.lastByCandidate[candidateId])
+
+    // Tick with empty candidates — stale entry should be pruned
+    announcer.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
+    XCTAssertNil(cache.lastByCandidate[candidateId])
+  }
+
+  // MARK: - Timestamp-based Cooldown
+
+  func test_tick_cooldownUsesPassedTimestamp() {
+    // Verify that suppression uses the passed-in timestamp, not Date().
+    // We use a base time far in the past — if Date() were used instead,
+    // the elapsed check would see a huge gap and never suppress.
+    let announcer = makeAnnouncer()
+
+    var c1 = TestCandidates.make(id: UUID())
+    c1.matchStatus = .full
+    c1.ocrText = "SAME"
+
+    var c2 = TestCandidates.make(id: UUID())
+    c2.matchStatus = .full
+    c2.ocrText = "SAME"
+
+    let base = Date(timeIntervalSince1970: 1_000_000)
+
+    // First tick: c1 speaks "Found matching plate SAME"
+    announcer.tick(candidates: [c1, c2], timestamp: base)
+    // c1 speaks, c2 is suppressed by global cooldown (same phrase within 6s)
+    XCTAssertEqual(mockSpeaker.speakCallCount, 1)
+
+    // Second tick 1s later: both still present, statuses unchanged → no speech
+    announcer.tick(candidates: [c1, c2], timestamp: base.addingTimeInterval(1.0))
+    XCTAssertEqual(mockSpeaker.speakCallCount, 1, "Status unchanged should suppress")
   }
 }

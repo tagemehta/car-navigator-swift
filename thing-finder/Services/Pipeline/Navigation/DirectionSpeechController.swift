@@ -3,13 +3,18 @@ import Foundation
 
 /// Emits direction words with distance based on the bounding box centre X normalised to 0–1.
 final class DirectionSpeechController {
+  private let cache: AnnouncementCache
   private let config: NavigationFeedbackConfig
   private let speaker: SpeechOutput
   private var lastDirection: Direction = .center
   private var timeLastSpoken: Date = .distantPast
   private let settings: Settings
 
-  init(config: NavigationFeedbackConfig, speaker: SpeechOutput, settings: Settings) {
+  init(
+    cache: AnnouncementCache, config: NavigationFeedbackConfig, speaker: SpeechOutput,
+    settings: Settings
+  ) {
+    self.cache = cache
     self.config = config
     self.speaker = speaker
     self.settings = settings
@@ -45,11 +50,18 @@ final class DirectionSpeechController {
       }
     }
 
-    speak(text: announcement)
+    speak(text: announcement, at: timestamp)
   }
 
-  private func speak(text: String) {
-    timeLastSpoken = Date()
+  private func speak(text: String, at timestamp: Date) {
+    // Check if another controller just spoke (avoid talking over NavAnnouncer)
+    if let g = cache.lastGlobal,
+      timestamp.timeIntervalSince(g.time) < config.directionChangeInterval
+    {
+      return
+    }
+    timeLastSpoken = timestamp
     speaker.speak(text)
+    cache.lastGlobal = (text, timestamp)
   }
 }
