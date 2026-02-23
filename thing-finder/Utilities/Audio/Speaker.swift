@@ -4,7 +4,7 @@ class Speaker: SpeechOutput {
   private let synthesizer = AVSpeechSynthesizer()
   private let rate: Float
   public init(settings: Settings) {
-    self.rate = Float(settings.speechRate)
+    self.rate = Float(AVSpeechUtteranceMinimumSpeechRate + Float(settings.speechRate)*(AVSpeechUtteranceMaximumSpeechRate - AVSpeechUtteranceMinimumSpeechRate))
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(handlePauseAllAudio),
