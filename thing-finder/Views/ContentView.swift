@@ -43,12 +43,7 @@ struct ContentView: View {
           HStack {
             // Pause / Resume Toggle
             Button(action: {
-              if isCameraRunning {
-                AudioControl.pauseAll()
-              } else {
-                AudioControl.resumeAll()
-              }
-              isCameraRunning.toggle()
+              playbackControl()
             }) {
               Text(isCameraRunning ? "Pause" : "Resume")
                 .font(.system(size: 28, weight: .bold))
@@ -90,6 +85,17 @@ struct ContentView: View {
     .onRotate { _ in
       // Orientation changes are handled inside DetectorContainer
     }
+    .accessibilityAction(.magicTap) {
+      playbackControl()
+    }
+  }
+  private func playbackControl() {
+    if isCameraRunning {
+      AudioControl.pauseAll()
+    } else {
+      AudioControl.resumeAll()
+    }
+    isCameraRunning.toggle()
   }
 }
 
