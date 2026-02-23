@@ -448,6 +448,83 @@ final class NavAnnouncerTests: XCTestCase {
     XCTAssertNil(cache.lastByCandidate[candidateId])
   }
 
+  // MARK: - Vehicle View Announcements
+
+  func test_tick_announcesVehicleViewOnce() {
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.make(matchStatus: .full, view: .front)
+    candidate.ocrText = "ABC123"
+
+    let now = Date()
+    announcer.tick(candidates: [candidate], timestamp: now)
+
+    // Should speak the status phrase AND the view phrase
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("front of the car"))
+
+    // Second tick with same view — should NOT re-announce view
+    let beforeCount = mockSpeaker.speakCallCount
+    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(7.0))
+    // The status phrase may or may not repeat (cooldown), but view should not
+    XCTAssertFalse(
+      mockSpeaker.spokenPhrases.suffix(from: beforeCount).contains(where: {
+        $0.contains("front of the car")
+      }),
+      "View should not be re-announced when unchanged")
+  }
+
+  func test_tick_reAnnouncesViewOnChange() {
+    let announcer = makeAnnouncer()
+    let id = UUID()
+
+    var candidate = TestCandidates.make(id: id, matchStatus: .full, view: .front)
+    candidate.ocrText = "ABC123"
+
+    let now = Date()
+    announcer.tick(candidates: [candidate], timestamp: now)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("front of the car"))
+
+    // Change view to rear
+    candidate.view = .rear
+    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(7.0))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("rear of the car"))
+  }
+
+  func test_tick_doesNotAnnounceUnknownView() {
+    let announcer = makeAnnouncer()
+
+    var candidate = TestCandidates.make(matchStatus: .full, view: .unknown)
+    candidate.ocrText = "ABC123"
+
+    announcer.tick(candidates: [candidate], timestamp: Date())
+
+    XCTAssertFalse(
+      mockSpeaker.didSpeakContaining("of the car"),
+      "Unknown view should not be announced")
+  }
+
+  func test_tick_evictionClearsViewTracking() {
+    let announcer = makeAnnouncer()
+    let id = UUID()
+
+    var candidate = TestCandidates.make(id: id, matchStatus: .full, view: .left)
+    candidate.ocrText = "ABC123"
+
+    let now = Date()
+    announcer.tick(candidates: [candidate], timestamp: now)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("left side of the car"))
+
+    // Evict by removing candidate from snapshot
+    announcer.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
+
+    // Re-introduce same candidate — view should be announced again
+    mockSpeaker.reset()
+    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(8.0))
+    XCTAssertTrue(
+      mockSpeaker.didSpeakContaining("left side of the car"),
+      "After eviction, view should be re-announced")
+  }
+
   // MARK: - Timestamp-based Cooldown
 
   func test_tick_cooldownUsesPassedTimestamp() {

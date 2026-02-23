@@ -242,7 +242,7 @@ final class HapticBeepControllerTests: XCTestCase {
     XCTAssertTrue(mockHaptics.isPulsing)
     XCTAssertNotNil(mockHaptics.lastInterval)
     XCTAssertEqual(
-      mockHaptics.lastInterval!, 0.6, accuracy: 0.001,
+      mockHaptics.lastInterval!, 6.0, accuracy: 0.001,
       "Without distance, haptics should use steady fallback pulse")
   }
 

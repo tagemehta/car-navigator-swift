@@ -72,7 +72,7 @@ public class TrafficEyeStrategy: BaseVerificationStrategy {
 
     // --COMMENTED OUT 10/23 due to changes in side view ability of traffic eye--
     // Don't use TrafficEye for side view after minPrimaryRetries failures
-    // if candidate.view == .side
+    // if candidate.view.isSide
     //   && candidate.verificationTracker.trafficAttempts >= VerificationPolicy.minPrimaryRetries
     // {
     //   return false

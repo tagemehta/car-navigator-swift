@@ -156,7 +156,7 @@ extension MockVerificationStrategy {
         if candidate.verificationTracker.trafficAttempts >= VerificationPolicy.maxPrimaryRetries {
           p += 30  // Prefer LLM if TE has failed multiple times
         }
-        if candidate.view == .side {
+        if candidate.view.isSide {
           p += 10  // LLM is better for side views
         }
         p -= candidate.verificationTracker.llmAttempts * 10

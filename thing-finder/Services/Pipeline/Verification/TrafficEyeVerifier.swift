@@ -49,12 +49,54 @@ private struct MMR: Codable {
   let model: MMRItem?
   let color: MMRItem?
   let view: MMRItem?
+  let view8: MMRItem?
 }
 
 private struct MMRItem: Codable {
   let value: String
   let score: Double
 }
+
+// MARK: - View Parsing
+
+/// Parse the API's view8 (preferred) or view field into a VehicleView.
+///
+/// **view8 values**: "frontal exact", "frontal+left", "frontal+right",
+///   "left", "right", "rear exact", "rear+left", "rear+right".
+/// **view values** (legacy): "frontal", "side", "rear".
+private func parseVehicleView(mmr: MMR?) -> (Candidate.VehicleView, Double?) {
+  // Prefer view8 for left/right granularity
+  if let view8 = mmr?.view8 {
+    let v = view8.value.lowercased()
+    let parsed: Candidate.VehicleView
+    switch v {
+    case "frontal exact", "frontal+left", "frontal+right":
+      parsed = .front
+    case "rear exact", "rear+left", "rear+right":
+      parsed = .rear
+    case "left":
+      parsed = .left
+    case "right":
+      parsed = .right
+    default:
+      parsed = .unknown
+    }
+    if parsed != .unknown {
+      return (parsed, view8.score)
+    }
+  }
+  // Fallback to legacy view field
+  if let view = mmr?.view {
+    let v = view.value.lowercased()
+    switch v {
+    case "frontal": return (.front, view.score)
+    case "rear", "back": return (.rear, view.score)
+    default: return (.unknown, view.score)
+    }
+  }
+  return (.unknown, nil)
+}
+
 // MARK: - TrafficEye Verifier
 
 public final class TrafficEyeVerifier: ImageVerifier {
@@ -138,21 +180,14 @@ public final class TrafficEyeVerifier: ImageVerifier {
 
           if detectedNorm == expectedNorm {
             // Perfect match – success
-            let vehicleView: Candidate.VehicleView = {
-              switch result.mmr?.view?.value.lowercased() {
-              case "frontal": return .front
-              case "rear", "back": return .rear
-              case "side": return .side
-              default: return .unknown
-              }
-            }()
+            let (vehicleView, viewScore) = parseVehicleView(mmr: result.mmr)
             let outcome = VerificationOutcome(
               isMatch: true,
               description: detectedPlate.text.value,
               rejectReason: .success,
               isPlateMatch: true,
               vehicleView: vehicleView,
-              viewScore: result.mmr?.view?.score)
+              viewScore: viewScore)
             return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
           } else if (detectedPlate.text.score ?? 0) >= 0.9
             && detectedNorm.count == expectedNorm.count
@@ -193,14 +228,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
             "[TrafficEye][\(candidateId.uuidString.suffix(8))] Plate detected: \(plate.text.value) (confidence=\(String(format: "%.2f", plate.text.score ?? 0)))"
           )
         }
-        let vehicleView: Candidate.VehicleView = {
-          switch mmr.view?.value {
-          case "frontal": return .front
-          case "rear", "back": return .rear
-          case "side": return .side
-          default: return .unknown
-          }
-        }()
+        let (vehicleView, viewScore) = parseVehicleView(mmr: mmr)
         // Compute info quality and decide whether to call LLM
         let infoQ = {
           let makeScore = mmr.make?.score ?? 0
@@ -467,21 +495,14 @@ public final class TrafficEyeVerifier: ImageVerifier {
             rejectReason = .insufficientInfo
           }
         }
-        let vehicleView: Candidate.VehicleView = {
-          switch mmrResult.view?.value.lowercased() {
-          case "frontal": return .front
-          case "rear", "back": return .rear
-          case "side": return .side
-          default: return .unknown
-          }
-        }()
+        let (vehicleView, viewScore) = parseVehicleView(mmr: mmrResult)
         let outcome = VerificationOutcome(
           isMatch: isMatch,
           description:
             "\(mmrResult.color?.value ?? "") \(mmrResult.make?.value ?? "") \(mmrResult.model?.value ?? "")",
           rejectReason: rejectReason,
           vehicleView: vehicleView,
-          viewScore: mmrResult.view?.score
+          viewScore: viewScore
         )
 
         if isMatch {

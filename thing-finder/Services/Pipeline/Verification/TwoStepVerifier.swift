@@ -340,7 +340,9 @@ public final class TwoStepVerifier: ImageVerifier {
     switch str.lowercased() {
     case "front", "frontal": return .front
     case "rear", "back": return .rear
-    case "side", "lateral": return .side
+    case "left": return .left
+    case "right": return .right
+    case "side", "lateral": return .left  // LLM "side" defaults to .left
     default: return .unknown
     }
   }

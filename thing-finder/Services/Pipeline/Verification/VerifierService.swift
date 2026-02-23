@@ -182,7 +182,7 @@ public final class VerifierService: VerifierServiceProtocol {
         continue
       }
 
-      if cand.view != .side
+      if !cand.view.isSide
         && now.timeIntervalSince(cand.lastMMRTime) < verificationConfig.perCandidateMMRInterval
       {
         // Skip TrafficEye re-verify until per-candidate interval passes.

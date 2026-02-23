@@ -49,12 +49,12 @@ final class CandidateTests: XCTestCase {
   func test_updateView_prefersHigherRank() {
     var candidate = TestCandidates.make(view: .unknown, viewScore: 0.9)
 
-    // Side (rank 1) beats unknown (rank 0) even with lower score
-    candidate.updateView(.side, score: 0.5)
-    XCTAssertEqual(candidate.view, .side)
+    // Left (rank 1) beats unknown (rank 0) even with lower score
+    candidate.updateView(.left, score: 0.5)
+    XCTAssertEqual(candidate.view, .left)
     XCTAssertEqual(candidate.viewScore, 0.5)
 
-    // Front (rank 2) beats side (rank 1)
+    // Front (rank 2) beats left (rank 1)
     candidate.updateView(.front, score: 0.3)
     XCTAssertEqual(candidate.view, .front)
     XCTAssertEqual(candidate.viewScore, 0.3)
@@ -68,8 +68,8 @@ final class CandidateTests: XCTestCase {
   func test_updateView_doesNotDowngrade() {
     var candidate = TestCandidates.make(view: .front, viewScore: 0.5)
 
-    // Side (rank 1) should NOT replace front (rank 2)
-    candidate.updateView(.side, score: 0.9)
+    // Left (rank 1) should NOT replace front (rank 2)
+    candidate.updateView(.left, score: 0.9)
     XCTAssertEqual(candidate.view, .front)
     XCTAssertEqual(candidate.viewScore, 0.5)
 

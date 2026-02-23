@@ -69,7 +69,7 @@ public class LLMStrategy: BaseVerificationStrategy {
 
     // COMMENTED OUT 10/23 due to changes in side view ability of traffic eye
     // // Earlier fallback for side view after fewer failures
-    // if candidate.view == .side
+    // if candidate.view.isSide
     //   && candidate.verificationTracker.trafficAttempts >= VerificationPolicy.minPrimaryRetries
     // {
     //   return meetsBasicRequirements(candidate)

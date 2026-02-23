@@ -23,6 +23,9 @@ final class NavAnnouncer {
   // Track last announced retry reason per candidate to avoid repetition
   private var lastRetryReasonSpoken: [UUID: RejectReason] = [:]
 
+  // Track last announced vehicle view per candidate (announce once, re-announce on change)
+  private var lastViewAnnounced: [UUID: Candidate.VehicleView] = [:]
+
   init(
     cache: AnnouncementCache,
     config: NavigationFeedbackConfig,
@@ -62,6 +65,13 @@ final class NavAnnouncer {
     // Process high-priority candidates (full/partial/rejected/lost)
     for candidate in active {
       handleCandidate(candidate, now: timestamp)
+    }
+
+    // Announce vehicle view changes (front/rear/side) for tracked candidates
+    if settings.enableSpeech {
+      for candidate in active {
+        announceViewIfChanged(candidate)
+      }
     }
 
     // Handle waiting and retry messages independently of car announcements (speech only)
@@ -184,6 +194,30 @@ final class NavAnnouncer {
     cache.lastGlobal = (phrase, now)
   }
 
+  // MARK: - Vehicle View Announcements
+
+  /// Announce the vehicle view (front, rear, side) once per candidate,
+  /// and again only if it changes.
+  private func announceViewIfChanged(_ candidate: Candidate) {
+    let view = candidate.view
+    guard view != .unknown else { return }
+
+    if lastViewAnnounced[candidate.id] == view { return }
+    lastViewAnnounced[candidate.id] = view
+
+    let phrase: String
+    switch view {
+    case .front: phrase = "seeing the front of the car"
+    case .rear: phrase = "seeing the rear of the car"
+    case .left: phrase = "seeing the left side of the car"
+    case .right: phrase = "seeing the right side of the car"
+    case .unknown: return
+    }
+
+    speaker.speak(phrase)
+    cache.lastGlobal = (phrase, Date())
+  }
+
   // MARK: - Eviction
 
   /// Remove tracking state for candidates that are no longer in the snapshot.
@@ -191,6 +225,7 @@ final class NavAnnouncer {
     for id in lastStatus.keys where !liveIDs.contains(id) {
       lastStatus.removeValue(forKey: id)
       lastRetryReasonSpoken.removeValue(forKey: id)
+      lastViewAnnounced.removeValue(forKey: id)
       cache.lastByCandidate.removeValue(forKey: id)
     }
   }

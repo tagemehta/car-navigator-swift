@@ -65,7 +65,10 @@ public struct Candidate: Identifiable {
 
   // MARK: View angle tracking
   public enum VehicleView: String, Codable {
-    case front, rear, side, unknown
+    case front, rear, left, right, unknown
+
+    /// True for lateral views (left or right side of the vehicle).
+    public var isSide: Bool { self == .left || self == .right }
   }
   /// Best view observed for this candidate so far.
   public var view: VehicleView = .unknown
@@ -77,11 +80,11 @@ public struct Candidate: Identifiable {
 
   /// Update the stored view only if it is an improvement.
   public mutating func updateView(_ newView: VehicleView, score: Double) {
-    // Prefer front/rear over side/unknown, else prefer higher score.
+    // Prefer front/rear over left/right/unknown, else prefer higher score.
     func rank(_ v: VehicleView) -> Int {
       switch v {
       case .front, .rear: return 2
-      case .side: return 1
+      case .left, .right: return 1
       case .unknown: return 0
       }
     }
