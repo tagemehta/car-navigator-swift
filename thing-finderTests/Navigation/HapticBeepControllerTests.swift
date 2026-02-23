@@ -11,22 +11,25 @@ import XCTest
 final class HapticBeepControllerTests: XCTestCase {
 
   private var mockBeeper: MockSmoothBeeper!
+  private var mockHaptics: MockHapticManager!
   private var settings: Settings!
 
   override func setUp() {
     super.setUp()
     mockBeeper = MockSmoothBeeper()
+    mockHaptics = MockHapticManager()
     settings = TestSettings.makeDefault()
   }
 
   override func tearDown() {
     mockBeeper = nil
+    mockHaptics = nil
     settings = nil
     super.tearDown()
   }
 
   private func makeController() -> HapticBeepController {
-    return HapticBeepController(beeper: mockBeeper, settings: settings)
+    return HapticBeepController(beeper: mockBeeper, hapticManager: mockHaptics, settings: settings)
   }
 
   // MARK: - Beep Enable/Disable
@@ -174,5 +177,85 @@ final class HapticBeepControllerTests: XCTestCase {
     controller.tick(targetBox: targetBox, timestamp: Date())
     XCTAssertEqual(mockBeeper.startCallCount, 2)
     XCTAssertTrue(mockBeeper.isPlaying)
+  }
+
+  // MARK: - Beeps ignore distance
+
+  func test_tick_beepIntervalUnchangedByDistance() {
+    let controller = makeController()
+    let box = CGRect(x: 0.0, y: 0.25, width: 0.2, height: 0.5)
+
+    controller.tick(targetBox: box, distance: nil, timestamp: Date())
+    let withoutDistance = mockBeeper.lastInterval!
+
+    mockBeeper.reset()
+    let controller2 = makeController()
+    controller2.tick(targetBox: box, distance: settings.distanceMin, timestamp: Date())
+    let withDistance = mockBeeper.lastInterval!
+
+    XCTAssertEqual(
+      withoutDistance, withDistance, accuracy: 0.001,
+      "Beep interval should be driven by centering only, not distance")
+  }
+
+  // MARK: - Haptics driven by distance
+
+  func test_tick_hapticUsesDistanceInterval_whenDistanceAvailable() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let box = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
+
+    controller.tick(targetBox: box, distance: settings.distanceMin, timestamp: Date())
+
+    let expected = settings.calculateBeepInterval(distanceMeters: settings.distanceMin)
+    XCTAssertNotNil(mockHaptics.lastInterval)
+    XCTAssertEqual(
+      mockHaptics.lastInterval!, expected, accuracy: 0.001,
+      "Haptics should pulse at distance-derived interval")
+  }
+
+  func test_tick_hapticCloseDistanceFasterThanFar() {
+    settings.enableHaptics = true
+    let box = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
+
+    let controller1 = makeController()
+    controller1.tick(targetBox: box, distance: settings.distanceMin, timestamp: Date())
+    let closeInterval = mockHaptics.lastInterval!
+
+    mockHaptics.reset()
+    let controller2 = makeController()
+    controller2.tick(targetBox: box, distance: settings.distanceMax, timestamp: Date())
+    let farInterval = mockHaptics.lastInterval!
+
+    XCTAssertLessThan(
+      closeInterval, farInterval,
+      "Close distance should produce faster haptic pulses")
+  }
+
+  func test_tick_hapticSteadyPulse_whenNoDistance() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let box = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
+
+    controller.tick(targetBox: box, distance: nil, timestamp: Date())
+
+    XCTAssertTrue(mockHaptics.isPulsing)
+    XCTAssertNotNil(mockHaptics.lastInterval)
+    XCTAssertEqual(
+      mockHaptics.lastInterval!, 0.6, accuracy: 0.001,
+      "Without distance, haptics should use steady fallback pulse")
+  }
+
+  func test_tick_hapticStopsWhenTargetLost() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let box = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
+
+    controller.tick(targetBox: box, distance: 1.0, timestamp: Date())
+    XCTAssertTrue(mockHaptics.isPulsing)
+
+    controller.tick(targetBox: nil, timestamp: Date())
+    XCTAssertFalse(mockHaptics.isPulsing)
+    XCTAssertEqual(mockHaptics.stopPulsingCallCount, 1)
   }
 }

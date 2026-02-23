@@ -47,6 +47,6 @@ final class FrameNavigationManager: NavigationSpeaker {
     announcer.tick(candidates: candidates, timestamp: timestamp)
     dirController.tick(
       targetBox: targetBox, distance: distance, timestamp: timestamp)
-    beepController.tick(targetBox: targetBox, timestamp: timestamp)
+    beepController.tick(targetBox: targetBox, distance: distance, timestamp: timestamp)
   }
 }

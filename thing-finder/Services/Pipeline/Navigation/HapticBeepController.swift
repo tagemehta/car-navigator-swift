@@ -1,8 +1,10 @@
 import CoreGraphics
 import Foundation
 
-/// Converts car centering → tone frequency & volume and drives a concrete `Beeper`.
-/// Also drives haptic pulses for deafblind users when haptics are enabled.
+/// Two-channel feedback controller:
+/// - **Beeps**: driven by centering (direction) — faster when target is centered.
+/// - **Haptics**: driven by distance — faster when closer. Falls back to a
+///   steady pulse when distance is unavailable (non-LiDAR devices).
 final class HapticBeepController {
   private let beeper: SmoothBeeperProtocol
   private let hapticManager: HapticManagerProtocol
@@ -21,13 +23,15 @@ final class HapticBeepController {
   }
 
   /// Call every frame.
-  /// - Parameter targetBox: optional bounding box of the target in normalized coordinates.
-  func tick(targetBox: CGRect?, timestamp: Date) {
+  /// - Parameters:
+  ///   - targetBox: optional bounding box of the target in normalized coordinates.
+  ///   - distance: optional distance to target in meters (from LiDAR/AR).
+  func tick(targetBox: CGRect?, distance: Double? = nil, timestamp: Date) {
     tickBeeps(targetBox: targetBox)
-    tickHaptics(targetBox: targetBox)
+    tickHaptics(targetBox: targetBox, distance: distance)
   }
 
-  // MARK: - Beep Feedback
+  // MARK: - Beep Feedback (centering only)
 
   private func tickBeeps(targetBox: CGRect?) {
     guard settings.enableBeeps else {
@@ -39,7 +43,8 @@ final class HapticBeepController {
       return
     }
 
-    let interval = calculateInterval(for: box)
+    let centeringScore = abs(box.midX - 0.5)
+    let interval = settings.calculateBeepInterval(distanceFromCenter: centeringScore)
 
     if !isBeeping {
       beeper.start(interval: interval)
@@ -56,19 +61,27 @@ final class HapticBeepController {
     }
   }
 
-  // MARK: - Haptic Feedback
+  // MARK: - Haptic Feedback (distance only, steady fallback)
 
-  private func tickHaptics(targetBox: CGRect?) {
+  /// Default steady pulse when distance is unavailable (e.g. non-LiDAR device).
+  private static let steadyPulseInterval: TimeInterval = 6.0
+
+  private func tickHaptics(targetBox: CGRect?, distance: Double?) {
     guard settings.enableHaptics else {
       stopHapticsIfNeeded()
       return
     }
-    guard let box = targetBox else {
+    guard targetBox != nil else {
       stopHapticsIfNeeded()
       return
     }
 
-    let interval = calculateInterval(for: box)
+    let interval: TimeInterval
+    if let distance {
+      interval = settings.calculateBeepInterval(distanceMeters: distance)
+    } else {
+      interval = Self.steadyPulseInterval
+    }
 
     if !isHapticPulsing {
       hapticManager.startPulsing(interval: interval)
@@ -85,11 +98,4 @@ final class HapticBeepController {
     }
   }
 
-  // MARK: - Shared
-
-  private func calculateInterval(for box: CGRect) -> TimeInterval {
-    let centerX = box.midX
-    let centeringScore = abs(centerX - 0.5)
-    return settings.calculateBeepInterval(distanceFromCenter: centeringScore)
-  }
 }

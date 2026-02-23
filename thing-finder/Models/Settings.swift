@@ -44,7 +44,7 @@ public class Settings: ObservableObject {
   @AppStorage("distance_min") var distanceMin: Double = 0.2
 
   /// Maximum distance for volume mapping (meters)
-  @AppStorage("distance_max") var distanceMax: Double = 10.0
+  @AppStorage("distance_max") var distanceMax: Double = 20.0
 
   /// Minimum volume level (0.0-1.0)
   @AppStorage("volume_min") var volumeMin: Double = 0.2
@@ -164,6 +164,60 @@ extension Settings {
     } else {
       return .center
     }
+  }
+
+  /// Calculates haptic/beep interval based on physical distance in meters.
+  ///
+  /// **Used for**: Haptic pulsing on depth-enabled devices.
+  ///
+  /// **Behavior**:
+  /// - Closer targets → shorter intervals (faster pulses)
+  /// - Farther targets → longer intervals (slower pulses)
+  ///
+  /// **Algorithm**:
+  /// 1. Clamp distance to [distanceMin, distanceMax] range
+  /// 2. Normalize to [0, 1] where 0 = closest, 1 = farthest
+  /// 3. Invert to proximity: 1 = closest, 0 = farthest
+  /// 4. Apply curve (linear/logarithmic/quadratic) for perceptual tuning
+  /// 5. Map to [beepIntervalMin, beepIntervalMax] where shorter = faster
+  ///
+  /// **Example** (defaults: min=0.1m, max=10m, intervalMin=0.1s, intervalMax=1.0s):
+  /// - At 0.1m (closest): ~0.1s interval (10 pulses/sec)
+  /// - At 5m (mid): ~0.55s interval
+  /// - At 10m (farthest): ~1.0s interval (1 pulse/sec)
+  func calculateBeepInterval(distanceMeters: Double) -> TimeInterval {
+    // Step 1: Clamp to valid range
+    let clamped = max(distanceMin, min(distanceMax, distanceMeters))
+
+    // Step 2: Normalize distance to [0, 1] where 0 = closest, 1 = farthest
+    let normalizedFar: Double
+    if distanceMax - distanceMin <= 0 {
+      normalizedFar = 0  // Degenerate case: treat as closest
+    } else {
+      normalizedFar = (clamped - distanceMin) / (distanceMax - distanceMin)
+    }
+
+    // Step 3: Invert to proximity score (1 = closest, 0 = farthest)
+    let proximity = 1.0 - normalizedFar
+
+    // Step 4: Apply perceptual curve
+    let factor: Double
+    switch volumeCurve {
+    case .linear:
+      // Direct linear mapping
+      factor = proximity
+    case .logarithmic:
+      // Emphasizes changes at close range, compresses far range
+      factor = proximity <= 0 ? 0 : log(1 + 9 * proximity) / log(10)
+    case .quadratic:
+      // Emphasizes extremes (very close and very far)
+      factor = proximity * proximity
+    }
+
+    // Step 5: Map factor to interval range
+    // factor=1 (closest) → beepIntervalMin (fastest)
+    // factor=0 (farthest) → beepIntervalMax (slowest)
+    return beepIntervalMax - (beepIntervalMax - beepIntervalMin) * factor
   }
 
   /// Calculates beep interval based on distance from center
