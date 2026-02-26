@@ -22,7 +22,7 @@ private struct ExperimentalDisclaimerView: View {
           .bold()
 
         Text(
-          "This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services."
+          "This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services. This app is not intended to replace any mobility aid."
         )
         .font(.body)
 

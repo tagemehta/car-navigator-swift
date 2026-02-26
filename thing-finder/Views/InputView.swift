@@ -60,8 +60,8 @@ struct InputView: View {
 
   var placeholderText: String {
     searchMode == .uberFinder
-      ? "Describe your ride (e.g., 'white Toyota Camry with license plate ABC123')"
-      : "Describe it in detail (e.g., 'silver laptop with a white and green laptop sticker')"
+      ? "Describe your ride (e.g., white Toyota Camry with license plate ABC123)"
+      : "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)"
   }
 
   var body: some View {
@@ -189,7 +189,7 @@ struct InputView: View {
         }
       }
       .scrollDismissesKeyboard(.immediately)
-      .navigationTitle("Find My Car")
+      .navigationTitle("CurbToCar")
       .alert(pasteAlertMessage, isPresented: $showPasteAlert) {
         Button("OK", role: .cancel) {}
       }
