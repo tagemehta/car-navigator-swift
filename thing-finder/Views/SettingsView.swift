@@ -248,6 +248,11 @@ struct SettingsView: View {
           }
           .foregroundColor(.red)
         }
+
+        // MARK: - Feedback Section
+        Section(header: Text("Contact Us")) {
+          FeedbackSection()
+        }
       }
       .navigationTitle("Settings")
     }

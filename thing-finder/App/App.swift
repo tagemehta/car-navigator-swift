@@ -66,10 +66,6 @@ struct MainTabView: View {
       .tabItem {
         Label("Settings", systemImage: "gear")
       }
-
-      NavigationStack {
-        FeedbackView()
-      }
       .tabItem {
         Label("Feedback", systemImage: "envelope")
       }
