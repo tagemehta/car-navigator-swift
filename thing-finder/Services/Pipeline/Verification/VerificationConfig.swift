@@ -8,6 +8,28 @@
 
 import Foundation
 
+// MARK: - Verifier Strategy
+
+/// Defines which verifier(s) to use for vehicle verification.
+public enum VerifierStrategy {
+  /// Standard car search: TrafficEye (fast) → TwoStepVerifier (fallback) escalation loop.
+  /// TrafficEye attempts first, escalates to LLM after failures, cycles back.
+  case hybrid
+
+  /// Always use advanced LLM verifier, skip TrafficEye entirely.
+  /// Use for custom features TrafficEye can't detect.
+  case llmOnly
+
+  /// Always use TrafficEye, never escalate to LLM.
+  /// Use for simple MMR-only verification when LLM is unnecessary.
+  case trafficEyeOnly
+
+  /// Public transit mode: TrafficEye ↔ AdvancedLLM cycling.
+  /// Like hybrid but uses AdvancedLLM (prompted for route numbers, logos, vehicle IDs)
+  /// instead of TwoStepVerifier. For buses and paratransit vehicles.
+  case paratransit
+}
+
 public struct VerificationConfig {
   /// The exact license plate we expect (uppercase, no spaces). Optional.
   public var expectedPlate: String?
@@ -35,8 +57,8 @@ public struct VerificationConfig {
   /// Maximum frequency (seconds) to call MMR for the *same* candidate.
   public var perCandidateMMRInterval: TimeInterval
 
-  /// Whether verifier service should use the combined TrafficEye→LLM fallback strategy.
-  public var useCombinedVerifier: Bool
+  /// Which verifier(s) to use for verification.
+  public var strategy: VerifierStrategy
 
   public init(
     expectedPlate: String?,
@@ -47,7 +69,7 @@ public struct VerificationConfig {
     shouldRunOCR: Bool = false,
     maxEditsForMatch: Int = 1,  // an edit is a change in a single character of the ocr text
     maxEditsForContinue: Int = 2,  // an edit is a change in a single character of the ocr text
-    useCombinedVerifier: Bool = true,
+    strategy: VerifierStrategy = .hybrid,
     perCandidateMMRInterval: TimeInterval = 0.8
   ) {
     self.expectedPlate = expectedPlate?.uppercased()
@@ -57,7 +79,7 @@ public struct VerificationConfig {
     self.shouldRunOCR = shouldRunOCR
     self.maxEditsForMatch = maxEditsForMatch
     self.maxEditsForContinue = maxEditsForContinue
-    self.useCombinedVerifier = useCombinedVerifier
+    self.strategy = strategy
     self.perCandidateMMRInterval = perCandidateMMRInterval
   }
 }

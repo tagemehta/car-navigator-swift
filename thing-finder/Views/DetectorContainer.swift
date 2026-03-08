@@ -14,6 +14,7 @@ struct DetectorContainer: View {
   let description: String
   let targetClasses: [String]
   let settings: Settings
+  let isParatransitMode: Bool
 
   // MARK: – Dependencies
   @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
@@ -26,17 +27,20 @@ struct DetectorContainer: View {
     isRunning: Binding<Bool>,
     description: String,
     targetClasses: [String],
-    settings: Settings
+    settings: Settings,
+    isParatransitMode: Bool = false
   ) {
     _isRunning = isRunning
     self.description = description
     self.targetClasses = targetClasses
     self.settings = settings
+    self.isParatransitMode = isParatransitMode
     _detectionModel = StateObject(
       wrappedValue: CameraViewModel(
         targetClasses: targetClasses,
         targetTextDescription: description,
-        settings: settings))
+        settings: settings,
+        isParatransitMode: isParatransitMode))
   }
 
   // MARK: – View

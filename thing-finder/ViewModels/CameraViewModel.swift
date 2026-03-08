@@ -56,7 +56,10 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
   init(dependencies: CameraDependencies) {
     // Build new pipeline coordinator
     self.pipeline = AppContainer.shared.makePipeline(
-      classes: dependencies.targetClasses, description: dependencies.targetTextDescription)
+      classes: dependencies.targetClasses,
+      description: dependencies.targetTextDescription,
+      isParatransitMode: dependencies.isParatransitMode
+    )
     self.dependencies = dependencies
     super.init()
 
@@ -99,12 +102,18 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
   }
 
   /// Convenience initializer for backward compatibility
-  convenience init(targetClasses: [String], targetTextDescription: String, settings: Settings) {
+  convenience init(
+    targetClasses: [String],
+    targetTextDescription: String,
+    settings: Settings,
+    isParatransitMode: Bool = false
+  ) {
     self.init(
       dependencies: .makeDefault(
         targetClasses: targetClasses,
         targetTextDescription: targetTextDescription,
-        settings: settings
+        settings: settings,
+        isParatransitMode: isParatransitMode
       )
     )
   }

@@ -12,7 +12,8 @@ final class FrameNavigationManager: NavigationSpeaker {
   init(
     settings: Settings,
     speaker: SpeechOutput,
-    beeper: Beeper? = nil
+    beeper: Beeper? = nil,
+    hapticManager: HapticManagerProtocol? = nil
   ) {
     // Shared cache across controllers to coordinate phrase throttling.
     let cache = AnnouncementCache()
@@ -21,13 +22,17 @@ final class FrameNavigationManager: NavigationSpeaker {
       speechRepeatInterval: settings.speechRepeatInterval,
       directionChangeInterval: settings.speechChangeInterval,
       waitingPhraseCooldown: settings.waitingPhraseCooldown, retryPhraseCooldown: 6)
+    // Single shared haptic manager for all controllers.
+    let sharedHaptics = hapticManager ?? HapticManager(settings: settings)
     self.announcer = NavAnnouncer(
-      cache: cache, config: config, speaker: speaker, settings: settings)
+      cache: cache, config: config, speaker: speaker,
+      hapticManager: sharedHaptics, settings: settings)
     self.dirController = DirectionSpeechController(
-      config: config, speaker: speaker, settings: settings)
+      cache: cache, config: config, speaker: speaker, settings: settings)
     let actualBeeper: SmoothBeeperProtocol =
       beeper as? SmoothBeeperProtocol ?? SmoothBeeper(settings: settings)
-    self.beepController = HapticBeepController(beeper: actualBeeper, settings: settings)
+    self.beepController = HapticBeepController(
+      beeper: actualBeeper, hapticManager: sharedHaptics, settings: settings)
   }
 
   // MARK: - NavigationSpeaker
@@ -42,6 +47,6 @@ final class FrameNavigationManager: NavigationSpeaker {
     announcer.tick(candidates: candidates, timestamp: timestamp)
     dirController.tick(
       targetBox: targetBox, distance: distance, timestamp: timestamp)
-    beepController.tick(targetBox: targetBox, timestamp: timestamp)
+    beepController.tick(targetBox: targetBox, distance: distance, timestamp: timestamp)
   }
 }

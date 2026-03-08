@@ -80,8 +80,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "83"
             endingLineNumber = "83"
-            landmarkName = "AdvancedLLMVerifier"
-            landmarkType = "3">
+            landmarkName = "verify(image:candidateId:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -135,22 +135,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "89A96664-89F1-473F-9ACC-FF3AF1779990"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "thing-finder/Services/Pipeline/Verification/TrafficEyeVerifier.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "325"
-            endingLineNumber = "325"
-            landmarkName = "callLLMForComparison(with:candidateId:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "8F8B90EB-AE10-4E7E-9B78-DDD43430A2E3"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -160,7 +144,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "349"
             endingLineNumber = "349"
-            landmarkName = "callLLMForComparison(with:candidateId:)"
+            landmarkName = "createMultipartBody(boundary:image:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

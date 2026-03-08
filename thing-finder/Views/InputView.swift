@@ -12,16 +12,19 @@ extension InputView {
 struct InputView: View {
 
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
+  @AppStorage("InputView.isParatransitMode") private var isParatransitMode = false
 
-  private var historyItems: [String] {
-    (try? JSONDecoder().decode([String].self, from: Data(searchHistoryData.utf8))) ?? []
+  private var historyItems: [SearchHistoryItem] {
+    (try? JSONDecoder().decode([SearchHistoryItem].self, from: Data(searchHistoryData.utf8))) ?? []
   }
 
-  private func saveToHistory(_ entry: String) {
+  private func saveToHistory(_ entry: String, mode: SearchMode, paratransit: Bool) {
     let trimmed = entry.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
-    var items = historyItems.filter { $0 != trimmed }
-    items.insert(trimmed, at: 0)
+    let newItem = SearchHistoryItem(
+      description: trimmed, mode: mode, isParatransitMode: paratransit)
+    var items = historyItems.filter { $0.description != trimmed }
+    items.insert(newItem, at: 0)
     if items.count > 5 { items = Array(items.prefix(5)) }
     if let data = try? JSONEncoder().encode(items),
       let json = String(data: data, encoding: .utf8)
@@ -60,8 +63,8 @@ struct InputView: View {
 
   var placeholderText: String {
     searchMode == .uberFinder
-      ? "Describe your ride (e.g., 'white Toyota Camry with license plate ABC123')"
-      : "Describe it in detail (e.g., 'silver laptop with a white and green laptop sticker')"
+      ? "Describe your ride (e.g., white Toyota Camry with license plate ABC123)"
+      : "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)"
   }
 
   var body: some View {
@@ -136,11 +139,26 @@ struct InputView: View {
           .buttonStyle(.bordered)
           .accessibilityLabel("Paste from clipboard")
           .accessibilityHint("Pastes text from clipboard into the description field")
+
+          if searchMode == .uberFinder {
+            Toggle(isOn: $isParatransitMode) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text("Transit Mode")
+                Text("For buses with route numbers and logos")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+            }
+            .accessibilityLabel("Transit mode")
+            .accessibilityHint(
+              "Enable for public transit buses. Matches by route number and agency logo instead of make and model."
+            )
+          }
         }
 
         Section {
           Button(searchMode == .uberFinder ? "Find My Ride" : "Start Searching") {
-            saveToHistory(description)
+            saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
             isShowingCamera = true
           }
           .frame(maxWidth: .infinity, alignment: .center)
@@ -164,32 +182,44 @@ struct InputView: View {
               .foregroundColor(.blue)
             }
           ) {
-            ForEach(historyItems.prefix(5), id: \.self) { item in
+            ForEach(historyItems.prefix(5), id: \.id) { item in
               Button {
-                description = item
+                description = item.description
+                searchMode = item.mode
+                isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
-                saveToHistory(item)
+                saveToHistory(
+                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
                 isShowingCamera = true
               } label: {
                 HStack {
-                  Image(systemName: "clock.arrow.circlepath")
+                  Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
                     .foregroundColor(.secondary)
                     .accessibilityHidden(true)
-                  Text(item)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                  VStack(alignment: .leading, spacing: 2) {
+                    Text(item.description)
+                      .lineLimit(1)
+                      .truncationMode(.tail)
+                      .foregroundColor(.primary)
+                    if item.mode == .uberFinder && item.isParatransitMode {
+                      Text("Transit Mode")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    }
+                  }
+                  .frame(maxWidth: .infinity, alignment: .leading)
                 }
               }
-              .accessibilityLabel("Recent search: \(item)")
+              .accessibilityLabel(
+                "Recent search: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Transit mode" : "")"
+              )
               .accessibilityHint("Double tap to search with this description")
             }
           }
         }
       }
       .scrollDismissesKeyboard(.immediately)
-      .navigationTitle("Find My Car")
+      .navigationTitle("CurbToCar")
       .alert(pasteAlertMessage, isPresented: $showPasteAlert) {
         Button("OK", role: .cancel) {}
       }
@@ -203,7 +233,8 @@ struct InputView: View {
         ContentView(
           description: description,
           searchMode: searchMode,
-          targetClasses: selectedClasses
+          targetClasses: selectedClasses,
+          isParatransitMode: isParatransitMode
         )
       }
     }

@@ -46,7 +46,8 @@ Thing Finder is an assistive technology iOS app for blind users that helps ident
 - Singleton `AppContainer.shared` wires all services together
 - `makePipeline(classes:description:)` builds a fully-configured `FramePipelineCoordinator`
 - Parses license plate from description via `DescriptionParser`
-- Configures: `DetectionManager`, `TrackingManager`, `DriftRepairService`, `VerifierService`, `FrameNavigationManager`, `CandidateLifecycleService`
+- Configures: `DetectionManager`, `TrackingManager`, `DriftRepairService`, `VerifierService` (with `VerifierSelector`), `FrameNavigationManager`, `CandidateLifecycleService`
+- **Verification flow:** `VerifierService` → `VerifierSelector` → `[TrafficEyeVerifier, TwoStepVerifier]`
 
 ---
 
@@ -149,29 +150,24 @@ Thing Finder is an assistive technology iOS app for blind users that helps ident
 
 #### `Services/Pipeline/Verification/`
 
-**Strategy pattern for verification.** Two main engines cycle until match or hard reject:
+**Simplified 2-layer architecture.** Two main engines cycle until match or hard reject:
 
 | File | Purpose |
 |------|---------|
-| `VerifierService.swift` | Frame-driven orchestrator. Rate-limits verification, crops images, delegates to `VerificationStrategyManager`, handles OCR for license plates. |
-| `VerificationStrategy.swift` | Protocol + `VerificationStrategyManager`. Selects best strategy by `shouldUse()` + `priority()`. Resets opposite counter when switching engines. |
-| `BaseVerificationStrategy.swift` | Abstract base with timeout handling (5s on main queue), error mapping, retry logic. |
-| `TrafficEyeStrategy.swift` | Wraps `TrafficEyeVerifier` in strategy pattern. |
-| `TrafficEyeVerifier.swift` | Calls TrafficEye API for fast MMR (make/model recognition). Returns view angle, confidence, plate text. |
-| `LLMStrategy.swift` | Wraps `TwoStepVerifier` in strategy pattern. |
-| `TwoStepVerifier.swift` | Two-step OpenAI verification: (1) extract make/model/color, (2) match against description. |
-| `AdvancedLLMStrategy.swift` | Last-resort LLM with higher token budget. |
-| `VerificationConfig.swift` | Config: expected plate, OCR settings, retry limits, MMR interval. |
-| `VerificationPolicy.swift` | Escalation logic: TrafficEye fails → LLM, LLM fails → back to TrafficEye. |
-| `VerificationStrategyFactory.swift` | Creates strategy manager with configured strategies. |
+| `VerifierService.swift` | Frame-driven orchestrator. Rate-limits verification, crops images, delegates to `VerifierSelector`, handles OCR for license plates. |
+| `VerifierSelector.swift` | Selection logic. Uses `VerificationPolicy.nextKind()` to pick TrafficEye or LLM, resets opposite counter, applies 5s timeout, converts errors to outcomes. |
+| `TrafficEyeVerifier.swift` | **Hybrid verifier:** Calls TrafficEye API for make/model/color → OpenAI for semantic comparison. Robust to side views (as of 10/23). ~1.9s latency. |
+| `TwoStepVerifier.swift` | **Pure LLM verifier:** Two-step OpenAI verification: (1) extract make/model/color, (2) match against description. ~4-5s latency. |
+| `VerificationConfig.swift` | Config: expected plate, OCR settings, retry limits, MMR interval, `useCombinedVerifier` flag. |
+| `VerificationPolicy.swift` | Escalation logic: `nextKind()` returns `.trafficEye` or `.llm` based on attempt counters. Thresholds: `maxPrimaryRetries=3`, `maxLLMRetries=3`. |
 | `VerifierService+OCR.swift` | OCR extension using Vision framework for license plate reading. |
 | `VisionOCREngine.swift` | `OCREngine` impl using `VNRecognizeTextRequest`. |
-| `ImageVerifier.swift` | Legacy protocol for verifiers. |
+| `ImageVerifier.swift` | Protocol for verifiers: `verify(image:candidateId:)` → `VerificationOutcome`. |
 
 **Verification flow:**
-1. TrafficEye (fast, view-aware) attempts first
-2. On failure, counter increments → escalates to LLM
-3. LLM failures escalate back to TrafficEye
+1. TrafficEye (hybrid: API + OpenAI) attempts first
+2. On failure, counter increments → after 3 failures, escalates to LLM
+3. LLM failures (after 3) escalate back to TrafficEye
 4. Loops until match or hard reject (wrong make/model/plate)
 
 **VerificationOutcome:** `isMatch`, `description`, `vehicleView`, `viewScore`, `rejectReason`, `isPlateMatch`

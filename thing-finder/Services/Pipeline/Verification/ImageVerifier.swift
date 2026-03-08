@@ -2,9 +2,9 @@
 //  thing-finder
 //
 //  Defines a minimal protocol abstracting over any component that can verify an
-//  object crop (as base-64 image data) against the user’s natural-language
-//  target description.  This allows `VerifierService` to depend on a protocol
-//  instead of concrete, `final` `LLMVerifier`, making unit testing easier.
+//  object crop against the user's natural-language target description.
+//  This allows `VerifierService` to depend on a protocol instead of concrete
+//  verifier implementations, making unit testing easier.
 //
 //  Created by Cascade AI on 2025-07-20.
 

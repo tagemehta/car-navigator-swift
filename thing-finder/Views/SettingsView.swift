@@ -39,11 +39,11 @@ struct SettingsView: View {
             .foregroundColor(.secondary)
 
           VStack(alignment: .leading) {
-            Text("Speech Rate: \(String(format: "%.1f", settings.speechRate))")
+            Text("Speech Rate: \(String(Int(settings.speechRate*100)))%")
             Text("Adjusts the speed of spoken directions.")
               .font(.caption)
               .foregroundColor(.secondary)
-            Slider(value: $settings.speechRate, in: -1...1, step: 0.1)
+            Slider(value: $settings.speechRate, in: 0...1, step: 0.1)
               .accessibilityLabel("Speech Rate")
           }
         }
@@ -247,6 +247,11 @@ struct SettingsView: View {
             resetToDefaults()
           }
           .foregroundColor(.red)
+        }
+
+        // MARK: - Feedback Section
+        Section(header: Text("Contact Us")) {
+          FeedbackSection()
         }
       }
       .navigationTitle("Settings")

@@ -104,10 +104,34 @@ final class MatchStatusSpeechTests: XCTestCase {
     // Small angle change (< 60°) should not announce
     let phrase = MatchStatusSpeech.phrase(
       for: .lost,
-      lastDirection: CompassHeading.shared.degrees  // Same as current
+      lastDirection: 0.0,
+      currentHeading: 30.0  // Only 30° change — below 60° threshold
     )
 
     XCTAssertNil(phrase)
+  }
+
+  func test_phrase_lost_withLargeAngleChange_returnsDirection() {
+    // Large angle change (> 60°) should announce direction
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lost,
+      lastDirection: 0.0,
+      currentHeading: 90.0  // 90° change to the right
+    )
+
+    XCTAssertNotNil(phrase)
+    XCTAssertTrue(phrase!.contains("degrees to the right"))
+  }
+
+  func test_phrase_lost_withLargeLeftAngle_returnsLeft() {
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lost,
+      lastDirection: 90.0,
+      currentHeading: 0.0  // 90° change to the left
+    )
+
+    XCTAssertNotNil(phrase)
+    XCTAssertTrue(phrase!.contains("degrees to the left"))
   }
 
   // MARK: - Retry Phrases

@@ -1,51 +1,17 @@
 /// VerifierService
-/// --------------
-/// Frame-driven orchestrator that decides **which verifier to call – TrafficEye or LLM –**
-/// and applies the result back onto each `Candidate`.
+/// ----------------
+/// Frame-driven orchestrator called once per frame by `FramePipelineCoordinator`.
 ///
-/// ### Core ideas
-/// • **Cost & latency balancing** – TrafficEye (fast, expensive, view-aware) first; LLM (slow, cheap,
-///   view-agnostic) second.
-/// • **Escalation loop** – The pipeline now _cycles indefinitely_ between the two engines using
-///   **durable attempt counters**:
-///   * `trafficAttempts` – consecutive failed TrafficEye calls.
-///   * `llmAttempts`      – consecutive failed LLM calls.
-///   When the active engine exceeds its limit the other engine is selected **and the opposite
-///   counter is reset**, allowing the process to loop forever until a match or hard reject.
+/// Responsibilities:
+///   1. Filter candidates needing verification (.unknown status).
+///   2. Rate-limit and per-candidate throttle.
+///   3. Crop the candidate from the pixel buffer.
+///   4. Delegate to `VerifierSelector` which picks TrafficEye or LLM.
+///   5. Update `CandidateStore` with the result (match / reject / retry).
+///   6. OCR pass for license-plate verification (when enabled).
 ///
-/// ### High-level flow per `tick(...)`
-/// 1. Snapshot candidates from the shared `CandidateStore`.
-/// 2. Determine which candidates are due for (re)verification.
-/// 3. For each candidate choose the engine via `VerificationPolicy.nextKind(for:)`.
-/// 4. **Reset the opposite counter** (implemented inside `VerifierService` just before calling).
-/// 5. Call the chosen verifier asynchronously.
-/// 6. Record success → `.matched`; on failure increment the active counter and keep looping.
-///
-/// ### Attempt limits (see `VerificationPolicy`)
-/// ```
-/// TrafficEye escalation:   side-view after 1 fail, any view after 3 fails
-/// LLM fallback to TE:      after 2 consecutive LLM failures
-/// ```
-/// These constants can be tuned without touching `VerifierService`.
-///
-/// Threading: All verification calls run off-main; `CandidateStore` is thread-safe so updates are
-/// posted directly from Combine sinks.
-///
-/// Dependencies injected:
-/// * `TrafficEyeVerifier`, `TwoStepVerifier` (LLM)
-/// * `ImageUtilities` – bounding-box helpers
-/// * `OCREngine` – licence-plate verification
-///
-/// Created by Tage Mehta – updated 2025-08-06 to document the continuous TE ↔︎ LLM loop.
-//
-//  DefaultVerifierService.swift
-//  thing-finder
-//
-//  Created as part of the state-machine refactor. Wraps asynchronous LLM
-//  verification calls and updates the `CandidateStore` with the results.
-//
-//  NOTE: VSCode may show unresolved import warnings – they compile fine in
-//  Xcode as per user guidance.
+/// Counter management (attempt escalation, counter resets) lives in
+/// `VerifierSelector` – this class only increments the active counter on failure.
 
 import Combine
 import CoreVideo
@@ -54,9 +20,8 @@ import UIKit
 import Vision
 
 public final class VerifierService: VerifierServiceProtocol {
-  /// Strategy manager for handling verification
-  private let strategyManager: VerificationStrategyManager
 
+  private let selector: VerifierSelector
   internal let imgUtils: ImageUtilities
   internal let verificationConfig: VerificationConfig
   internal let ocrEngine: OCREngine
@@ -72,24 +37,10 @@ public final class VerifierService: VerifierServiceProtocol {
     config: VerificationConfig,
     ocrEngine: OCREngine = VisionOCREngine()
   ) {
-    let factory = VerificationStrategyFactory(config: config)
-    self.strategyManager = factory.createStrategyManager(
-      targetTextDescription: targetTextDescription)
-    self.imgUtils = imgUtils
-    self.verificationConfig = config
-    self.ocrEngine = ocrEngine
-  }
-
-  /// Legacy initializer for backwards compatibility
-  init(
-    verifier: ImageVerifier,
-    imgUtils: ImageUtilities,
-    config: VerificationConfig,
-    ocrEngine: OCREngine = VisionOCREngine()
-  ) {
-    let factory = VerificationStrategyFactory(config: config)
-    self.strategyManager = factory.createStrategyManager(
-      targetTextDescription: verifier.targetTextDescription)
+    self.selector = VerifierSelector(
+      targetTextDescription: targetTextDescription,
+      config: config
+    )
     self.imgUtils = imgUtils
     self.verificationConfig = config
     self.ocrEngine = ocrEngine
@@ -114,9 +65,7 @@ public final class VerifierService: VerifierServiceProtocol {
     // toVerify.append(contentsOf: staleVerified)  // Disabled re-verification
 
     // Check if we have a target description to verify against
-    let hasTargetDescription =
-      !strategyManager.strategies.isEmpty
-      && !(strategyManager.targetTextDescription?.isEmpty ?? true)
+    let hasTargetDescription = !(selector.targetTextDescription.isEmpty)
 
     if !hasTargetDescription {
       for cand in pendingUnknown {
@@ -182,10 +131,8 @@ public final class VerifierService: VerifierServiceProtocol {
         continue
       }
 
-      if cand.view != .side
-        && now.timeIntervalSince(cand.lastMMRTime) < verificationConfig.perCandidateMMRInterval
-      {
-        // Skip TrafficEye re-verify until per-candidate interval passes.
+      if now.timeIntervalSince(cand.lastMMRTime) < verificationConfig.perCandidateMMRInterval {
+        // Skip re-verify until per-candidate interval passes.
         let message = "Candidate \(cand.id.uuidString.suffix(8)) skipped – MMR throttled"
         DebugPublisher.shared.info("[Verifier] \(message)")
         continue
@@ -207,8 +154,7 @@ public final class VerifierService: VerifierServiceProtocol {
       }
 
       let verifyStartTime = Date()
-      // Use strategy manager to handle verification with proper counter management
-      strategyManager.verify(image: img, candidate: cand, store: store)
+      selector.verify(image: img, candidate: cand, store: store)
         .sink { completion in
           switch completion {
           case .finished:
@@ -249,8 +195,9 @@ public final class VerifierService: VerifierServiceProtocol {
 
           // Update view and timing information
           store.update(id: cand.id) { c in
-            if let v = outcome.vehicleView, let score = outcome.viewScore {
-              c.updateView(v, score: score)
+            if let v = outcome.vehicleView {
+              c.view = v
+              c.viewScore = outcome.viewScore ?? 0
             }
             // Update MMR time for TrafficEye strategies
             if strategyName.contains("TrafficEye") {

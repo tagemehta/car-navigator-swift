@@ -31,51 +31,31 @@ final class CandidateTests: XCTestCase {
     XCTAssertNil(candidate.ocrText)
   }
 
-  // MARK: - updateView Tests
+  // MARK: - View Assignment Tests
 
-  func test_updateView_tracksMaxScore_sameRank() {
-    var candidate = TestCandidates.make(view: .front, viewScore: 0.7)
+  func test_view_canBeSetDirectly() {
+    var candidate = TestCandidates.make(view: .unknown, viewScore: 0.0)
 
-    // Higher score at same rank should update
-    candidate.updateView(.front, score: 0.9)
+    // View can be set directly (no ranking logic)
+    candidate.view = .front
+    candidate.viewScore = 0.9
     XCTAssertEqual(candidate.view, .front)
     XCTAssertEqual(candidate.viewScore, 0.9)
 
-    // Lower score at same rank should NOT update
-    candidate.updateView(.front, score: 0.5)
-    XCTAssertEqual(candidate.viewScore, 0.9)
+    // View can be changed to any value
+    candidate.view = .left
+    candidate.viewScore = 0.5
+    XCTAssertEqual(candidate.view, .left)
+    XCTAssertEqual(candidate.viewScore, 0.5)
   }
 
-  func test_updateView_prefersHigherRank() {
-    var candidate = TestCandidates.make(view: .unknown, viewScore: 0.9)
-
-    // Side (rank 1) beats unknown (rank 0) even with lower score
-    candidate.updateView(.side, score: 0.5)
-    XCTAssertEqual(candidate.view, .side)
-    XCTAssertEqual(candidate.viewScore, 0.5)
-
-    // Front (rank 2) beats side (rank 1)
-    candidate.updateView(.front, score: 0.3)
-    XCTAssertEqual(candidate.view, .front)
-    XCTAssertEqual(candidate.viewScore, 0.3)
-
-    // Rear (rank 2) with higher score updates
-    candidate.updateView(.rear, score: 0.8)
-    XCTAssertEqual(candidate.view, .rear)
-    XCTAssertEqual(candidate.viewScore, 0.8)
-  }
-
-  func test_updateView_doesNotDowngrade() {
-    var candidate = TestCandidates.make(view: .front, viewScore: 0.5)
-
-    // Side (rank 1) should NOT replace front (rank 2)
-    candidate.updateView(.side, score: 0.9)
-    XCTAssertEqual(candidate.view, .front)
-    XCTAssertEqual(candidate.viewScore, 0.5)
-
-    // Unknown (rank 0) should NOT replace front
-    candidate.updateView(.unknown, score: 1.0)
-    XCTAssertEqual(candidate.view, .front)
+  func test_vehicleView_isSide() {
+    XCTAssertTrue(Candidate.VehicleView.left.isSide)
+    XCTAssertTrue(Candidate.VehicleView.right.isSide)
+    XCTAssertTrue(Candidate.VehicleView.side.isSide)
+    XCTAssertFalse(Candidate.VehicleView.front.isSide)
+    XCTAssertFalse(Candidate.VehicleView.rear.isSide)
+    XCTAssertFalse(Candidate.VehicleView.unknown.isSide)
   }
 
   // MARK: - isMatched Tests

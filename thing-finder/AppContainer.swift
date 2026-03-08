@@ -5,31 +5,36 @@
 //  Keeps SwiftUI view-models lean and allows tests to swap services easily.
 //
 //  Usage (e.g. in CameraViewModel):
-//    let coordinator = AppContainer.shared.makePipeline()
+//    let coordinator = AppContainer.shared.makePipeline(classes: [...], description: "...")
 //
-//  NOTE: Real implementations for detector/tracker/etc. are placeholders here—
-//  you can keep using the existing DetectionManager et al. until we migrate.
+//  Verification flow (simplified 2-layer architecture):
+//    VerifierService → VerifierSelector → [TrafficEyeVerifier, TwoStepVerifier, AdvancedLLMVerifier]
+//    Selection logic lives in VerifierSelector.selectVerifier()
 
 import Foundation
-import Vision
 import SwiftUI
+import Vision
 
 public final class AppContainer {
   static let shared = AppContainer()
-  
+
   /// Shared debug overlay model for displaying verification errors and debug information
   let debugOverlayModel = DebugOverlayModel()
-  
+
   private init() {}
 
   // Build a fully-wired coordinator for a given capture mode.
-  func makePipeline(classes: [String], description: String) -> FramePipelineCoordinator {
+  func makePipeline(
+    classes: [String],
+    description: String,
+    isParatransitMode: Bool = false
+  ) -> FramePipelineCoordinator {
     let settings = Settings()
     // MARK: Concrete service wiring
     // 1. Detector
     let mlModel: VNCoreMLModel = {
       // Fallback to a lightweight default Vision model if your main CoreML file
-      // isn’t bundled yet; replace with actual.
+      // isn't bundled yet; replace with actual.
       return try! VNCoreMLModel(for: yolo11n().model)
     }()
     let detector = DetectionManager(model: mlModel)
@@ -40,17 +45,16 @@ public final class AppContainer {
     // 3. Drift repair using shared ImageUtilities
     let drift = DriftRepairService(imageUtils: ImageUtilities.shared)
 
-    // 4. Verifier – DefaultVerifierService wired with TrafficEyeVerifier
-    // Extract potential license plate and remaining description
+    // 4. Verifier – VerifierSelector picks TrafficEye or LLM per-candidate
     let parsed = DescriptionParser.extractPlate(from: description)
     let needsOCR =
       classes.contains { ["car", "truck", "bus", "van"].contains($0.lowercased()) }
       && parsed.plate != nil
+    let strategy: VerifierStrategy = isParatransitMode ? .paratransit : .hybrid
     let verifierConfig = VerificationConfig(
-      expectedPlate: parsed.plate, shouldRunOCR: needsOCR, useCombinedVerifier: true)
+      expectedPlate: parsed.plate, shouldRunOCR: needsOCR, strategy: strategy)
     let verifier = VerifierService(
-      verifier: TrafficEyeVerifier(
-        targetClasses: classes, targetTextDescription: description, config: verifierConfig),
+      targetTextDescription: description,
       imgUtils: ImageUtilities.shared,
       config: verifierConfig
     )
