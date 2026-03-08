@@ -9,16 +9,19 @@ struct ContentView: View {
   let description: String
   let searchMode: SearchMode
   let targetClasses: [String]
+  let isParatransitMode: Bool
   private let settings: Settings
 
   init(
     description: String,
     searchMode: SearchMode,
-    targetClasses: [String]
+    targetClasses: [String],
+    isParatransitMode: Bool = false
   ) {
     self.description = description
     self.searchMode = searchMode
     self.targetClasses = targetClasses
+    self.isParatransitMode = isParatransitMode
     let settings = Settings()
     self.settings = settings
   }
@@ -34,7 +37,8 @@ struct ContentView: View {
           isRunning: $isCameraRunning,
           description: description,
           targetClasses: targetClasses,
-          settings: settings
+          settings: settings,
+          isParatransitMode: isParatransitMode
         )
         .id(detectorKey)
 

@@ -12,17 +12,22 @@ import Foundation
 
 /// Defines which verifier(s) to use for vehicle verification.
 public enum VerifierStrategy {
-  /// Standard car search: TrafficEye (fast) → LLM (fallback) escalation loop.
+  /// Standard car search: TrafficEye (fast) → TwoStepVerifier (fallback) escalation loop.
   /// TrafficEye attempts first, escalates to LLM after failures, cycles back.
   case hybrid
 
   /// Always use advanced LLM verifier, skip TrafficEye entirely.
-  /// Use for paratransit (wheelchair lifts, ramps) or custom features TrafficEye can't detect.
+  /// Use for custom features TrafficEye can't detect.
   case llmOnly
 
   /// Always use TrafficEye, never escalate to LLM.
   /// Use for simple MMR-only verification when LLM is unnecessary.
   case trafficEyeOnly
+
+  /// Public transit mode: TrafficEye ↔ AdvancedLLM cycling.
+  /// Like hybrid but uses AdvancedLLM (prompted for route numbers, logos, vehicle IDs)
+  /// instead of TwoStepVerifier. For buses and paratransit vehicles.
+  case paratransit
 }
 
 public struct VerificationConfig {

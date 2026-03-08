@@ -386,6 +386,114 @@ final class VerifierSelectorTests: XCTestCase {
     XCTAssertEqual(config.strategy, .trafficEyeOnly)
   }
 
+  func test_verifierStrategy_canBeSetToParatransit() {
+    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
+    XCTAssertEqual(config.strategy, .paratransit)
+  }
+
+  // MARK: - Strategy Selection: .paratransit
+
+  func test_paratransit_freshCandidate_selectsTrafficEye() {
+    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
+    let selector = VerifierSelector(
+      targetTextDescription: "Route 42 bus",
+      config: config
+    )
+
+    let candidate = TestCandidates.make()
+    store.upsert(candidate)
+
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    selector.verify(image: UIImage(), candidate: candidate, store: store)
+      .sink(
+        receiveCompletion: { _ in expectation.fulfill() },
+        receiveValue: { _, verifierName in
+          XCTAssertEqual(verifierName, "TrafficEye")
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 15.0)
+  }
+
+  func test_paratransit_afterOneTrafficEyeFailure_selectsAdvancedLLM() {
+    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
+    let selector = VerifierSelector(
+      targetTextDescription: "Route 42 bus",
+      config: config
+    )
+
+    // Paratransit uses threshold of 1 for TrafficEye
+    let candidate = TestCandidates.make(trafficAttempts: 1)
+    store.upsert(candidate)
+
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    selector.verify(image: UIImage(), candidate: candidate, store: store)
+      .sink(
+        receiveCompletion: { _ in expectation.fulfill() },
+        receiveValue: { _, verifierName in
+          XCTAssertEqual(verifierName, "AdvancedLLM")
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 15.0)
+  }
+
+  func test_paratransit_afterThreeLLMFailures_cyclesBackToTrafficEye() {
+    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
+    let selector = VerifierSelector(
+      targetTextDescription: "Route 42 bus",
+      config: config
+    )
+
+    // Paratransit: 1 TE, 3 LLM, then cycle back
+    let candidate = TestCandidates.make(trafficAttempts: 1, llmAttempts: 3)
+    store.upsert(candidate)
+
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    selector.verify(image: UIImage(), candidate: candidate, store: store)
+      .sink(
+        receiveCompletion: { _ in expectation.fulfill() },
+        receiveValue: { _, verifierName in
+          XCTAssertEqual(verifierName, "TrafficEye")
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 15.0)
+  }
+
+  func test_paratransit_resetsCountersOnSwitch() {
+    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
+    let selector = VerifierSelector(
+      targetTextDescription: "Route 42 bus",
+      config: config
+    )
+
+    // When switching to LLM, TrafficEye counter should reset
+    let candidate = TestCandidates.make(trafficAttempts: 1, llmAttempts: 0)
+    store.upsert(candidate)
+
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    selector.verify(image: UIImage(), candidate: candidate, store: store)
+      .sink(
+        receiveCompletion: { _ in expectation.fulfill() },
+        receiveValue: { [weak self] _, verifierName in
+          XCTAssertEqual(verifierName, "AdvancedLLM")
+          let updated = self?.store[candidate.id]
+          XCTAssertEqual(updated?.verificationTracker.trafficAttempts, 0)
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 15.0)
+  }
+
   // MARK: - Error Handling
 
   func test_verify_convertsErrorsToRetryableOutcome() {

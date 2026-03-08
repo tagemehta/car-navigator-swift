@@ -24,13 +24,17 @@ public final class AppContainer {
   private init() {}
 
   // Build a fully-wired coordinator for a given capture mode.
-  func makePipeline(classes: [String], description: String) -> FramePipelineCoordinator {
+  func makePipeline(
+    classes: [String],
+    description: String,
+    isParatransitMode: Bool = false
+  ) -> FramePipelineCoordinator {
     let settings = Settings()
     // MARK: Concrete service wiring
     // 1. Detector
     let mlModel: VNCoreMLModel = {
       // Fallback to a lightweight default Vision model if your main CoreML file
-      // isn’t bundled yet; replace with actual.
+      // isn't bundled yet; replace with actual.
       return try! VNCoreMLModel(for: yolo11n().model)
     }()
     let detector = DetectionManager(model: mlModel)
@@ -46,8 +50,9 @@ public final class AppContainer {
     let needsOCR =
       classes.contains { ["car", "truck", "bus", "van"].contains($0.lowercased()) }
       && parsed.plate != nil
+    let strategy: VerifierStrategy = isParatransitMode ? .paratransit : .hybrid
     let verifierConfig = VerificationConfig(
-      expectedPlate: parsed.plate, shouldRunOCR: needsOCR, strategy: .hybrid)
+      expectedPlate: parsed.plate, shouldRunOCR: needsOCR, strategy: strategy)
     let verifier = VerifierService(
       targetTextDescription: description,
       imgUtils: ImageUtilities.shared,

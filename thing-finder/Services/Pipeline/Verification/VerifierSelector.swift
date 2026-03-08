@@ -6,15 +6,17 @@
 /// a single class that owns selection, counter-reset, timeout, and error handling.
 ///
 /// ### Strategies
-/// - **hybrid**: TrafficEye → LLM escalation loop (standard car search)
-/// - **llmOnly**: Always use AdvancedLLMVerifier (paratransit, custom features)
+/// - **hybrid**: TrafficEye → TwoStepVerifier escalation loop (standard car search)
+/// - **llmOnly**: Always use AdvancedLLMVerifier (custom features)
 /// - **trafficEyeOnly**: Always use TrafficEye, never escalate (simple MMR-only)
+/// - **paratransit**: TrafficEye → AdvancedLLMVerifier escalation loop (buses/transit)
 ///
-/// ### Escalation loop (hybrid mode only)
+/// ### Escalation loop (hybrid and paratransit modes)
 /// TrafficEye is tried first. After `maxTrafficEyeRetries` consecutive
-/// failures the selector switches to TwoStepVerifier and resets the
-/// TrafficEye counter. After `maxLLMRetries` LLM failures it cycles back.
-/// This continues until a match or hard reject.
+/// failures the selector switches to LLM and resets the TrafficEye counter.
+/// After `maxLLMRetries` LLM failures it cycles back.
+/// - hybrid uses TwoStepVerifier for LLM step
+/// - paratransit uses AdvancedLLMVerifier (prompted for route numbers, logos)
 
 import Combine
 import Foundation
@@ -60,12 +62,19 @@ public final class VerifierSelector {
   /// TrafficEye is hybrid (API + OpenAI) so allow enough headroom.
   private let perCallTimeout: TimeInterval = 10
 
-  // MARK: - Escalation thresholds (hybrid mode only)
+  // MARK: - Escalation thresholds (hybrid mode)
 
   /// TrafficEye failures before escalating to LLM
   private static let maxTrafficEyeRetries: Int = 3
   /// LLM failures before cycling back to TrafficEye
   private static let maxLLMRetries: Int = 3
+
+  // MARK: - Escalation thresholds (paratransit mode)
+
+  /// TrafficEye failures before escalating to LLM (paratransit)
+  private static let maxTrafficEyeRetriesParatransit: Int = 1
+  /// LLM failures before cycling back to TrafficEye (paratransit)
+  private static let maxLLMRetriesParatransit: Int = 3
 
   // MARK: - Init
 
@@ -103,6 +112,16 @@ public final class VerifierSelector {
       )
       self.llmVerifier = nil
       self.advancedLLM = nil
+
+    case .paratransit:
+      self.trafficEye = TrafficEyeVerifier(
+        targetTextDescription: targetTextDescription,
+        config: config
+      )
+      self.llmVerifier = nil
+      self.advancedLLM = AdvancedLLMVerifier(
+        targetTextDescription: targetTextDescription,
+      )
     }
   }
 
@@ -119,14 +138,14 @@ public final class VerifierSelector {
     let kind = selectVerifier(for: candidate)
     let verifierName: String
 
-    // Reset opposite counter when switching engines (hybrid mode only)
-    if strategy == .hybrid {
+    // Reset opposite counter when switching engines (hybrid and paratransit modes)
+    if strategy == .hybrid || strategy == .paratransit {
       switch kind {
       case .trafficEye:
         verifierName = "TrafficEye"
         store.update(id: candidate.id) { $0.verificationTracker.llmAttempts = 0 }
       case .llm:
-        verifierName = "LLM"
+        verifierName = strategy == .paratransit ? "AdvancedLLM" : "LLM"
         store.update(id: candidate.id) { $0.verificationTracker.trafficAttempts = 0 }
       }
     } else {
@@ -151,7 +170,7 @@ public final class VerifierSelector {
       }
       publisher = llm.verify(image: image, candidateId: candidate.id)
 
-    case (.llm, .llmOnly):
+    case (.llm, .llmOnly), (.llm, .paratransit):
       guard let adv = advancedLLM else {
         fatalError("AdvancedLLMVerifier not available for strategy \(strategy)")
       }
@@ -194,6 +213,16 @@ public final class VerifierSelector {
       return .llm
 
     case .trafficEyeOnly:
+      return .trafficEye
+
+    case .paratransit:
+      // Paratransit: 1 TrafficEye attempt, then 3 LLM attempts, then cycle
+      if candidate.verificationTracker.llmAttempts >= Self.maxLLMRetriesParatransit {
+        return .trafficEye
+      }
+      if candidate.verificationTracker.trafficAttempts >= Self.maxTrafficEyeRetriesParatransit {
+        return .llm
+      }
       return .trafficEye
     }
   }
