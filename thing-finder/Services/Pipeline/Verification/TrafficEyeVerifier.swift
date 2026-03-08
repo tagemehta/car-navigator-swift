@@ -91,14 +91,21 @@ private func parseVehicleView(mmr: MMR?) -> (Candidate.VehicleView, Double?) {
     switch v {
     case "frontal": return (.front, view.score)
     case "rear", "back": return (.rear, view.score)
+    case "side": return (.side, view.score)
     default: return (.unknown, view.score)
     }
   }
   return (.unknown, nil)
 }
 
-// MARK: - TrafficEye Verifier
+// MARK: - TrafficEye Verifier (Hybrid: TrafficEye API + OpenAI comparison)
 
+/// Hybrid verifier: calls the TrafficEye recognition API for make/model/color/view,
+/// then delegates to an OpenAI LLM call to semantically compare the API output
+/// against the user's natural-language description.
+///
+/// This is the primary (fast) verification path — typically ~1.9s per call.
+/// Now robust to side views as of 10/23.
 public final class TrafficEyeVerifier: ImageVerifier {
   private var lastVerifiedDate = Date()
 
@@ -228,7 +235,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
             "[TrafficEye][\(candidateId.uuidString.suffix(8))] Plate detected: \(plate.text.value) (confidence=\(String(format: "%.2f", plate.text.score ?? 0)))"
           )
         }
-        let (vehicleView, viewScore) = parseVehicleView(mmr: mmr)
+        let (vehicleView, _) = parseVehicleView(mmr: mmr)
         // Compute info quality and decide whether to call LLM
         let infoQ = {
           let makeScore = mmr.make?.score ?? 0

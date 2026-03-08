@@ -460,7 +460,7 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: now)
 
     // Should speak the status phrase AND the view phrase
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("front of the car"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Front view of car"))
 
     // Second tick with same view — should NOT re-announce view
     let beforeCount = mockSpeaker.speakCallCount
@@ -468,7 +468,7 @@ final class NavAnnouncerTests: XCTestCase {
     // The status phrase may or may not repeat (cooldown), but view should not
     XCTAssertFalse(
       mockSpeaker.spokenPhrases.suffix(from: beforeCount).contains(where: {
-        $0.contains("front of the car")
+        $0.contains("Front view of car")
       }),
       "View should not be re-announced when unchanged")
   }
@@ -482,12 +482,12 @@ final class NavAnnouncerTests: XCTestCase {
 
     let now = Date()
     announcer.tick(candidates: [candidate], timestamp: now)
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("front of the car"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Front view of car"))
 
     // Change view to rear
     candidate.view = .rear
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(7.0))
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("rear of the car"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Rear view of car"))
   }
 
   func test_tick_doesNotAnnounceUnknownView() {
@@ -499,7 +499,7 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: Date())
 
     XCTAssertFalse(
-      mockSpeaker.didSpeakContaining("of the car"),
+      mockSpeaker.didSpeakContaining("of car"),
       "Unknown view should not be announced")
   }
 
@@ -512,7 +512,7 @@ final class NavAnnouncerTests: XCTestCase {
 
     let now = Date()
     announcer.tick(candidates: [candidate], timestamp: now)
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("left side of the car"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Left side of car"))
 
     // Evict by removing candidate from snapshot
     announcer.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
@@ -521,7 +521,7 @@ final class NavAnnouncerTests: XCTestCase {
     mockSpeaker.reset()
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(8.0))
     XCTAssertTrue(
-      mockSpeaker.didSpeakContaining("left side of the car"),
+      mockSpeaker.didSpeakContaining("Left side of car"),
       "After eviction, view should be re-announced")
   }
 

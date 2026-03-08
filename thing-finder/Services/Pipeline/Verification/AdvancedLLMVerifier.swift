@@ -34,7 +34,7 @@ public final class AdvancedLLMVerifier: ImageVerifier {
 
   public init(targetTextDescription: String) { self.targetTextDescription = targetTextDescription }
 
-  // MARK: - Tool schemas (reuse struct types from LLMVerifier)
+  // MARK: - Tool schemas (using OpenAI model types)
   // Combined tool schema: extract + match fields
   private static let combinedToolSchema: Tool = Tool(
     function: Function(

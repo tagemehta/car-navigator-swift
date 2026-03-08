@@ -65,36 +65,17 @@ public struct Candidate: Identifiable {
 
   // MARK: View angle tracking
   public enum VehicleView: String, Codable {
-    case front, rear, left, right, unknown
+    case front, rear, left, right, side, unknown
 
     /// True for lateral views (left or right side of the vehicle).
-    public var isSide: Bool { self == .left || self == .right }
+    public var isSide: Bool { self == .left || self == .right || self == .side }
   }
-  /// Best view observed for this candidate so far.
+  /// Most recent view angle reported by the verifier.
   public var view: VehicleView = .unknown
   /// Confidence score (0–1) of the current `view`.
   public var viewScore: Double = 0.0
   /// Timestamp when an MMR (fast-path) verification was last performed for this candidate.
   public var lastMMRTime: Date = .distantPast
-  /// If side/unknown view was last seen, we wait until this time before consulting LLM.
-
-  /// Update the stored view only if it is an improvement.
-  public mutating func updateView(_ newView: VehicleView, score: Double) {
-    // Prefer front/rear over left/right/unknown, else prefer higher score.
-    func rank(_ v: VehicleView) -> Int {
-      switch v {
-      case .front, .rear: return 2
-      case .left, .right: return 1
-      case .unknown: return 0
-      }
-    }
-    let currentRank = rank(view)
-    let newRank = rank(newView)
-    if newRank > currentRank || (newRank == currentRank && score > viewScore) {
-      view = newView
-      viewScore = score
-    }
-  }
 
   // MARK: Lifetime bookkeeping
   public var createdAt: Date = Date()

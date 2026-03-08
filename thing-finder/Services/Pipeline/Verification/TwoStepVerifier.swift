@@ -39,7 +39,7 @@ public final class TwoStepVerifier: ImageVerifier {
 
   public init(targetTextDescription: String) { self.targetTextDescription = targetTextDescription }
 
-  // MARK: - Tool schemas (reuse struct types from LLMVerifier)
+  // MARK: - Tool schemas (using OpenAI model types)
   // Step 1 – identification
   private static let extractToolSchema: Tool = Tool(
     function: Function(
@@ -72,7 +72,7 @@ public final class TwoStepVerifier: ImageVerifier {
           "confidence", "visible_fraction",
         ])))
 
-  // Reuse match_tool from LLMVerifier via static helper for consistency
+  // Match tool schema for consistency with other verifiers
   private static let matchToolSchema: Tool = Tool(
     function: Function(
       name: "match_object",
@@ -342,7 +342,7 @@ public final class TwoStepVerifier: ImageVerifier {
     case "rear", "back": return .rear
     case "left": return .left
     case "right": return .right
-    case "side", "lateral": return .left  // LLM "side" defaults to .left
+    case "side", "lateral": return .side  // LLM "side" defaults to .left
     default: return .unknown
     }
   }

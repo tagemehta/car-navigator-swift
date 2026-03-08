@@ -208,9 +208,10 @@ final class NavAnnouncer {
     let phrase: String
     switch view {
     case .front: phrase = "Front view of car"
-    case .rear: phrase = "Rear view of  car"
+    case .rear: phrase = "Rear view of car"
     case .left: phrase = "Left side of car"
     case .right: phrase = "Right side of car"
+    case .side: phrase = "Side of car"
     case .unknown: return
     }
 
