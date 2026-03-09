@@ -126,6 +126,7 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
         case .streaming:
           self.isRunning = true
           MetaGlassesManager.shared.isStreamActive = true
+          MetaGlassesManager.shared.streamStartFailed = false
         case .stopped, .paused:
           self.isRunning = false
           MetaGlassesManager.shared.isStreamActive = false
@@ -165,21 +166,31 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
           print("[MetaGlassesFrameProvider] Permission status: \(status)")
 
           if status != .granted {
+            print("[MetaGlassesFrameProvider] Permission not granted, requesting...")
             let requestStatus = try await Wearables.shared.requestPermission(permission)
             guard requestStatus == .granted else {
-              print("[MetaGlassesFrameProvider] Camera permission denied")
+              print("[MetaGlassesFrameProvider] Camera permission denied after request")
+              MetaGlassesManager.shared.isStreamActive = false
               return
             }
           }
         } catch {
-          print("[MetaGlassesFrameProvider] Permission check failed: \(error)")
-          // Continue anyway - AutoDeviceSelector will wait for device
+          print("[MetaGlassesFrameProvider] Permission check/request failed: \(error)")
+          // Permission failed - glasses can't stream, signal fallback
+          MetaGlassesManager.shared.isStreamActive = false
+          MetaGlassesManager.shared.streamStartFailed = true
+          MetaGlassesManager.shared.errorMessage =
+            "Camera permission required. Open Meta AI app to grant access."
+          return
         }
       } else {
-        print("[MetaGlassesFrameProvider] No devices yet, starting session (will wait for device)")
+        print("[MetaGlassesFrameProvider] No devices available")
+        MetaGlassesManager.shared.isStreamActive = false
+        MetaGlassesManager.shared.streamStartFailed = true
+        return
       }
 
-      // Start the session - AutoDeviceSelector will wait for a device if none available
+      // Start the session - we have devices and permission
       await streamSession?.start()
       print("[MetaGlassesFrameProvider] Session started")
     }

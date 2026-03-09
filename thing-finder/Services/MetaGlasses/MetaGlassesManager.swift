@@ -34,6 +34,9 @@ public final class MetaGlassesManager: ObservableObject {
   /// Tracks if the glasses stream is currently active and producing frames
   @Published public var isStreamActive: Bool = false
 
+  /// Tracks if the stream failed to start (e.g., permission denied) - triggers fallback
+  @Published public var streamStartFailed: Bool = false
+
   private var registrationTask: Task<Void, Never>?
   private var deviceStreamTask: Task<Void, Never>?
 
@@ -71,6 +74,7 @@ public final class MetaGlassesManager: ObservableObject {
             self.hasEverRegistered = false
             self.isRegistrationInProgress = false
             self.isStreamActive = false
+            self.streamStartFailed = false
             self.availableDevices = []
             self.deviceStreamTask?.cancel()
             self.deviceStreamTask = nil
