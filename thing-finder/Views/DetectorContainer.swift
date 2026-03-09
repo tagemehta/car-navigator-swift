@@ -18,6 +18,7 @@ struct DetectorContainer: View {
 
   // MARK: – Dependencies
   @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
+  @ObservedObject private var metaGlassesManager = MetaGlassesManager.shared
 
   // MARK: – StateObject (lifetime tied to this view instance)
   @StateObject private var detectionModel: CameraViewModel
@@ -43,6 +44,22 @@ struct DetectorContainer: View {
         isParatransitMode: isParatransitMode))
   }
 
+  // MARK: - Computed Properties
+
+  /// Determines the capture source based on settings and Meta glasses availability
+  /// Falls back to phone camera if glasses mode is enabled but stream isn't active
+  private var captureSource: CaptureSourceType {
+    if settings.useMetaGlasses
+      && (metaGlassesManager.isStreamActive || metaGlassesManager.isReadyForUse)
+    {
+      return .metaGlasses
+    }
+    if settings.useARMode {
+      return .arKit
+    }
+    return .avFoundation
+  }
+
   // MARK: – View
   var body: some View {
     ZStack {
@@ -50,7 +67,7 @@ struct DetectorContainer: View {
       CameraPreviewWrapper(
         isRunning: $isRunning,
         delegate: detectionModel,
-        source: settings.useARMode ? .arKit : .avFoundation
+        source: captureSource
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

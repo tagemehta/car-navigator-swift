@@ -19,9 +19,9 @@ struct CameraPreviewWrapper: View {
           .overlay(Text("Camera Preview").foregroundColor(.white))
       } else {
         #if targetEnvironment(simulator)
-        CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: .videoFile)
+          CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: .videoFile)
         #else
-        CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
+          CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
         #endif
       }
     #else
@@ -116,6 +116,8 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         self.videoCapture = ARVideoCapture()
       case .videoFile:
         self.videoCapture = VideoFileFrameProvider()
+      case .metaGlasses:
+        self.videoCapture = MetaGlassesFrameProvider()
       default:
         self.videoCapture = VideoCapture()
       }

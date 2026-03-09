@@ -1,4 +1,5 @@
 // MARK: - App Entry
+import MWDATCore
 import SwiftUI
 
 @main
@@ -6,7 +7,18 @@ struct ThingFinderApp: App {
   var body: some Scene {
     WindowGroup {
       MainTabView()
-      //      ContentView(description: "always return false", searchMode: .objectFinder, targetClasses: ["laptop"])
+        .onOpenURL { url in
+          // Handle callback from Meta AI app after registration/permission flows
+          guard url.scheme == "thingfinder" else { return }
+          Task {
+            do {
+              _ = try await Wearables.shared.handleUrl(url)
+              print("[ThingFinderApp] Handled Meta AI callback URL: \(url)")
+            } catch {
+              print("[ThingFinderApp] Failed to handle URL: \(error)")
+            }
+          }
+        }
     }
   }
 }

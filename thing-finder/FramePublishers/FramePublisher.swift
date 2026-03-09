@@ -8,7 +8,7 @@
 import AVFoundation
 import UIKit
 
-protocol FrameProviderDelegate: AnyObject {
+public protocol FrameProviderDelegate: AnyObject {
   /// - buffer: BGRA pixel buffer of the live camera frame
   /// - depthAt: closure returning depth (metres) for a point in view-coords, or `nil`
   func processFrame(
@@ -18,7 +18,7 @@ protocol FrameProviderDelegate: AnyObject {
   )
 }
 
-protocol FrameProvider: AnyObject {
+public protocol FrameProvider: AnyObject {
   // Ready-made preview view to add to your hierarchy
   var previewView: UIView { get }
 
@@ -26,7 +26,7 @@ protocol FrameProvider: AnyObject {
 
   /// The underlying capture source type (ARKit or AVFoundation).
   var sourceType: CaptureSourceType { get }
-  
+
   /// Indicates whether the capture session is currently running.
   var isRunning: Bool { get }
 

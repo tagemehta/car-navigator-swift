@@ -30,6 +30,9 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
   /// Interface orientation
   private var interfaceOrientation: UIInterfaceOrientation = .portrait
 
+  /// Current capture source type
+  private var currentCaptureSourceType: CaptureSourceType = .avFoundation
+
   /// Colors for different object classes
   private var colors: [String: UIColor] = [:]
 
@@ -74,7 +77,13 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
           let viewBounds = self.cachedPreviewViewBounds,
           let imageSize = self.cachedBufferDims
         else { return }
-        let orientation = self.imgUtils.cgOrientation(for: self.interfaceOrientation)
+        let orientation: CGImagePropertyOrientation
+        switch self.currentCaptureSourceType {
+        case .metaGlasses:
+          orientation = .up  // Glasses frames are already upright
+        case .avFoundation, .arKit, .videoFile:
+          orientation = self.imgUtils.cgOrientation(for: self.interfaceOrientation)
+        }
         self.boundingBoxes = pres.candidates.map { cand in
           // Map normalized bbox to view-space rect
           //            if cand.matchStatus == .lost
@@ -167,6 +176,9 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
   func processFrame(
     _ capture: any FrameProvider, buffer: CVPixelBuffer, depthAt: @escaping (CGPoint) -> Float?
   ) {
+    // Track the current capture source type
+    currentCaptureSourceType = capture.sourceType
+
     // Update FPS calculation
     // Set up frame dimensions and preview view bounds
     setupFrameDimensions(buffer, capture)
@@ -174,8 +186,16 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
       return
     }
     fpsManager.updateFPSCalculation()
-    let orientation = ImageUtilities.shared.cgOrientation(
-      for: UIInterfaceOrientation(UIDevice.current.orientation))
+    let orientation: CGImagePropertyOrientation
+    switch capture.sourceType {
+    case .metaGlasses:
+      // Glasses camera produces upright frames - no rotation needed
+      orientation = .up
+    case .avFoundation, .arKit, .videoFile:
+      // Phone camera sensor is rotated 90° - needs orientation hint
+      orientation = ImageUtilities.shared.cgOrientation(
+        for: UIInterfaceOrientation(UIDevice.current.orientation))
+    }
 
     // NEW: delegate heavy lifting to coordinator
     pipeline.process(
