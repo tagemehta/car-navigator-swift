@@ -19,9 +19,9 @@ struct CameraPreviewWrapper: View {
           .overlay(Text("Camera Preview").foregroundColor(.white))
       } else {
         #if targetEnvironment(simulator)
-        CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: .videoFile)
+          CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: .videoFile)
         #else
-        CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
+          CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
         #endif
       }
     #else
@@ -76,6 +76,10 @@ struct CameraPreviewView: UIViewControllerRepresentable {
 
   func updateUIViewController(_ uiVC: UIViewController, context: Context) {
     print("Updating camera preview view controller (isRunning: \(isRunning))")
+
+    // Check if source changed and swap provider if needed
+    context.coordinator.updateSource(source, delegate: delegate)
+
     let capture = context.coordinator.videoCapture
 
     // Update delegate if needed
@@ -102,24 +106,47 @@ struct CameraPreviewView: UIViewControllerRepresentable {
 
   // 4️⃣ Define the Coordinator
   class Coordinator: ObservableObject {
-    let videoCapture: FrameProvider
+    var videoCapture: FrameProvider
     weak var delegate: FrameProviderDelegate?
     private var hasSetUpSession = false
+    private(set) var currentSource: CaptureSourceType
 
     init(
       delegate: FrameProviderDelegate?,
       source: CaptureSourceType
     ) {
       self.delegate = delegate
+      self.currentSource = source
+      self.videoCapture = Self.createProvider(for: source)
+      self.videoCapture.delegate = delegate
+    }
+
+    private static func createProvider(for source: CaptureSourceType) -> FrameProvider {
       switch source {
       case .arKit:
-        self.videoCapture = ARVideoCapture()
+        return ARVideoCapture()
       case .videoFile:
-        self.videoCapture = VideoFileFrameProvider()
+        return VideoFileFrameProvider()
+      case .metaGlasses:
+        return MetaGlassesFrameProvider()
       default:
-        self.videoCapture = VideoCapture()
+        return VideoCapture()
       }
-      self.videoCapture.delegate = delegate
+    }
+
+    func updateSource(_ newSource: CaptureSourceType, delegate: FrameProviderDelegate?) {
+      guard newSource != currentSource else { return }
+
+      // Stop old provider
+      if videoCapture.isRunning {
+        videoCapture.stop()
+      }
+
+      // Create new provider
+      currentSource = newSource
+      videoCapture = Self.createProvider(for: newSource)
+      videoCapture.delegate = delegate
+      hasSetUpSession = false
     }
 
     func setupIfNeeded() {

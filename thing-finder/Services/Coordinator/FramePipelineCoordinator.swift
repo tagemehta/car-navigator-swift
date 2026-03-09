@@ -142,7 +142,7 @@ public final class FramePipelineCoordinator: ObservableObject {
       // Sample depth at the box centre using the supplied depthAt closure.
       let center: CGPoint
       switch captureType {
-      case .avFoundation, .videoFile:
+      case .avFoundation, .videoFile, .metaGlasses:
         // Convert view-rect back to normalized image rect for AVF buffers
         let (imageRect, _) = imgUtils.unscaledBoundingBoxes(
           for: box,

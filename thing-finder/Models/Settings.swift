@@ -117,6 +117,11 @@ public class Settings: ObservableObject {
 
   /// Enable debug overlay with verification messages
   @AppStorage("debug_overlay_enabled") var debugOverlayEnabled: Bool = false
+
+  // MARK: - Meta Glasses Settings
+
+  /// Whether to use Meta glasses camera when available
+  @AppStorage("use_meta_glasses") var useMetaGlasses: Bool = false
 }
 
 /// Volume curve types for distance mapping
@@ -282,6 +287,9 @@ extension Settings {
     smoothingAlpha = 0.2
     developerMode = false
     debugOverlayEnabled = false
+
+    // Meta Glasses Settings
+    useMetaGlasses = false
 
     // Force UserDefaults to synchronize changes
     UserDefaults.standard.synchronize()

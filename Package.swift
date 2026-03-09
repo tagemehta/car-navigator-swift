@@ -17,13 +17,16 @@ let package = Package(
   ],
   dependencies: [
     // Dependencies declare other packages that this package depends on.
-    // Add external dependencies here if needed
+    .package(url: "https://github.com/facebook/meta-wearables-dat-ios", from: "0.4.0")
   ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.
     .target(
       name: "ThingFinder",
-      dependencies: [],
+      dependencies: [
+        .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
+        .product(name: "MWDATCamera", package: "meta-wearables-dat-ios"),
+      ],
       path: "thing-finder",
       resources: [
         .process("Assets.xcassets"),

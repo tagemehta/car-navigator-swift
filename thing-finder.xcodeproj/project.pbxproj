@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		310B07602F5E4AA700B57862 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 310B075F2F5E4AA700B57862 /* MWDATCamera */; };
+		310B07622F5E4AA700B57862 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 310B07612F5E4AA700B57862 /* MWDATCore */; };
+		310B07642F5E4AA700B57862 /* MWDATMockDevice in Frameworks */ = {isa = PBXBuildFile; productRef = 310B07632F5E4AA700B57862 /* MWDATMockDevice */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3106F9122E2C3DBD00A9092B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				310B07642F5E4AA700B57862 /* MWDATMockDevice in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,6 +66,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				310B07602F5E4AA700B57862 /* MWDATCamera in Frameworks */,
+				310B07622F5E4AA700B57862 /* MWDATCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,6 +113,7 @@
 			);
 			name = "thing-finderTests";
 			packageProductDependencies = (
+				310B07632F5E4AA700B57862 /* MWDATMockDevice */,
 			);
 			productName = "thing-finderTests";
 			productReference = 3106F90E2E2C3DBD00A9092B /* thing-finderTests.xctest */;
@@ -126,6 +136,8 @@
 			);
 			name = "thing-finder";
 			packageProductDependencies = (
+				310B075F2F5E4AA700B57862 /* MWDATCamera */,
+				310B07612F5E4AA700B57862 /* MWDATCore */,
 			);
 			productName = "thing-finder";
 			productReference = 313783A42DF497B200C36BEE /* thing-finder.app */;
@@ -159,6 +171,9 @@
 			);
 			mainGroup = 3137839B2DF497B200C36BEE;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				310B075E2F5E4AA700B57862 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 313783A52DF497B200C36BEE /* Products */;
 			projectDirPath = "";
@@ -482,6 +497,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		310B075E2F5E4AA700B57862 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/meta-wearables-dat-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		310B075F2F5E4AA700B57862 /* MWDATCamera */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 310B075E2F5E4AA700B57862 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCamera;
+		};
+		310B07612F5E4AA700B57862 /* MWDATCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 310B075E2F5E4AA700B57862 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCore;
+		};
+		310B07632F5E4AA700B57862 /* MWDATMockDevice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 310B075E2F5E4AA700B57862 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATMockDevice;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3137839C2DF497B200C36BEE /* Project object */;
 }
