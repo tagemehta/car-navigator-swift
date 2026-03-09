@@ -216,14 +216,9 @@ public final class VerifierSelector {
       return .trafficEye
 
     case .paratransit:
-      // Paratransit: 1 TrafficEye attempt, then 3 LLM attempts, then cycle
-      if candidate.verificationTracker.llmAttempts >= Self.maxLLMRetriesParatransit {
-        return .trafficEye
-      }
-      if candidate.verificationTracker.trafficAttempts >= Self.maxTrafficEyeRetriesParatransit {
-        return .llm
-      }
-      return .trafficEye
+      // Always use AdvancedLLM for transit mode
+      // To restore escalation loop: use hybrid-style logic with maxTrafficEyeRetriesParatransit/maxLLMRetriesParatransit
+      return .llm
     }
   }
 

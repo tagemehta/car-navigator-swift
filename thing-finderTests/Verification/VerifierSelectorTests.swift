@@ -393,105 +393,44 @@ final class VerifierSelectorTests: XCTestCase {
 
   // MARK: - Strategy Selection: .paratransit
 
-  func test_paratransit_freshCandidate_selectsTrafficEye() {
+  func test_paratransit_alwaysSelectsAdvancedLLM() {
+    // Paratransit mode always uses AdvancedLLM regardless of attempt counters.
+    // To restore escalation loop, see comment in VerifierSelector.selectVerifier().
     let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
     let selector = VerifierSelector(
       targetTextDescription: "Route 42 bus",
       config: config
     )
 
-    let candidate = TestCandidates.make()
-    store.upsert(candidate)
+    // Test with fresh candidate
+    let freshCandidate = TestCandidates.make()
+    store.upsert(freshCandidate)
 
-    let expectation = XCTestExpectation(description: "Verify completes")
-
-    selector.verify(image: UIImage(), candidate: candidate, store: store)
+    let expectation1 = XCTestExpectation(description: "Fresh candidate verify completes")
+    selector.verify(image: UIImage(), candidate: freshCandidate, store: store)
       .sink(
-        receiveCompletion: { _ in expectation.fulfill() },
-        receiveValue: { _, verifierName in
-          XCTAssertEqual(verifierName, "TrafficEye")
-        }
-      )
-      .store(in: &cancellables)
-
-    wait(for: [expectation], timeout: 15.0)
-  }
-
-  func test_paratransit_afterOneTrafficEyeFailure_selectsAdvancedLLM() {
-    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
-    let selector = VerifierSelector(
-      targetTextDescription: "Route 42 bus",
-      config: config
-    )
-
-    // Paratransit uses threshold of 1 for TrafficEye
-    let candidate = TestCandidates.make(trafficAttempts: 1)
-    store.upsert(candidate)
-
-    let expectation = XCTestExpectation(description: "Verify completes")
-
-    selector.verify(image: UIImage(), candidate: candidate, store: store)
-      .sink(
-        receiveCompletion: { _ in expectation.fulfill() },
+        receiveCompletion: { _ in expectation1.fulfill() },
         receiveValue: { _, verifierName in
           XCTAssertEqual(verifierName, "AdvancedLLM")
         }
       )
       .store(in: &cancellables)
 
-    wait(for: [expectation], timeout: 15.0)
-  }
+    // Test with candidate that has prior attempts (should still use AdvancedLLM)
+    let candidateWithAttempts = TestCandidates.make(trafficAttempts: 5, llmAttempts: 10)
+    store.upsert(candidateWithAttempts)
 
-  func test_paratransit_afterThreeLLMFailures_cyclesBackToTrafficEye() {
-    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
-    let selector = VerifierSelector(
-      targetTextDescription: "Route 42 bus",
-      config: config
-    )
-
-    // Paratransit: 1 TE, 3 LLM, then cycle back
-    let candidate = TestCandidates.make(trafficAttempts: 1, llmAttempts: 3)
-    store.upsert(candidate)
-
-    let expectation = XCTestExpectation(description: "Verify completes")
-
-    selector.verify(image: UIImage(), candidate: candidate, store: store)
+    let expectation2 = XCTestExpectation(description: "Candidate with attempts verify completes")
+    selector.verify(image: UIImage(), candidate: candidateWithAttempts, store: store)
       .sink(
-        receiveCompletion: { _ in expectation.fulfill() },
+        receiveCompletion: { _ in expectation2.fulfill() },
         receiveValue: { _, verifierName in
-          XCTAssertEqual(verifierName, "TrafficEye")
-        }
-      )
-      .store(in: &cancellables)
-
-    wait(for: [expectation], timeout: 15.0)
-  }
-
-  func test_paratransit_resetsCountersOnSwitch() {
-    let config = VerificationConfig(expectedPlate: nil, strategy: .paratransit)
-    let selector = VerifierSelector(
-      targetTextDescription: "Route 42 bus",
-      config: config
-    )
-
-    // When switching to LLM, TrafficEye counter should reset
-    let candidate = TestCandidates.make(trafficAttempts: 1, llmAttempts: 0)
-    store.upsert(candidate)
-
-    let expectation = XCTestExpectation(description: "Verify completes")
-
-    selector.verify(image: UIImage(), candidate: candidate, store: store)
-      .sink(
-        receiveCompletion: { _ in expectation.fulfill() },
-        receiveValue: { [weak self] _, verifierName in
           XCTAssertEqual(verifierName, "AdvancedLLM")
-          let updated = self?.store[candidate.id]
-          XCTAssertEqual(updated?.verificationTracker.trafficAttempts, 0)
         }
       )
       .store(in: &cancellables)
 
-    wait(for: [expectation], timeout: 15.0)
+    wait(for: [expectation1, expectation2], timeout: 15.0)
   }
 
   // MARK: - Error Handling
