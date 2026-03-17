@@ -28,9 +28,12 @@ final class DirectionSpeechController {
 
     var distanceText: String = ""
     if let dist = distance {
-      let roundedDistance = Int(round(dist))
-      distanceText = "\(roundedDistance) meters"
-
+      let measurement = Measurement(value: dist, unit: UnitLength.meters)
+      let formatter = MeasurementFormatter()
+      formatter.unitOptions = .naturalScale
+      formatter.unitStyle = .long
+      formatter.numberFormatter.maximumFractionDigits = 0
+      distanceText = formatter.string(from: measurement)
     }
 
     let announcement: String
