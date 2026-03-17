@@ -62,8 +62,10 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   }
 
   deinit {
-    // Note: Cannot call MainActor-isolated stop() from deinit
-    // The streamSession will be cleaned up automatically
+    // Clean up stream session
+    Task { @MainActor [streamSession] in
+      await streamSession?.stop()
+    }
   }
 
   // MARK: - FrameProvider Methods
@@ -71,27 +73,15 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   func setupSession() {
     guard streamSession == nil else { return }
 
-    // SDK requires MainActor - dispatch synchronously since we're likely already on main
-    if Thread.isMainThread {
-      MainActor.assumeIsolated {
-        setupSessionOnMain()
-      }
-    } else {
-      DispatchQueue.main.sync {
-        MainActor.assumeIsolated { [self] in
-          setupSessionOnMain()
-        }
-      }
+    // Must be called on MainActor for MWDATCamera
+    Task { @MainActor in
+      self.setupSessionOnMain()
     }
   }
 
   @MainActor
   private func setupSessionOnMain() {
     guard streamSession == nil else { return }
-
-    print("[MetaGlassesFrameProvider] Setting up session...")
-    print("[MetaGlassesFrameProvider] Registration state: \(Wearables.shared.registrationState)")
-    print("[MetaGlassesFrameProvider] Current devices: \(Wearables.shared.devices)")
 
     let wearables = Wearables.shared
     deviceSelector = AutoDeviceSelector(wearables: wearables)
@@ -107,7 +97,6 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
       return
     }
     streamSession = StreamSession(streamSessionConfig: config, deviceSelector: selector)
-    print("[MetaGlassesFrameProvider] StreamSession created")
 
     // Subscribe to video frames
     videoFrameListenerToken = streamSession?.videoFramePublisher.listen { [weak self] videoFrame in
@@ -121,7 +110,6 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     stateListenerToken = streamSession?.statePublisher.listen { [weak self] state in
       Task { @MainActor [weak self] in
         guard let self else { return }
-        print("[MetaGlassesFrameProvider] State changed: \(state)")
         switch state {
         case .streaming:
           self.isRunning = true
@@ -131,7 +119,6 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
           self.isRunning = false
           MetaGlassesManager.shared.isStreamActive = false
         case .waitingForDevice:
-          // Glasses not available - signal fallback needed
           MetaGlassesManager.shared.isStreamActive = false
         default:
           break
@@ -140,11 +127,7 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     }
 
     // Subscribe to errors
-    errorListenerToken = streamSession?.errorPublisher.listen { error in
-      Task { @MainActor in
-        print("[MetaGlassesFrameProvider] Stream error: \(error)")
-      }
-    }
+    errorListenerToken = streamSession?.errorPublisher.listen { _ in }
   }
 
   func start() {
@@ -154,45 +137,64 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     Task { @MainActor [weak self] in
       guard let self else { return }
       defer { self.isStarting = false }
-      // Check if we have any devices available
-      let devices = Wearables.shared.devices
-      print("[MetaGlassesFrameProvider] Available devices: \(devices)")
+
+      // Reset failure flag for fresh attempt
+      MetaGlassesManager.shared.streamStartFailed = false
+
+      // Ensure session is set up before starting
+      if self.streamSession == nil {
+        self.setupSessionOnMain()
+      }
+
+      // Wait briefly for devices to become available if needed
+      var devices = Wearables.shared.devices
+      if devices.isEmpty {
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        devices = Wearables.shared.devices
+      }
 
       if !devices.isEmpty {
-        // Only check permissions if we have a real device
+        // Check and request permissions
         do {
           let permission = Permission.camera
-          let status = try await Wearables.shared.checkPermissionStatus(permission)
-          print("[MetaGlassesFrameProvider] Permission status: \(status)")
 
-          if status != .granted {
-            print("[MetaGlassesFrameProvider] Permission not granted, requesting...")
+          var needsRequest = false
+          do {
+            let status = try await Wearables.shared.checkPermissionStatus(permission)
+            needsRequest = (status != .granted)
+          } catch {
+            needsRequest = true
+          }
+
+          if needsRequest {
+            MetaGlassesManager.shared.isPermissionRequestInProgress = true
             let requestStatus = try await Wearables.shared.requestPermission(permission)
-            guard requestStatus == .granted else {
-              print("[MetaGlassesFrameProvider] Camera permission denied after request")
+            MetaGlassesManager.shared.isPermissionRequestInProgress = false
+            if requestStatus != .granted {
               MetaGlassesManager.shared.isStreamActive = false
+              MetaGlassesManager.shared.streamStartFailed = true
+              MetaGlassesManager.shared.errorMessage =
+                "Camera permission required. Please grant access in Meta AI app."
               return
             }
           }
         } catch {
-          print("[MetaGlassesFrameProvider] Permission check/request failed: \(error)")
-          // Permission failed - glasses can't stream, signal fallback
+          MetaGlassesManager.shared.isPermissionRequestInProgress = false
           MetaGlassesManager.shared.isStreamActive = false
           MetaGlassesManager.shared.streamStartFailed = true
           MetaGlassesManager.shared.errorMessage =
-            "Camera permission required. Open Meta AI app to grant access."
+            "Camera permission required. Please grant access in Meta AI app."
           return
         }
       } else {
-        print("[MetaGlassesFrameProvider] No devices available")
         MetaGlassesManager.shared.isStreamActive = false
         MetaGlassesManager.shared.streamStartFailed = true
         return
       }
 
-      // Start the session - we have devices and permission
-      await streamSession?.start()
-      print("[MetaGlassesFrameProvider] Session started")
+      // Start the session
+      guard self.streamSession != nil else { return }
+      await self.streamSession?.start()
     }
   }
 
@@ -200,10 +202,25 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     guard isRunning || isStarting || streamSession != nil else { return }
 
     Task { @MainActor in
-      await streamSession?.stop()
-      isRunning = false
-      MetaGlassesManager.shared.isStreamActive = false
+      await self.teardownSession()
     }
+  }
+
+  @MainActor
+  private func teardownSession() async {
+    await streamSession?.stop()
+
+    // Clear listener tokens
+    stateListenerToken = nil
+    videoFrameListenerToken = nil
+    errorListenerToken = nil
+
+    // Clear session so a fresh one is created on next start
+    streamSession = nil
+    deviceSelector = nil
+
+    isRunning = false
+    MetaGlassesManager.shared.isStreamActive = false
   }
 
   // MARK: - Video Frame Handling
@@ -213,9 +230,6 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   @MainActor
   private func handleVideoFrame(_ videoFrame: VideoFrame) {
     frameCount += 1
-    if frameCount % 30 == 1 {
-      print("[MetaGlassesFrameProvider] Received frame #\(frameCount)")
-    }
 
     // Update preview
     if let uiImage = videoFrame.makeUIImage() {

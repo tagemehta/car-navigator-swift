@@ -37,6 +37,9 @@ public final class MetaGlassesManager: ObservableObject {
   /// Tracks if the stream failed to start (e.g., permission denied) - triggers fallback
   @Published public var streamStartFailed: Bool = false
 
+  /// Tracks if permission request is in progress (app may go to background for Meta AI)
+  @Published public var isPermissionRequestInProgress: Bool = false
+
   private var registrationTask: Task<Void, Never>?
   private var deviceStreamTask: Task<Void, Never>?
 
@@ -49,49 +52,64 @@ public final class MetaGlassesManager: ObservableObject {
       try Wearables.configure()
       isConfigured = true
 
-      // Listen for registration state changes
+      // Check current registration state synchronously on launch
+      // This handles the case where the app relaunches with persisted registration
+      let currentState = Wearables.shared.registrationState
+      // print("[MetaGlassesManager] Initial registration state: \(currentState)")
+      handleRegistrationState(currentState, isInitial: true)
+
+      // Listen for future registration state changes
       registrationTask = Task {
         for await state in Wearables.shared.registrationStateStream() {
-          print("[MetaGlassesManager] Registration state: \(state)")
-          self.isRegistered = (state == .registered)
-
-          switch state {
-          case .registered:
-            // If we were in registration flow, show success modal
-            if self.isRegistrationInProgress {
-              self.shouldShowRegistrationSuccess = true
-            }
-            self.hasEverRegistered = true
-            self.isRegistrationInProgress = false
-            await self.setupDeviceStream()
-            print("[MetaGlassesManager] isReadyForUse: \(self.isReadyForUse)")
-
-          case .registering:
-            self.isRegistrationInProgress = true
-
-          default:
-            // Any state other than registered/registering means unregistered
-            self.hasEverRegistered = false
-            self.isRegistrationInProgress = false
-            self.isStreamActive = false
-            self.streamStartFailed = false
-            self.availableDevices = []
-            self.deviceStreamTask?.cancel()
-            self.deviceStreamTask = nil
-            print("[MetaGlassesManager] State \(state) - state reset")
-          }
+          // print("[MetaGlassesManager] Registration state changed: \(state)")
+          self.handleRegistrationState(state, isInitial: false)
         }
       }
     } catch {
       errorMessage = "Failed to configure Wearables SDK: \(error)"
-      print("[MetaGlassesManager] \(errorMessage!)")
+      // print("[MetaGlassesManager] \(errorMessage!)")
+    }
+  }
+
+  private func handleRegistrationState(_ state: RegistrationState, isInitial: Bool) {
+    self.isRegistered = (state == .registered)
+
+    switch state {
+    case .registered:
+      // If we were in registration flow (not initial), show success modal
+      if self.isRegistrationInProgress && !isInitial {
+        self.shouldShowRegistrationSuccess = true
+      }
+      self.hasEverRegistered = true
+      self.isRegistrationInProgress = false
+      // Immediately fetch current devices synchronously to avoid race condition
+      self.availableDevices = Wearables.shared.devices
+      Task {
+        await self.setupDeviceStream()
+      }
+    // print("[MetaGlassesManager] isReadyForUse: \(self.isReadyForUse)")
+
+    case .registering:
+      self.isRegistrationInProgress = true
+
+    default:
+      // Any state other than registered/registering means unregistered
+      self.hasEverRegistered = false
+      self.isRegistrationInProgress = false
+      self.isPermissionRequestInProgress = false
+      self.isStreamActive = false
+      self.streamStartFailed = false
+      self.availableDevices = []
+      self.deviceStreamTask?.cancel()
+      self.deviceStreamTask = nil
+    // print("[MetaGlassesManager] State \(state) - state reset")
     }
   }
 
   private func setupDeviceStream() async {
     // Immediately check current devices
     self.availableDevices = Wearables.shared.devices
-    print("[MetaGlassesManager] Initial devices: \(self.availableDevices)")
+    // print("[MetaGlassesManager] Initial devices: \(self.availableDevices)")
 
     deviceStreamTask?.cancel()
     deviceStreamTask = Task {
