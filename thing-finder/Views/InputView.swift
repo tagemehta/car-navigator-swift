@@ -73,6 +73,7 @@ struct InputView: View {
       description = carDesc
       searchMode = .uberFinder
       showPlaceholder = false
+      isParatransitMode = false
       saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
       isShowingCamera = true
     }
