@@ -9,6 +9,7 @@ final class DirectionSpeechController {
   private var lastDirection: Direction = .center
   private var timeLastSpoken: Date = .distantPast
   private let settings: Settings
+  private let distanceFormatter: MeasurementFormatter
 
   init(
     cache: AnnouncementCache, config: NavigationFeedbackConfig, speaker: SpeechOutput,
@@ -18,6 +19,13 @@ final class DirectionSpeechController {
     self.config = config
     self.speaker = speaker
     self.settings = settings
+
+    // KNOWN ISSUE - mixes languages in non English locales
+    let formatter = MeasurementFormatter()
+    formatter.unitOptions = .naturalScale
+    formatter.unitStyle = .long
+    formatter.numberFormatter.maximumFractionDigits = 0
+    self.distanceFormatter = formatter
   }
 
   /// Pass `nil` when there is no active target against which to provide direction.
@@ -29,11 +37,7 @@ final class DirectionSpeechController {
     var distanceText: String = ""
     if let dist = distance {
       let measurement = Measurement(value: dist, unit: UnitLength.meters)
-      let formatter = MeasurementFormatter()
-      formatter.unitOptions = .naturalScale
-      formatter.unitStyle = .long
-      formatter.numberFormatter.maximumFractionDigits = 0
-      distanceText = formatter.string(from: measurement)
+      distanceText = distanceFormatter.string(from: measurement)
     }
 
     let announcement: String
