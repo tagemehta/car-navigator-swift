@@ -41,7 +41,6 @@ struct CameraPreviewView: UIViewControllerRepresentable {
   }
 
   func makeUIViewController(context: Context) -> UIViewController {
-    print("Creating camera preview view controller...")
     let vc = UIViewController()
     vc.view.backgroundColor = .black
 
@@ -70,28 +69,24 @@ struct CameraPreviewView: UIViewControllerRepresentable {
       }
     }
 
-    print("Preview view controller created with frame: \(preview.frame)")
     return vc
   }
 
   func updateUIViewController(_ uiVC: UIViewController, context: Context) {
-    print("Updating camera preview view controller (isRunning: \(isRunning))")
-
     // Check if source changed and swap provider if needed
-    context.coordinator.updateSource(source, delegate: delegate)
+    let sourceChanged = context.coordinator.updateSource(
+      source, delegate: delegate, parentView: uiVC.view)
 
     let capture = context.coordinator.videoCapture
 
     // Update delegate if needed
     if capture.delegate !== delegate {
-      print("Updating capture delegate")
       capture.delegate = delegate
     }
 
     // Start/stop capture as needed
     if isRunning {
       DispatchQueue.main.async {
-        print("Starting capture from update")
         context.coordinator.setupIfNeeded()
         // Only start if not already running to avoid duplicate starts
         if !capture.isRunning {
@@ -99,7 +94,10 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         }
       }
     } else {
-      print("Stopping capture from update")
+      // Don't stop if Meta glasses permission request is in progress
+      if MetaGlassesManager.shared.isPermissionRequestInProgress {
+        return
+      }
       capture.stop()
     }
   }
@@ -134,8 +132,15 @@ struct CameraPreviewView: UIViewControllerRepresentable {
       }
     }
 
-    func updateSource(_ newSource: CaptureSourceType, delegate: FrameProviderDelegate?) {
-      guard newSource != currentSource else { return }
+    @discardableResult
+    func updateSource(
+      _ newSource: CaptureSourceType, delegate: FrameProviderDelegate?, parentView: UIView
+    ) -> Bool {
+      guard newSource != currentSource else { return false }
+
+      // Remove old preview view
+      let oldPreview = videoCapture.previewView
+      oldPreview.removeFromSuperview()
 
       // Stop old provider
       if videoCapture.isRunning {
@@ -147,6 +152,17 @@ struct CameraPreviewView: UIViewControllerRepresentable {
       videoCapture = Self.createProvider(for: newSource)
       videoCapture.delegate = delegate
       hasSetUpSession = false
+
+      // Add new preview view
+      let newPreview = videoCapture.previewView
+      newPreview.frame = parentView.bounds
+      newPreview.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      newPreview.contentMode = .scaleAspectFill
+      newPreview.clipsToBounds = true
+      parentView.addSubview(newPreview)
+      parentView.sendSubviewToBack(newPreview)
+
+      return true
     }
 
     func setupIfNeeded() {

@@ -51,7 +51,9 @@ struct DetectorContainer: View {
   private var captureSource: CaptureSourceType {
     if settings.useMetaGlasses
       && !metaGlassesManager.streamStartFailed
-      && (metaGlassesManager.isStreamActive || metaGlassesManager.isReadyForUse)
+      && (metaGlassesManager.isStreamActive
+        || metaGlassesManager.isReadyForUse
+        || metaGlassesManager.isPermissionRequestInProgress)
     {
       return .metaGlasses
     }
