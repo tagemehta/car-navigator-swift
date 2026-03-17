@@ -13,6 +13,7 @@ struct InputView: View {
 
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
   @AppStorage("InputView.isParatransitMode") private var isParatransitMode = false
+  @State private var shortcutNavigationState = ShortcutNavigationState.shared
 
   private var historyItems: [SearchHistoryItem] {
     (try? JSONDecoder().decode([SearchHistoryItem].self, from: Data(searchHistoryData.utf8))) ?? []
@@ -65,6 +66,17 @@ struct InputView: View {
     searchMode == .uberFinder
       ? "Describe your ride (e.g., white Toyota Camry with license plate ABC123)"
       : "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)"
+  }
+
+  private func checkForShortcutNavigation() {
+    if let carDesc = shortcutNavigationState.consumePendingDescription() {
+      description = carDesc
+      searchMode = .uberFinder
+      showPlaceholder = false
+      isParatransitMode = false
+      saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
+      isShowingCamera = true
+    }
   }
 
   var body: some View {
@@ -225,6 +237,12 @@ struct InputView: View {
       }
       .onAppear {
         hideKeyboard()
+        checkForShortcutNavigation()
+      }
+      .onChange(of: shortcutNavigationState.pendingCarDescription) { _, newValue in
+        if newValue != nil {
+          checkForShortcutNavigation()
+        }
       }
       .onDisappear {
         hideKeyboard()

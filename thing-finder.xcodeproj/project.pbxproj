@@ -399,6 +399,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CurbToCar;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connect to meta glasses";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The app uses your camera to identify cars";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The app uses your compass to help navigate you to your car";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "The app save screenshots for debugging";
@@ -440,6 +442,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CurbToCar;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connect to meta glasses";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The app uses your camera to identify cars";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The app uses your compass to help navigate you to your car";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "The app save screenshots for debugging";
