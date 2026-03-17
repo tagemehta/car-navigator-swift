@@ -96,6 +96,7 @@ public final class MetaGlassesManager: ObservableObject {
       // Any state other than registered/registering means unregistered
       self.hasEverRegistered = false
       self.isRegistrationInProgress = false
+      self.isPermissionRequestInProgress = false
       self.isStreamActive = false
       self.streamStartFailed = false
       self.availableDevices = []

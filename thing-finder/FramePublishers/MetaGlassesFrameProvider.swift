@@ -172,6 +172,7 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
             MetaGlassesManager.shared.isPermissionRequestInProgress = false
             if requestStatus != .granted {
               MetaGlassesManager.shared.isStreamActive = false
+              MetaGlassesManager.shared.streamStartFailed = true
               MetaGlassesManager.shared.errorMessage =
                 "Camera permission required. Please grant access in Meta AI app."
               return
@@ -180,6 +181,7 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
         } catch {
           MetaGlassesManager.shared.isPermissionRequestInProgress = false
           MetaGlassesManager.shared.isStreamActive = false
+          MetaGlassesManager.shared.streamStartFailed = true
           MetaGlassesManager.shared.errorMessage =
             "Camera permission required. Please grant access in Meta AI app."
           return
