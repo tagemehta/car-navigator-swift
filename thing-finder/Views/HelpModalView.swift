@@ -56,18 +56,20 @@ struct HelpModalView: View {
           Divider()
 
           // MARK: - Meta Glasses
-          HelpSection(
-            title: "Meta Ray-Ban Glasses",
-            icon: "eyeglasses",
-            iconColor: .purple
-          ) {
-            Text("Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:")
-            Text("• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app")
-            Text("• **Permissions**: Grant camera access when prompted")
-            Text("• **Hands-Free**: Keep your phone in your pocket while glasses do the work")
-          }
+          if FeatureFlags.metaGlassesEnabled {
+            HelpSection(
+              title: "Meta Ray-Ban Glasses",
+              icon: "eyeglasses",
+              iconColor: .purple
+            ) {
+              Text("Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:")
+              Text("• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app")
+              Text("• **Permissions**: Grant camera access when prompted")
+              Text("• **Hands-Free**: Keep your phone in your pocket while glasses do the work")
+            }
 
-          Divider()
+            Divider()
+          }
 
           // MARK: - Settings Tips
           HelpSection(

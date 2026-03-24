@@ -49,7 +49,8 @@ struct DetectorContainer: View {
   /// Determines the capture source based on settings and Meta glasses availability
   /// Falls back to phone camera if glasses mode is enabled but stream isn't active or failed
   private var captureSource: CaptureSourceType {
-    if settings.useMetaGlasses
+    if FeatureFlags.metaGlassesEnabled
+      && settings.useMetaGlasses
       && !metaGlassesManager.streamStartFailed
       && (metaGlassesManager.isStreamActive
         || metaGlassesManager.isReadyForUse
