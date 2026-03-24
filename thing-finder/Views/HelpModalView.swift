@@ -28,6 +28,21 @@ struct HelpModalView: View {
 
           Divider()
 
+          // MARK: - Siri Shortcuts
+          HelpSection(
+            title: "Siri Shortcuts",
+            icon: "mic.fill",
+            iconColor: .purple
+          ) {
+            Text("Use Siri to quickly start finding your ride hands-free")
+            Text("• **'Hey Siri, find my car with CurbToCar'**")
+            Text("• **'Hey Siri, find my ride with CurbToCar'**")
+            Text("• **'Hey Siri, CurbToCar search'**")
+            Text("Then Siri will ask you to describe your car, and automatically launch the camera")
+          }
+
+          Divider()
+
           // MARK: - Navigation Feedback
           HelpSection(
             title: "Navigation Feedback",

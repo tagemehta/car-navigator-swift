@@ -29,9 +29,9 @@ struct ThingFinderShortcuts: AppShortcutsProvider {
     AppShortcut(
       intent: FindCarIntent(),
       phrases: [
-        "CurbToCar with \(.applicationName)",
         "Find my car with \(.applicationName)",
         "Find my ride with \(.applicationName)",
+        "\(.applicationName) search",
       ],
       shortTitle: "Find My Car",
       systemImageName: "car.fill"
