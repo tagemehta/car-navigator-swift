@@ -2,10 +2,21 @@ import SwiftUI
 
 struct SettingsView: View {
   @ObservedObject var settings: Settings
+  @State private var showingHelpModal = false
 
   var body: some View {
     NavigationStack {
       List {
+        // MARK: - Help Button
+        Section {
+          Button(action: {
+            showingHelpModal = true
+          }) {
+            Text("Help & Guide")
+          }
+          .accessibilityLabel("Help and Guide. Learn how to use CurbToCar")
+        }
+
         // MARK: - Navigation Feedback
         Section(header: Text("Navigation Feedback")) {
           Toggle("Audio Beeps", isOn: $settings.enableBeeps)
@@ -260,6 +271,9 @@ struct SettingsView: View {
         }
       }
       .navigationTitle("Settings")
+      .sheet(isPresented: $showingHelpModal) {
+        HelpModalView()
+      }
     }
   }
   private func resetToDefaults() {
