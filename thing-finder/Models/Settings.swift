@@ -47,7 +47,8 @@ enum SupportedLanguage: String, CaseIterable, Identifiable {
   var resolvedLanguageCode: String {
     switch self {
     case .system:
-      return Locale.current.language.languageCode?.identifier ?? "en"
+      let deviceLang = Locale.current.language.languageCode?.identifier ?? "en"
+      return ["en", "es"].contains(deviceLang) ? deviceLang : "en"
     case .english:
       return "en"
     case .spanish:
