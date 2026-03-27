@@ -25,6 +25,8 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
 
   private let streamSessionVM: StreamSessionViewModel
   private var frameObservationTask: Task<Void, Never>?
+  /// Tracks the last frame sent to the delegate to avoid reprocessing the same UIImage.
+  private weak var lastFrameRef: UIImage?
 
   private let previewImageView: UIImageView = {
     let iv = UIImageView()
@@ -60,13 +62,15 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   func setupSession() {
     // Start observing frames from the view model
     frameObservationTask?.cancel()
+    lastFrameRef = nil
     frameObservationTask = Task { @MainActor [weak self] in
       guard let self else { return }
       while !Task.isCancelled {
-        if let frame = self.streamSessionVM.currentVideoFrame {
+        if let frame = self.streamSessionVM.currentVideoFrame, frame !== self.lastFrameRef {
+          self.lastFrameRef = frame
           self.previewImageView.image = frame
-          // Convert UIImage back to CVPixelBuffer for the delegate
-          if let pixelBuffer = frame.pixelBuffer() {
+          // Use zero-copy pixel buffer extracted directly from the SDK's CMSampleBuffer
+          if let pixelBuffer = self.streamSessionVM.currentPixelBuffer {
             self.delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
           }
         }
@@ -77,69 +81,33 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
 
   func start() {
     guard !isRunning else { return }
+    // Set synchronously so a concurrent stop() sees the updated flag immediately
+    isRunning = true
     Task { @MainActor [weak self] in
       guard let self else { return }
-      await self.streamSessionVM.handleStartStreaming()
-      self.isRunning = true
-      self.setupSession()
+      let started = await self.streamSessionVM.handleStartStreaming()
+      // Re-check isRunning: stop() may have been called while we were awaiting permission
+      guard self.isRunning else {
+        if started { await self.streamSessionVM.stopStreaming() }
+        return
+      }
+      if started {
+        self.setupSession()
+      } else {
+        self.isRunning = false
+      }
     }
   }
 
   func stop() {
     guard isRunning else { return }
+    // Set synchronously so a concurrent start() Task sees the updated flag after its await
+    isRunning = false
+    frameObservationTask?.cancel()
+    frameObservationTask = nil
     Task { @MainActor [weak self] in
-      guard let self else { return }
-      await self.streamSessionVM.stopStreaming()
-      self.frameObservationTask?.cancel()
-      self.frameObservationTask = nil
-      self.isRunning = false
+      await self?.streamSessionVM.stopStreaming()
     }
   }
 
-}
-
-// MARK: - UIImage to CVPixelBuffer conversion
-
-extension UIImage {
-  fileprivate func pixelBuffer() -> CVPixelBuffer? {
-    guard let cgImage = self.cgImage else { return nil }
-    let width = cgImage.width
-    let height = cgImage.height
-
-    let attrs =
-      [
-        kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue!,
-        kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue!,
-      ] as CFDictionary
-
-    var pixelBuffer: CVPixelBuffer?
-    let status = CVPixelBufferCreate(
-      kCFAllocatorDefault,
-      width,
-      height,
-      kCVPixelFormatType_32ARGB,
-      attrs,
-      &pixelBuffer
-    )
-
-    guard status == kCVReturnSuccess, let buffer = pixelBuffer else { return nil }
-
-    CVPixelBufferLockBaseAddress(buffer, [])
-    defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
-
-    guard
-      let context = CGContext(
-        data: CVPixelBufferGetBaseAddress(buffer),
-        width: width,
-        height: height,
-        bitsPerComponent: 8,
-        bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
-        space: CGColorSpaceCreateDeviceRGB(),
-        bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue
-      )
-    else { return nil }
-
-    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-    return buffer
-  }
 }

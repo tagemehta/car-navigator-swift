@@ -124,12 +124,8 @@ public final class MetaGlassesManager: ObservableObject {
   // MARK: - SDK Configuration
 
   private func configureSDK() {
-    do {
-      try Wearables.configure()
-    } catch {
-      state = .failed("Failed to configure Wearables SDK: \(error.localizedDescription)")
-      return
-    }
+    // Wearables.configure() is called once at app startup in ThingFinderApp.init().
+    // Do not call it again here — the SDK must only be configured once.
 
     // Check persisted registration state from a previous session
     let currentState = Wearables.shared.registrationState

@@ -114,12 +114,6 @@ struct MetaGlassesSettingsSection: View {
     .sheet(isPresented: $showingSetupSheet) {
       MetaGlassesSetupView()
     }
-    .sheet(isPresented: $wearablesVM.showGettingStartedSheet) {
-      MetaGlassesSuccessView()
-        .onDisappear {
-          wearablesVM.showGettingStartedSheet = false
-        }
-    }
   }
 
   private var disconnectButton: some View {

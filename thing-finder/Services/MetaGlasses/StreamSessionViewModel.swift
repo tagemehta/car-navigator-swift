@@ -5,6 +5,7 @@
 //  Mirrors the Meta CameraAccess sample StreamSessionViewModel.
 //
 
+import CoreMedia
 import MWDATCamera
 import MWDATCore
 import SwiftUI
@@ -12,13 +13,16 @@ import SwiftUI
 @MainActor
 final class StreamSessionViewModel: ObservableObject {
   @Published var currentVideoFrame: UIImage?
+  /// Zero-copy pixel buffer extracted directly from the SDK's CMSampleBuffer.
+  /// Prefer this over converting currentVideoFrame back to CVPixelBuffer.
+  private(set) var currentPixelBuffer: CVPixelBuffer?
   @Published var hasReceivedFirstFrame: Bool = false
   @Published var streamingStatus: StreamingStatus = .stopped
   @Published var showError: Bool = false
   @Published var errorMessage: String = ""
   @Published var hasActiveDevice: Bool = false
 
-  var isStreaming: Bool { streamingStatus != .stopped }
+  var isStreaming: Bool { streamingStatus == .streaming }
 
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
@@ -61,6 +65,8 @@ final class StreamSessionViewModel: ObservableObject {
     videoFrameListenerToken = streamSession.videoFramePublisher.listen { [weak self] frame in
       Task { @MainActor [weak self] in
         guard let self else { return }
+        // Extract pixel buffer zero-copy before makeUIImage() discards the sample buffer
+        self.currentPixelBuffer = CMSampleBufferGetImageBuffer(frame.sampleBuffer)
         if let image = frame.makeUIImage() {
           self.currentVideoFrame = image
           if !self.hasReceivedFirstFrame {
@@ -89,22 +95,27 @@ final class StreamSessionViewModel: ObservableObject {
     updateStatus(from: streamSession.state)
   }
 
-  func handleStartStreaming() async {
+  /// Checks/requests camera permission and starts streaming if granted.
+  /// Returns `true` if streaming was successfully initiated, `false` on permission denial or error.
+  @discardableResult
+  func handleStartStreaming() async -> Bool {
     let permission = Permission.camera
     do {
       let status = try await wearables.checkPermissionStatus(permission)
       if status == .granted {
         await startStreaming()
-        return
+        return true
       }
       let requestStatus = try await wearables.requestPermission(permission)
       if requestStatus == .granted {
         await startStreaming()
-        return
+        return true
       }
       showErrorMessage("Permission denied")
+      return false
     } catch {
       showErrorMessage("Permission error: \(error.localizedDescription)")
+      return false
     }
   }
 
@@ -136,6 +147,7 @@ final class StreamSessionViewModel: ObservableObject {
       streamingStatus = .streaming
     case .stopped:
       currentVideoFrame = nil
+      currentPixelBuffer = nil
       streamingStatus = .stopped
     case .waitingForDevice, .starting, .stopping, .paused:
       streamingStatus = .waiting
