@@ -23,20 +23,33 @@ enum MatchStatusSpeech {
   ) -> String? {
     switch status {
     case .waiting:
-      return "Waiting for verification"
+      return String(
+        localized: "Waiting for verification", comment: "Speech: verification in progress")
     case .partial:
       if let desc = detectedDescription {
-        return "Found \(desc). Warning: Plate not visible yet"
+        return String(
+          format: NSLocalizedString(
+            "Found %@. Warning: Plate not visible yet",
+            comment: "Speech: vehicle found but plate not confirmed"),
+          desc)
       }
-      return "Plate not visible yet"
+      return String(localized: "Plate not visible yet", comment: "Speech: partial match, no plate")
     case .full:
       if let plate = recognisedText {
-        return "Found matching plate \(plate)"
+        return String(
+          format: NSLocalizedString(
+            "Found matching plate %@",
+            comment: "Speech: license plate matched"),
+          plate)
       }
       if let desc = detectedDescription {
-        return "Found \(desc)"
+        return String(
+          format: NSLocalizedString(
+            "Found %@",
+            comment: "Speech: vehicle description matched"),
+          desc)
       }
-      return "Found match"
+      return String(localized: "Found match", comment: "Speech: generic match found")
     case .rejected:
       if let desc = detectedDescription, let reason = rejectReason {
         // Add directional information for wrong make/model
@@ -44,11 +57,20 @@ enum MatchStatusSpeech {
           let settings = settings
         {
           let direction = settings.getDirection(normalizedX: normalizedX)
-          return "\(desc) – \(reason.userFriendlyDescription) \(direction.rawValue)"
+          return String(
+            format: NSLocalizedString(
+              "%@ – %@ %@",
+              comment: "Speech: rejected with direction"),
+            desc, reason.userFriendlyDescription, direction.localizedName)
         }
-        return "\(desc) – \(reason.userFriendlyDescription)"
+        return String(
+          format: NSLocalizedString(
+            "%@ – %@",
+            comment: "Speech: rejected with reason"),
+          desc, reason.userFriendlyDescription)
       }
-      return "Verification failed"
+      return String(
+        localized: "Verification failed", comment: "Speech: generic verification failure")
     case .unknown:
       return nil
     case .lost:
@@ -59,10 +81,20 @@ enum MatchStatusSpeech {
       let angle = round(compareAngles(lastDirection, currentHeading))
       if abs(angle) > 60.0 {
         if angle > 0 {
-          return "car was last seen \(Int((abs(angle) / 30).rounded()*30)) degrees to the right"
+          let degrees = Int((abs(angle) / 30).rounded() * 30)
+          return String(
+            format: NSLocalizedString(
+              "car was last seen %d degrees to the right",
+              comment: "Speech: lost car direction right"),
+            degrees)
         }
         if angle < 0 {
-          return "car was last seen \(Int((abs(angle) / 30).rounded()*30)) degrees to the left"
+          let degrees = Int((abs(angle) / 30).rounded() * 30)
+          return String(
+            format: NSLocalizedString(
+              "car was last seen %d degrees to the left",
+              comment: "Speech: lost car direction left"),
+            degrees)
         }
       }
       return nil
@@ -72,12 +104,27 @@ enum MatchStatusSpeech {
   /// Get a phrase to announce when retrying due to a specific reason
   static func retryPhrase(for reason: RejectReason) -> String? {
     switch reason {
-    case .unclearImage: return "Picture too blurry, trying again"
-    case .insufficientInfo: return "Need a better view, retrying"
-    case .lowConfidence: return "Not sure yet, taking another shot"
-    case .apiError: return "Detection error, retrying"
-    case .licensePlateNotVisible: return "Can't see the plate, retrying"
-    case .ambiguous: return "Results unclear, retrying"
+    case .unclearImage:
+      return String(
+        localized: "Picture too blurry, trying again", comment: "Speech: retry due to blurry image")
+    case .insufficientInfo:
+      return String(
+        localized: "Need a better view, retrying", comment: "Speech: retry due to insufficient info"
+      )
+    case .lowConfidence:
+      return String(
+        localized: "Not sure yet, taking another shot",
+        comment: "Speech: retry due to low confidence")
+    case .apiError:
+      return String(
+        localized: "Detection error, retrying", comment: "Speech: retry due to API error")
+    case .licensePlateNotVisible:
+      return String(
+        localized: "Can't see the plate, retrying",
+        comment: "Speech: retry due to plate not visible")
+    case .ambiguous:
+      return String(
+        localized: "Results unclear, retrying", comment: "Speech: retry due to ambiguous result")
     default: return nil  // no speech for hard rejects
     }
   }

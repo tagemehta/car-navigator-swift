@@ -176,7 +176,7 @@ struct HelpModalView: View {
 // MARK: - Helper Components
 
 struct HelpSection<Content: View>: View {
-  let title: String
+  let title: LocalizedStringKey
   let icon: String
   let iconColor: Color
   @ViewBuilder let content: Content
@@ -197,13 +197,14 @@ struct HelpSection<Content: View>: View {
 }
 
 struct HelpItem: View {
-  let title: String
-  let description: String
+  let title: LocalizedStringKey
+  let description: LocalizedStringKey
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text("**\(title)**")
+      Text(title)
         .font(.subheadline)
+        .bold()
       Text(description)
         .font(.caption)
         .foregroundColor(.secondary)

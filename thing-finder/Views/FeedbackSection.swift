@@ -41,7 +41,7 @@ struct FeedbackSection: View {
       MailComposer(
         isShowing: $isShowingMailComposer,
         recipients: [feedbackEmail],
-        subject: "CurbToCar App Feedback"
+        subject: String(localized: "CurbToCar App Feedback", comment: "Email subject for feedback")
       )
     }
     .alert("Email Copied", isPresented: $showEmailCopiedAlert) {

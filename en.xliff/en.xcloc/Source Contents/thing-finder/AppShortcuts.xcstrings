@@ -1,0 +1,21 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Find my car with ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Find my car with ${applicationName}",
+              "Find my ride with ${applicationName}",
+              "${applicationName} search"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.2"
+}

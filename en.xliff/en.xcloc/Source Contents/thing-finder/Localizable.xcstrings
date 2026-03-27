@@ -1,0 +1,651 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@ – %@" : {
+      "comment" : "Speech: rejected with reason",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ – %2$@"
+          }
+        }
+      }
+    },
+    "%@ – %@ %@" : {
+      "comment" : "Speech: rejected with direction",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ – %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "%@ has been copied to your clipboard." : {
+
+    },
+    "%@, %@" : {
+      "comment" : "Speech: new direction with distance",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%lf" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld device(s) available" : {
+
+    },
+    "• **'Hey Siri, CurbToCar search'**" : {
+
+    },
+    "• **'Hey Siri, find my car with CurbToCar'**" : {
+
+    },
+    "• **'Hey Siri, find my ride with CurbToCar'**" : {
+
+    },
+    "• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app" : {
+
+    },
+    "• **Hands-Free**: Keep your phone in your pocket while glasses do the work" : {
+
+    },
+    "• **Permissions**: Grant camera access when prompted" : {
+
+    },
+    "• Glasses are connected via Bluetooth" : {
+
+    },
+    "• Glasses are open (unfolded)" : {
+
+    },
+    "• Meta Glasses mode is enabled in Settings" : {
+
+    },
+    "1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste" : {
+
+    },
+    "2. **Point Camera**: Aim at the pickup area where vehicles arrive. Magic tap to pause/resume camera." : {
+
+    },
+    "3. **Follow Audio Cues**: Listen for directional guidance and announcements" : {
+
+    },
+    "4. **Locate Vehicle**: Audio beeps become faster as you center the car and haptics (if enabled) become faster as you get closer" : {
+
+    },
+    "Add details about the object (e.g., 'red backpack with white stripes')" : {
+      "comment" : "SearchMode: Object Finder placeholder"
+    },
+    "Adjust how fast announcements are spoken" : {
+
+    },
+    "Adjusts the speed of spoken directions." : {
+
+    },
+    "Ambiguous result" : {
+      "comment" : "Reject reason: ambiguous detection"
+    },
+    "Announce 'Waiting for verification' messages." : {
+
+    },
+    "Announce All Detected Cars" : {
+
+    },
+    "Announce every detected car, not just the target." : {
+
+    },
+    "Announce Options" : {
+
+    },
+    "Announce Retry Messages" : {
+
+    },
+    "Announce status messages like 'Picture too blurry, trying again'." : {
+
+    },
+    "Announce Waiting Messages" : {
+
+    },
+    "assistivetech@mit.edu" : {
+
+    },
+    "Audio Beeps" : {
+
+    },
+    "Audio not working" : {
+
+    },
+    "Back" : {
+
+    },
+    "Beep Intervals" : {
+
+    },
+    "Beep Smoothing" : {
+
+    },
+    "Before connecting, you need to enable Developer Mode in the Meta AI app:" : {
+
+    },
+    "By continuing, you acknowledge and accept the above." : {
+
+    },
+    "Can't see the plate, retrying" : {
+      "comment" : "Speech: retry due to plate not visible"
+    },
+    "Cancel" : {
+
+    },
+    "Car Description" : {
+
+    },
+    "car was last seen %lld degrees to the left" : {
+      "comment" : "Speech: lost car direction left"
+    },
+    "car was last seen %lld degrees to the right" : {
+      "comment" : "Speech: lost car direction right"
+    },
+    "Check that 'Speech Guidance' and 'Audio Beeps' are enabled in settings." : {
+
+    },
+    "Choose what information you want announced (all cars, retry messages, waiting status)" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear All" : {
+
+    },
+    "Clipboard is empty" : {
+      "comment" : "Alert: clipboard has no text"
+    },
+    "Complete the setup in Meta AI app, then return here." : {
+
+    },
+    "Connect Glasses" : {
+
+    },
+    "Connect Meta Glasses" : {
+
+    },
+    "Connect to Meta AI" : {
+
+    },
+    "Connected" : {
+
+    },
+    "Connected!" : {
+
+    },
+    "Connection Error" : {
+
+    },
+    "Contact Us" : {
+
+    },
+    "Contact us at:" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Control how often the same direction is repeated (1-10 seconds)" : {
+
+    },
+    "CurbToCar" : {
+
+    },
+    "CurbToCar App Feedback" : {
+      "comment" : "Email subject for feedback"
+    },
+    "Customization Tips" : {
+
+    },
+    "Debug Overlay" : {
+
+    },
+    "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)" : {
+      "comment" : "Placeholder: object description input"
+    },
+    "Describe your car (e.g., white Toyota Camry)" : {
+
+    },
+    "Describe your ride (e.g., white Toyota Camry with license plate ABC123)" : {
+      "comment" : "Placeholder: vehicle description input"
+    },
+    "Describe your vehicle (e.g., 'blue Toyota Prius with license plate ABC123')" : {
+      "comment" : "SearchMode: Uber Finder placeholder"
+    },
+    "Detection error" : {
+      "comment" : "Reject reason: API error"
+    },
+    "Detection error, retrying" : {
+      "comment" : "Speech: retry due to API error"
+    },
+    "Developer Options" : {
+
+    },
+    "Direction Settings" : {
+
+    },
+    "Directional beeps that increase in frequency as you get closer to your vehicle" : {
+
+    },
+    "Disconnect Glasses" : {
+
+    },
+    "Done" : {
+
+    },
+    "Double tap to search with this description" : {
+
+    },
+    "Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart." : {
+
+    },
+    "Email Copied" : {
+
+    },
+    "Email Feedback" : {
+
+    },
+    "Enable for public transit buses. Matches by route number and agency logo instead of make and model." : {
+
+    },
+    "Enable or disable audio beeps for feedback." : {
+
+    },
+    "Enable or disable haptic pulses for feedback." : {
+
+    },
+    "Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button." : {
+
+    },
+    "Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled." : {
+
+    },
+    "Ensure your glasses are open and on your head" : {
+
+    },
+    "Experimental Product" : {
+
+    },
+    "Find" : {
+
+    },
+    "Find My Car" : {
+
+    },
+    "Find My Ride" : {
+
+    },
+    "Find your vehicle with a simple description" : {
+      "comment" : "SearchMode: Uber Finder description"
+    },
+    "Finding Your Ride" : {
+      "comment" : "Nav title: searching for vehicle"
+    },
+    "Finding: %@" : {
+      "comment" : "Nav title: searching for object class"
+    },
+    "Fine-tune minimum and maximum beep frequency for comfort" : {
+
+    },
+    "For buses with route numbers and logos" : {
+
+    },
+    "Found %@" : {
+      "comment" : "Speech: vehicle description matched"
+    },
+    "Found %@. Warning: Plate not visible yet" : {
+      "comment" : "Speech: vehicle found but plate not confirmed"
+    },
+    "Found match" : {
+      "comment" : "Speech: generic match found"
+    },
+    "Found matching plate %@" : {
+      "comment" : "Speech: license plate matched"
+    },
+    "Front view of car" : {
+      "comment" : "Speech: vehicle viewed from front"
+    },
+    "Getting Started" : {
+
+    },
+    "Haptic Feedback" : {
+
+    },
+    "Haptic/Beep Settings" : {
+
+    },
+    "Help" : {
+
+    },
+    "Help & Guide" : {
+
+    },
+    "Help and Guide. Learn how to use CurbToCar" : {
+
+    },
+    "How often the same direction is repeated." : {
+
+    },
+    "I Agree / Continue" : {
+
+    },
+    "Important:" : {
+
+    },
+    "Left side of car" : {
+      "comment" : "Speech: vehicle viewed from left"
+    },
+    "License plate doesn't match" : {
+      "comment" : "Reject reason: plate mismatch"
+    },
+    "License plate not visible" : {
+      "comment" : "Reject reason: plate not visible"
+    },
+    "Longest time between beeps/pulses when target is at the edge." : {
+
+    },
+    "Make sure your glasses are open and powered on" : {
+
+    },
+    "Max Interval: %@s" : {
+
+    },
+    "Maximum Beep Interval" : {
+
+    },
+    "Meta Glasses" : {
+
+    },
+    "Meta glasses not connecting" : {
+
+    },
+    "Meta Ray-Ban Glasses" : {
+
+    },
+    "Min Interval: %@s" : {
+
+    },
+    "Minimum Beep Interval" : {
+
+    },
+    "Minimum time before repeating 'waiting' phrases." : {
+
+    },
+    "MIT Assistive Technology Club" : {
+
+    },
+    "Navigate Before Plate Match" : {
+
+    },
+    "Navigation Feedback" : {
+
+    },
+    "Need a better view" : {
+      "comment" : "Reject reason: insufficient information"
+    },
+    "Need a better view, retrying" : {
+      "comment" : "Speech: retry due to insufficient info"
+    },
+    "Need More Help?" : {
+
+    },
+    "No vehicles detected" : {
+
+    },
+    "Not a vehicle" : {
+      "comment" : "Reject reason: wrong object class"
+    },
+    "Not confident enough" : {
+      "comment" : "Reject reason: low detection confidence"
+    },
+    "Not Connected" : {
+
+    },
+    "Not sure yet, taking another shot" : {
+      "comment" : "Speech: retry due to low confidence"
+    },
+    "Object Class" : {
+
+    },
+    "OK" : {
+
+    },
+    "on your left" : {
+      "comment" : "Direction guidance: target is to the left"
+    },
+    "on your right" : {
+      "comment" : "Direction guidance: target is to the right"
+    },
+    "Opens email composer to send feedback to the development team" : {
+
+    },
+    "Paste from clipboard" : {
+
+    },
+    "Paste from Clipboard" : {
+
+    },
+    "Pastes text from clipboard into the description field" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Picture too blurry" : {
+      "comment" : "Reject reason: image quality too low"
+    },
+    "Picture too blurry, trying again" : {
+      "comment" : "Speech: retry due to blurry image"
+    },
+    "Plate not visible yet" : {
+      "comment" : "Speech: partial match, no plate"
+    },
+    "Please share your thoughts, report issues, or suggest features. Your input helps us make the app better for everyone." : {
+
+    },
+    "Rear view of car" : {
+      "comment" : "Speech: vehicle viewed from rear"
+    },
+    "Recent search: %@, %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recent search: %1$@, %2$@%3$@"
+          }
+        }
+      }
+    },
+    "Recent Searches" : {
+
+    },
+    "Repeat Interval" : {
+
+    },
+    "Repeat Interval: %@s" : {
+
+    },
+    "Rescan" : {
+
+    },
+    "Reset to Defaults" : {
+
+    },
+    "Results unclear, retrying" : {
+      "comment" : "Speech: retry due to ambiguous result"
+    },
+    "Resume" : {
+
+    },
+    "Right side of car" : {
+      "comment" : "Speech: vehicle viewed from right"
+    },
+    "Search for specific objects from a list of 80+ classes" : {
+      "comment" : "SearchMode: Object Finder description"
+    },
+    "Send feedback email" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Shortest time between beeps/pulses when target is centered." : {
+
+    },
+    "Show verification details and debug messages." : {
+
+    },
+    "Side of car" : {
+      "comment" : "Speech: vehicle viewed from side"
+    },
+    "Siri Shortcuts" : {
+
+    },
+    "Smoothing: %@" : {
+
+    },
+    "Smooths out rapid changes in beep frequency." : {
+
+    },
+    "Speech Guidance" : {
+
+    },
+    "Speech Rate" : {
+
+    },
+    "Speech Rate: %@%%" : {
+
+    },
+    "Spoken directions like 'left', 'right', 'straight ahead' to guide you" : {
+
+    },
+    "Start navigation before a license plate match is confirmed." : {
+
+    },
+    "Start receiving guidance before license plate is fully verified" : {
+
+    },
+    "Start Searching" : {
+
+    },
+    "Start searching for your car with a description" : {
+
+    },
+    "Status" : {
+
+    },
+    "Step 1: Enable Developer Mode" : {
+
+    },
+    "Step 2: Grant Camera Access" : {
+
+    },
+    "Still %@, %@" : {
+      "comment" : "Speech: direction unchanged, with distance",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Still %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "straight ahead" : {
+      "comment" : "Direction guidance: target is straight ahead"
+    },
+    "Stream video from Meta Ray-Ban glasses instead of phone camera." : {
+
+    },
+    "Tap the button below to open Meta AI and grant camera streaming permission to this app." : {
+
+    },
+    "The glasses camera will only be used when:" : {
+
+    },
+    "Then Siri will ask you to describe your car, and automatically launch the camera" : {
+
+    },
+    "This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services. This app is not intended to replace any mobility aid." : {
+
+    },
+    "Transit mode" : {
+
+    },
+    "Transit Mode" : {
+
+    },
+    "Troubleshooting" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Use Meta Glasses Camera" : {
+
+    },
+    "Use Siri to quickly start finding your ride hands-free" : {
+
+    },
+    "Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:" : {
+
+    },
+    "Vehicle Description" : {
+
+    },
+    "Verification failed" : {
+      "comment" : "Speech: generic verification failure"
+    },
+    "Vibration patterns that pulse faster when approaching your target" : {
+
+    },
+    "Waiting for permission..." : {
+
+    },
+    "Waiting for verification" : {
+      "comment" : "Speech: verification in progress"
+    },
+    "Waiting Phrase Cooldown" : {
+
+    },
+    "Waiting Phrase Cooldown: %llds" : {
+
+    },
+    "What are you looking for?" : {
+
+    },
+    "What does your car look like?" : {
+
+    },
+    "Wrong make or model" : {
+      "comment" : "Reject reason: wrong vehicle"
+    },
+    "Wrong vehicle announced" : {
+
+    },
+    "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
+
+    }
+  },
+  "version" : "1.0"
+}

@@ -64,8 +64,13 @@ struct InputView: View {
 
   var placeholderText: String {
     searchMode == .uberFinder
-      ? "Describe your ride (e.g., white Toyota Camry with license plate ABC123)"
-      : "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)"
+      ? String(
+        localized: "Describe your ride (e.g., white Toyota Camry with license plate ABC123)",
+        comment: "Placeholder: vehicle description input")
+      : String(
+        localized:
+          "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)",
+        comment: "Placeholder: object description input")
   }
 
   private func checkForShortcutNavigation() {
@@ -84,8 +89,14 @@ struct InputView: View {
       Form {
         Section(
           header: HStack {
-            Text(searchMode == .uberFinder ? "Vehicle Description" : "What are you looking for?")
-              .font(.headline)
+            Group {
+              if searchMode == .uberFinder {
+                Text("Vehicle Description")
+              } else {
+                Text("What are you looking for?")
+              }
+            }
+            .font(.headline)
 
             Spacer()
 
@@ -138,7 +149,8 @@ struct InputView: View {
               description = clipboardText
               showPlaceholder = false
             } else {
-              pasteAlertMessage = "Clipboard is empty"
+              pasteAlertMessage = String(
+                localized: "Clipboard is empty", comment: "Alert: clipboard has no text")
               showPasteAlert = true
             }
           } label: {
@@ -169,9 +181,15 @@ struct InputView: View {
         }
 
         Section {
-          Button(searchMode == .uberFinder ? "Find My Ride" : "Start Searching") {
+          Button {
             saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
             isShowingCamera = true
+          } label: {
+            if searchMode == .uberFinder {
+              Text("Find My Ride")
+            } else {
+              Text("Start Searching")
+            }
           }
           .frame(maxWidth: .infinity, alignment: .center)
           .buttonStyle(.borderedProminent)
@@ -232,8 +250,11 @@ struct InputView: View {
       }
       .scrollDismissesKeyboard(.immediately)
       .navigationTitle("CurbToCar")
-      .alert(pasteAlertMessage, isPresented: $showPasteAlert) {
-        Button("OK", role: .cancel) {}
+      .alert(isPresented: $showPasteAlert) {
+        Alert(
+          title: Text(pasteAlertMessage),
+          dismissButton: .cancel(Text("OK"))
+        )
       }
       .onAppear {
         hideKeyboard()

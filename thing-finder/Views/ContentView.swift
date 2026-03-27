@@ -6,11 +6,12 @@ struct ContentView: View {
   /// Changing this key forces SwiftUI to recreate `DetectorContainer`,
   /// which in turn rebuilds the `CameraViewModel` and fully resets the pipeline.
   @State private var detectorKey = UUID()
+  @EnvironmentObject var settings: Settings
+
   let description: String
   let searchMode: SearchMode
   let targetClasses: [String]
   let isParatransitMode: Bool
-  private let settings: Settings
 
   init(
     description: String,
@@ -22,8 +23,6 @@ struct ContentView: View {
     self.searchMode = searchMode
     self.targetClasses = targetClasses
     self.isParatransitMode = isParatransitMode
-    let settings = Settings()
-    self.settings = settings
   }
 
   var title: String {
@@ -49,11 +48,17 @@ struct ContentView: View {
             Button(action: {
               playbackControl()
             }) {
-              Text(isCameraRunning ? "Pause" : "Resume")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.white)
-                .padding()
-                .background(isCameraRunning ? Color.red.opacity(0.8) : Color.green.opacity(0.8))
+              Group {
+                if isCameraRunning {
+                  Text("Pause")
+                } else {
+                  Text("Resume")
+                }
+              }
+              .font(.system(size: 28, weight: .bold))
+              .foregroundColor(.white)
+              .padding()
+              .background(isCameraRunning ? Color.red.opacity(0.8) : Color.green.opacity(0.8))
               // .clipShape(Circle())
             }
             // Reset Detection Pipeline
