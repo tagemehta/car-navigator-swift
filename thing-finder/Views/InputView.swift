@@ -77,6 +77,15 @@ struct InputView: View {
       saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
       isShowingCamera = true
     }
+
+    if let paratransitDesc = shortcutNavigationState.consumePendingParatransitDescription() {
+      description = paratransitDesc
+      searchMode = .uberFinder
+      showPlaceholder = false
+      isParatransitMode = true
+      saveToHistory(paratransitDesc, mode: .uberFinder, paratransit: true)
+      isShowingCamera = true
+    }
   }
 
   var body: some View {
@@ -240,6 +249,11 @@ struct InputView: View {
         checkForShortcutNavigation()
       }
       .onChange(of: shortcutNavigationState.pendingCarDescription) { _, newValue in
+        if newValue != nil {
+          checkForShortcutNavigation()
+        }
+      }
+      .onChange(of: shortcutNavigationState.pendingParatransitDescription) { _, newValue in
         if newValue != nil {
           checkForShortcutNavigation()
         }

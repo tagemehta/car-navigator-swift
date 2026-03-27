@@ -94,10 +94,6 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         }
       }
     } else {
-      // Don't stop Meta glasses capture while permission request is in progress
-      if source == .metaGlasses && MetaGlassesManager.shared.isPermissionRequestInProgress {
-        return
-      }
       capture.stop()
     }
   }

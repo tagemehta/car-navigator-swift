@@ -22,6 +22,27 @@ struct FindCarIntent: AppIntent {
   }
 }
 
+// MARK: - Find Paratransit Intent (with spoken description)
+
+struct FindParatransitIntent: AppIntent {
+  static var title: LocalizedStringResource = "Find My Paratransit"
+  static var description = IntentDescription("Start searching for your paratransit vehicle with a description")
+  static var openAppWhenRun: Bool = true
+
+  @Parameter(
+    title: "Paratransit Description",
+    description: "Describe your paratransit vehicle (e.g., blue bus with wheelchair ramp)",
+    requestValueDialog: "What does your paratransit vehicle look like?"
+  )
+  var paratransitDescription: String
+
+  @MainActor
+  func perform() async throws -> some IntentResult {
+    ShortcutNavigationState.shared.pendingParatransitDescription = paratransitDescription
+    return .result()
+  }
+}
+
 // MARK: - App Shortcuts Provider
 
 struct ThingFinderShortcuts: AppShortcutsProvider {
@@ -35,6 +56,16 @@ struct ThingFinderShortcuts: AppShortcutsProvider {
       ],
       shortTitle: "Find My Car",
       systemImageName: "car.fill"
+    );
+    AppShortcut(
+      intent: FindParatransitIntent(),
+      phrases: [
+        "Find my paratransit vehicle with \(.applicationName)",
+        "Find my bus with \(.applicationName)",
+        "\(.applicationName) Paratransit",
+      ],
+      shortTitle: "Find My Paratransit",
+      systemImageName: "bus.fill"
     )
   }
 }
@@ -47,12 +78,17 @@ final class ShortcutNavigationState {
   static let shared = ShortcutNavigationState()
 
   var pendingCarDescription: String? = nil
-
+  var pendingParatransitDescription: String? = nil
   private init() {}
 
   func consumePendingDescription() -> String? {
     let description = pendingCarDescription
     pendingCarDescription = nil
+    return description
+  }
+  func consumePendingParatransitDescription() -> String? {
+    let description = pendingParatransitDescription
+    pendingParatransitDescription = nil
     return description
   }
 }

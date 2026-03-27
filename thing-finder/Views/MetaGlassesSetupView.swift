@@ -16,7 +16,7 @@ enum MetaGlassesSetupStep: Int, CaseIterable {
 
 struct MetaGlassesSetupView: View {
   @Environment(\.dismiss) private var dismiss
-  @StateObject private var manager = MetaGlassesManager.shared
+  @EnvironmentObject private var wearablesVM: WearablesViewModel
   @State private var currentStep: MetaGlassesSetupStep = .developerMode
 
   var body: some View {
@@ -48,27 +48,24 @@ struct MetaGlassesSetupView: View {
         }
       }
       .onAppear {
-        print(
-          "[MetaGlassesSetupView] onAppear - isRegistered: \(manager.isRegistered), hasEverRegistered: \(manager.hasEverRegistered), isRegistrationInProgress: \(manager.isRegistrationInProgress)"
-        )
-
         // Determine initial step based on current state
-        if manager.isRegistered || manager.hasEverRegistered {
+        switch wearablesVM.registrationState {
+        case .registered:
           currentStep = .success
-        } else if manager.isRegistrationInProgress {
+        case .registering:
           currentStep = .requestPermission
-        }
-        // Otherwise stay on developerMode (step 1)
-      }
-      .onChange(of: manager.isRegistered) { _, isRegistered in
-        print("[MetaGlassesSetupView] isRegistered changed to: \(isRegistered)")
-        if isRegistered {
-          currentStep = .success
+        default:
+          break  // Stay on developerMode (step 1)
         }
       }
-      .onChange(of: manager.hasEverRegistered) { _, hasEverRegistered in
-        if hasEverRegistered {
+      .onChange(of: wearablesVM.registrationState) { _, newState in
+        switch newState {
+        case .registered:
           currentStep = .success
+        case .registering:
+          currentStep = .requestPermission
+        default:
+          break
         }
       }
     }
@@ -133,27 +130,26 @@ struct MetaGlassesSetupView: View {
       .foregroundColor(.secondary)
 
       VStack(spacing: 16) {
-        if let errorMessage = manager.errorMessage {
+        if wearablesVM.showError {
           VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
               .font(.largeTitle)
               .foregroundColor(.orange)
             Text("Connection Error")
               .font(.headline)
-            Text(errorMessage)
+            Text(wearablesVM.errorMessage)
               .font(.caption)
               .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
 
-            // Allow retry after error
             Button("Try Again") {
-              manager.errorMessage = nil
-              manager.connectGlasses()
+              wearablesVM.dismissError()
+              wearablesVM.connectGlasses()
             }
             .buttonStyle(.bordered)
           }
           .padding()
-        } else if manager.isRegistrationInProgress {
+        } else if wearablesVM.registrationState == .registering {
           VStack(spacing: 12) {
             ProgressView()
               .scaleEffect(1.5)
@@ -167,7 +163,7 @@ struct MetaGlassesSetupView: View {
           .padding()
         } else {
           Button {
-            manager.connectGlasses()
+            wearablesVM.connectGlasses()
           } label: {
             HStack {
               Image(systemName: "link")

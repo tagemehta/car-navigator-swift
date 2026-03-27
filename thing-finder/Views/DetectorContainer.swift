@@ -18,7 +18,11 @@ struct DetectorContainer: View {
 
   // MARK: – Dependencies
   @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
-  @ObservedObject private var metaGlassesManager = MetaGlassesManager.shared
+  @EnvironmentObject private var wearablesVM: WearablesViewModel
+  @EnvironmentObject private var streamSessionVM: StreamSessionViewModel
+
+  // Track capture source as state so we can update it reactively
+  @State private var currentCaptureSource: CaptureSourceType = .avFoundation
 
   // MARK: – StateObject (lifetime tied to this view instance)
   @StateObject private var detectionModel: CameraViewModel
@@ -46,17 +50,16 @@ struct DetectorContainer: View {
 
   // MARK: - Computed Properties
 
-  /// Determines the capture source based on settings and Meta glasses availability
-  /// Falls back to phone camera if glasses mode is enabled but stream isn't active or failed
-  private var captureSource: CaptureSourceType {
-    if FeatureFlags.metaGlassesEnabled
-      && settings.useMetaGlasses
-      && !metaGlassesManager.streamStartFailed
-      && (metaGlassesManager.isStreamActive
-        || metaGlassesManager.isReadyForUse
-        || metaGlassesManager.isPermissionRequestInProgress)
-    {
-      return .metaGlasses
+  /// Determines the capture source based on settings and Meta glasses state.
+  /// Falls back to phone camera immediately on failure or when glasses aren't usable.
+  private func computeCaptureSource() -> CaptureSourceType {
+    if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses {
+      // Use glasses if registered AND (streaming or has an active device ready)
+      if wearablesVM.registrationState == .registered
+        && (streamSessionVM.isStreaming || streamSessionVM.hasActiveDevice)
+      {
+        return .metaGlasses
+      }
     }
     if settings.useARMode {
       return .arKit
@@ -71,7 +74,7 @@ struct DetectorContainer: View {
       CameraPreviewWrapper(
         isRunning: $isRunning,
         delegate: detectionModel,
-        source: captureSource
+        source: currentCaptureSource
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -100,6 +103,19 @@ struct DetectorContainer: View {
     }
     // Propagate orientation events so the model can react.
     .onRotate { _ in detectionModel.handleOrientationChange() }
-    .onAppear { detectionModel.handleOrientationChange() }
+    .onAppear {
+      detectionModel.handleOrientationChange()
+      currentCaptureSource = computeCaptureSource()
+    }
+    // Re-evaluate capture source when relevant states change
+    .onChange(of: wearablesVM.registrationState) { _, _ in
+      currentCaptureSource = computeCaptureSource()
+    }
+    .onChange(of: streamSessionVM.isStreaming) { _, _ in
+      currentCaptureSource = computeCaptureSource()
+    }
+    .onChange(of: streamSessionVM.hasActiveDevice) { _, _ in
+      currentCaptureSource = computeCaptureSource()
+    }
   }
 }
