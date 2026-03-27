@@ -36,6 +36,9 @@ final class StreamSessionViewModel: ObservableObject {
   private var errorListenerToken: AnyListenerToken?
   private var photoDataListenerToken: AnyListenerToken?
   private var deviceMonitorTask: Task<Void, Never>?
+  /// Incremented on each startStreaming call; stopStreaming is a no-op if the
+  /// generation has advanced (prevents a stale stop from killing a new session).
+  private(set) var streamGeneration: Int = 0
 
   init(wearables: WearablesInterface = Wearables.shared) {
     self.wearables = wearables
@@ -120,10 +123,19 @@ final class StreamSessionViewModel: ObservableObject {
   }
 
   func startStreaming() async {
+    streamGeneration += 1
     await streamSession.start()
   }
 
-  func stopStreaming() async {
+  /// Stop the current streaming session.
+  /// - Parameter generation: If provided, the stop is skipped when the stream
+  ///   generation has advanced (meaning a newer `startStreaming` was issued
+  ///   after this stop was queued). Pass `nil` to stop unconditionally.
+  func stopStreaming(ifGeneration generation: Int? = nil) async {
+    if let generation, generation != streamGeneration {
+      // A new startStreaming() was called after this stop was queued — skip.
+      return
+    }
     await streamSession.stop()
   }
 

@@ -105,8 +105,11 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     isRunning = false
     frameObservationTask?.cancel()
     frameObservationTask = nil
+    // Capture the current generation so the stop is skipped if a new provider
+    // calls startStreaming() before this async task executes.
+    let gen = streamSessionVM.streamGeneration
     Task { @MainActor [weak self] in
-      await self?.streamSessionVM.stopStreaming()
+      await self?.streamSessionVM.stopStreaming(ifGeneration: gen)
     }
   }
 
