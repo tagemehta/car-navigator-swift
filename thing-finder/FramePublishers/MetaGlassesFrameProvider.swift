@@ -99,7 +99,7 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
     }
   }
 
-  func stop() {
+  @MainActor func stop() {
     guard isRunning else { return }
     // Set synchronously so a concurrent start() Task sees the updated flag after its await
     isRunning = false
