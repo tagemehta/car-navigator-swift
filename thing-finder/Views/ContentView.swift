@@ -50,7 +50,7 @@ struct ContentView: View {
               playbackControl()
             }) {
               Text(isCameraRunning ? "Pause" : "Resume")
-                .font(.system(size: 28, weight: .bold))
+                .font(.title2.bold())
                 .foregroundColor(.white)
                 .padding()
                 .background(isCameraRunning ? Color.red.opacity(0.8) : Color.green.opacity(0.8))
@@ -72,7 +72,7 @@ struct ContentView: View {
               }
             }) {
               Text("Rescan")
-                .font(.system(size: 28, weight: .bold))
+                .font(.title2.bold())
                 .foregroundColor(.white)
                 .padding()
                 .background(Color.blue.opacity(0.8))

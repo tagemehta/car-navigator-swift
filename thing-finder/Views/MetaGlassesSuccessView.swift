@@ -16,7 +16,8 @@ struct MetaGlassesSuccessView: View {
         Spacer()
 
         Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 80))
+          .font(.largeTitle)
+          .imageScale(.large)
           .foregroundColor(.green)
 
         Text("Connected!")

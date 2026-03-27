@@ -19,14 +19,64 @@ struct InputView: View {
     (try? JSONDecoder().decode([SearchHistoryItem].self, from: Data(searchHistoryData.utf8))) ?? []
   }
 
+  private var favoriteItems: [SearchHistoryItem] {
+    historyItems.filter { $0.isFavorite }
+  }
+
+  private var recentItems: [SearchHistoryItem] {
+    historyItems.filter { !$0.isFavorite }.prefix(5).map { $0 }
+  }
+
   private func saveToHistory(_ entry: String, mode: SearchMode, paratransit: Bool) {
     let trimmed = entry.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
-    let newItem = SearchHistoryItem(
-      description: trimmed, mode: mode, isParatransitMode: paratransit)
-    var items = historyItems.filter { $0.description != trimmed }
-    items.insert(newItem, at: 0)
-    if items.count > 5 { items = Array(items.prefix(5)) }
+
+    var items = historyItems
+    if let existingIndex = items.firstIndex(where: { $0.description == trimmed }) {
+      let existingItem = items[existingIndex]
+      items.remove(at: existingIndex)
+      let updatedItem = SearchHistoryItem(
+        id: existingItem.id,
+        description: trimmed, mode: mode, isParatransitMode: paratransit,
+        isFavorite: existingItem.isFavorite)
+      items.insert(updatedItem, at: 0)
+    } else {
+      let newItem = SearchHistoryItem(
+        description: trimmed, mode: mode, isParatransitMode: paratransit)
+      items.insert(newItem, at: 0)
+    }
+
+    let nonFavorites = items.filter { !$0.isFavorite }
+    let favorites = items.filter { $0.isFavorite }
+    let trimmedNonFavorites = nonFavorites.count > 5 ? Array(nonFavorites.prefix(5)) : nonFavorites
+    items = favorites + trimmedNonFavorites
+
+    if let data = try? JSONEncoder().encode(items),
+      let json = String(data: data, encoding: .utf8)
+    {
+      searchHistoryData = json
+    }
+  }
+
+  private func toggleFavorite(_ item: SearchHistoryItem) {
+    var items = historyItems
+    if let index = items.firstIndex(where: { $0.id == item.id }) {
+      var updatedItem = items[index]
+      updatedItem.isFavorite.toggle()
+      items[index] = updatedItem
+
+      if let data = try? JSONEncoder().encode(items),
+        let json = String(data: data, encoding: .utf8)
+      {
+        searchHistoryData = json
+      }
+    }
+  }
+
+  private func deleteItem(_ item: SearchHistoryItem) {
+    var items = historyItems
+    items.removeAll { $0.id == item.id }
+
     if let data = try? JSONEncoder().encode(items),
       let json = String(data: data, encoding: .utf8)
     {
@@ -190,51 +240,150 @@ struct InputView: View {
               : false)
         }
 
-        if !historyItems.isEmpty {
+        if !favoriteItems.isEmpty {
+          Section(
+            header: Text("Favorites")
+              .font(.headline)
+          ) {
+            ForEach(favoriteItems, id: \.id) { item in
+              HStack(spacing: 12) {
+                Button {
+                  description = item.description
+                  searchMode = item.mode
+                  isParatransitMode = item.isParatransitMode
+                  showPlaceholder = false
+                  saveToHistory(
+                    item.description, mode: item.mode, paratransit: item.isParatransitMode)
+                  isShowingCamera = true
+                } label: {
+                  HStack {
+                    Image(systemName: "star.fill")
+                      .foregroundColor(.yellow)
+                      .accessibilityHidden(true)
+                    Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
+                      .foregroundColor(.secondary)
+                      .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                      Text(item.description)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundColor(.primary)
+                      if item.mode == .uberFinder && item.isParatransitMode {
+                        Text("Transit Mode")
+                          .font(.caption2)
+                          .foregroundColor(.secondary)
+                      }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                  }
+                }
+                .accessibilityLabel(
+                  "Favorite: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Transit mode" : "")"
+                )
+                .accessibilityHint("Double tap to search with this description")
+
+                Button {
+                  toggleFavorite(item)
+                } label: {
+                  Image(systemName: "star.slash")
+                    .font(.body)
+                    .foregroundColor(.orange)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Remove from favorites")
+                .accessibilityHint("Moves this search back to recent searches")
+
+                Button(role: .destructive) {
+                  deleteItem(item)
+                } label: {
+                  Image(systemName: "trash")
+                    .font(.body)
+                    .foregroundColor(.red)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Delete favorite")
+                .accessibilityHint("Removes this search from favorites")
+              }
+            }
+          }
+        }
+
+        if !recentItems.isEmpty {
           Section(
             header: HStack {
               Text("Recent Searches")
                 .font(.headline)
               Spacer()
               Button("Clear All") {
-                searchHistoryData = "[]"
+                let favorites = historyItems.filter { $0.isFavorite }
+                if let data = try? JSONEncoder().encode(favorites),
+                  let json = String(data: data, encoding: .utf8)
+                {
+                  searchHistoryData = json
+                }
               }
               .font(.subheadline)
               .foregroundColor(.blue)
+              .accessibilityLabel("Clear all recent searches")
+              .accessibilityHint("Removes all non-favorite searches from history")
             }
           ) {
-            ForEach(historyItems.prefix(5), id: \.id) { item in
-              Button {
-                description = item.description
-                searchMode = item.mode
-                isParatransitMode = item.isParatransitMode
-                showPlaceholder = false
-                saveToHistory(
-                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                isShowingCamera = true
-              } label: {
-                HStack {
-                  Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
-                    .foregroundColor(.secondary)
-                    .accessibilityHidden(true)
-                  VStack(alignment: .leading, spacing: 2) {
-                    Text(item.description)
-                      .lineLimit(1)
-                      .truncationMode(.tail)
-                      .foregroundColor(.primary)
-                    if item.mode == .uberFinder && item.isParatransitMode {
-                      Text("Transit Mode")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+            ForEach(recentItems, id: \.id) { item in
+              HStack(spacing: 12) {
+                Button {
+                  description = item.description
+                  searchMode = item.mode
+                  isParatransitMode = item.isParatransitMode
+                  showPlaceholder = false
+                  saveToHistory(
+                    item.description, mode: item.mode, paratransit: item.isParatransitMode)
+                  isShowingCamera = true
+                } label: {
+                  HStack {
+                    Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
+                      .foregroundColor(.secondary)
+                      .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                      Text(item.description)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundColor(.primary)
+                      if item.mode == .uberFinder && item.isParatransitMode {
+                        Text("Transit Mode")
+                          .font(.caption2)
+                          .foregroundColor(.secondary)
+                      }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                   }
-                  .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .accessibilityLabel(
+                  "Recent search: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Transit mode" : "")"
+                )
+                .accessibilityHint("Double tap to search with this description")
+
+                Button {
+                  toggleFavorite(item)
+                } label: {
+                  Image(systemName: "star")
+                    .font(.body)
+                    .foregroundColor(.yellow)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Add to favorites")
+                .accessibilityHint("Saves this search to favorites")
+
+                Button(role: .destructive) {
+                  deleteItem(item)
+                } label: {
+                  Image(systemName: "trash")
+                    .font(.body)
+                    .foregroundColor(.red)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Delete search")
+                .accessibilityHint("Removes this search from history")
               }
-              .accessibilityLabel(
-                "Recent search: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Transit mode" : "")"
-              )
-              .accessibilityHint("Double tap to search with this description")
             }
           }
         }

@@ -10,11 +10,16 @@ struct SearchHistoryItem: Codable, Identifiable {
   let description: String
   let mode: SearchMode
   let isParatransitMode: Bool
-  
-  init(description: String, mode: SearchMode, isParatransitMode: Bool) {
-    self.id = UUID()
+  var isFavorite: Bool
+
+  init(
+    id: UUID = UUID(), description: String, mode: SearchMode, isParatransitMode: Bool,
+    isFavorite: Bool = false
+  ) {
+    self.id = id
     self.description = description
     self.mode = mode
     self.isParatransitMode = isParatransitMode
+    self.isFavorite = isFavorite
   }
 }
