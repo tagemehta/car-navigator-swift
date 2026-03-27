@@ -2,24 +2,15 @@
  * MetaGlassesFrameProvider.swift
  *
  * FrameProvider implementation for Meta glasses using the DAT SDK.
- * Uses MockDevice for testing without physical glasses.
+ *
+ * Lightweight adapter that delegates to StreamSessionViewModel.
+ * Responsibility: forward frames from the view model to the FrameProviderDelegate.
  */
 
 import CoreMedia
 import MWDATCamera
 import MWDATCore
 import UIKit
-
-#if DEBUG && canImport(MWDATMockDevice)
-  import MWDATMockDevice
-#endif
-
-/// Configuration for the mock video source used when testing without physical glasses.
-/// Change `mockVideoFileName` and `mockVideoFileExtension` to use a different video file.
-enum MetaGlassesConfig {
-  static let mockVideoFileName = "videoplayback.hevc"
-  static let mockVideoFileExtension = "mp4"
-}
 
 final class MetaGlassesFrameProvider: NSObject, FrameProvider {
 
@@ -29,27 +20,26 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   weak var delegate: FrameProviderDelegate?
   let sourceType: CaptureSourceType = .metaGlasses
   private(set) var isRunning: Bool = false
-  private var isStarting: Bool = false
 
-  // MARK: - Meta DAT SDK
+  // MARK: - Private
 
-  private var streamSession: StreamSession?
-  private var deviceSelector: AutoDeviceSelector?
-  private var stateListenerToken: AnyListenerToken?
-  private var videoFrameListenerToken: AnyListenerToken?
-  private var errorListenerToken: AnyListenerToken?
+  private let streamSessionVM: StreamSessionViewModel
+  private var frameObservationTask: Task<Void, Never>?
 
-  // Preview layer for displaying video
   private let previewImageView: UIImageView = {
-    let imageView = UIImageView()
-    imageView.contentMode = .scaleAspectFill
-    imageView.clipsToBounds = true
-    return imageView
+    let iv = UIImageView()
+    iv.contentMode = .scaleAspectFill
+    iv.clipsToBounds = true
+    return iv
   }()
 
   // MARK: - Init
 
-  override init() {
+  init(
+    streamSessionViewModel: StreamSessionViewModel = MetaGlassesEnvironment.shared
+      .streamSessionViewModel
+  ) {
+    self.streamSessionVM = streamSessionViewModel
     super.init()
     previewView.addSubview(previewImageView)
     previewImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -62,184 +52,94 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   }
 
   deinit {
-    // Clean up stream session
-    Task { @MainActor [streamSession] in
-      await streamSession?.stop()
-    }
+    frameObservationTask?.cancel()
   }
 
   // MARK: - FrameProvider Methods
 
   func setupSession() {
-    guard streamSession == nil else { return }
-
-    // Must be called on MainActor for MWDATCamera
-    Task { @MainActor in
-      self.setupSessionOnMain()
-    }
-  }
-
-  @MainActor
-  private func setupSessionOnMain() {
-    guard streamSession == nil else { return }
-
-    let wearables = Wearables.shared
-    deviceSelector = AutoDeviceSelector(wearables: wearables)
-
-    let config = StreamSessionConfig(
-      videoCodec: .raw,
-      resolution: .low,
-      frameRate: 24
-    )
-
-    guard let selector = deviceSelector else {
-      print("[MetaGlassesFrameProvider] Failed to create device selector")
-      return
-    }
-    streamSession = StreamSession(streamSessionConfig: config, deviceSelector: selector)
-
-    // Subscribe to video frames
-    videoFrameListenerToken = streamSession?.videoFramePublisher.listen { [weak self] videoFrame in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        self.handleVideoFrame(videoFrame)
-      }
-    }
-
-    // Subscribe to state changes
-    stateListenerToken = streamSession?.statePublisher.listen { [weak self] state in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        switch state {
-        case .streaming:
-          self.isRunning = true
-          MetaGlassesManager.shared.isStreamActive = true
-          MetaGlassesManager.shared.streamStartFailed = false
-        case .stopped, .paused:
-          self.isRunning = false
-          MetaGlassesManager.shared.isStreamActive = false
-        case .waitingForDevice:
-          MetaGlassesManager.shared.isStreamActive = false
-        default:
-          break
+    // Start observing frames from the view model
+    frameObservationTask?.cancel()
+    frameObservationTask = Task { @MainActor [weak self] in
+      guard let self else { return }
+      while !Task.isCancelled {
+        if let frame = self.streamSessionVM.currentVideoFrame {
+          self.previewImageView.image = frame
+          // Convert UIImage back to CVPixelBuffer for the delegate
+          if let pixelBuffer = frame.pixelBuffer() {
+            self.delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
+          }
         }
+        try? await Task.sleep(nanoseconds: 33_000_000)  // ~30fps polling
       }
     }
-
-    // Subscribe to errors
-    errorListenerToken = streamSession?.errorPublisher.listen { _ in }
   }
 
   func start() {
-    guard !isRunning, !isStarting else { return }
-    isStarting = true
-
+    guard !isRunning else { return }
     Task { @MainActor [weak self] in
       guard let self else { return }
-      defer { self.isStarting = false }
-
-      // Reset failure flag for fresh attempt
-      MetaGlassesManager.shared.streamStartFailed = false
-
-      // Ensure session is set up before starting
-      if self.streamSession == nil {
-        self.setupSessionOnMain()
-      }
-
-      // Wait briefly for devices to become available if needed
-      var devices = Wearables.shared.devices
-      if devices.isEmpty {
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        devices = Wearables.shared.devices
-      }
-
-      if !devices.isEmpty {
-        // Check and request permissions
-        do {
-          let permission = Permission.camera
-
-          var needsRequest = false
-          do {
-            let status = try await Wearables.shared.checkPermissionStatus(permission)
-            needsRequest = (status != .granted)
-          } catch {
-            needsRequest = true
-          }
-
-          if needsRequest {
-            MetaGlassesManager.shared.isPermissionRequestInProgress = true
-            let requestStatus = try await Wearables.shared.requestPermission(permission)
-            MetaGlassesManager.shared.isPermissionRequestInProgress = false
-            if requestStatus != .granted {
-              MetaGlassesManager.shared.isStreamActive = false
-              MetaGlassesManager.shared.streamStartFailed = true
-              MetaGlassesManager.shared.errorMessage =
-                "Camera permission required. Please grant access in Meta AI app."
-              return
-            }
-          }
-        } catch {
-          MetaGlassesManager.shared.isPermissionRequestInProgress = false
-          MetaGlassesManager.shared.isStreamActive = false
-          MetaGlassesManager.shared.streamStartFailed = true
-          MetaGlassesManager.shared.errorMessage =
-            "Camera permission required. Please grant access in Meta AI app."
-          return
-        }
-      } else {
-        MetaGlassesManager.shared.isStreamActive = false
-        MetaGlassesManager.shared.streamStartFailed = true
-        return
-      }
-
-      // Start the session
-      guard self.streamSession != nil else { return }
-      await self.streamSession?.start()
+      await self.streamSessionVM.handleStartStreaming()
+      self.isRunning = true
+      self.setupSession()
     }
   }
 
   func stop() {
-    guard isRunning || isStarting || streamSession != nil else { return }
-
-    Task { @MainActor in
-      await self.teardownSession()
+    guard isRunning else { return }
+    Task { @MainActor [weak self] in
+      guard let self else { return }
+      await self.streamSessionVM.stopStreaming()
+      self.frameObservationTask?.cancel()
+      self.frameObservationTask = nil
+      self.isRunning = false
     }
   }
 
-  @MainActor
-  private func teardownSession() async {
-    await streamSession?.stop()
+}
 
-    // Clear listener tokens
-    stateListenerToken = nil
-    videoFrameListenerToken = nil
-    errorListenerToken = nil
+// MARK: - UIImage to CVPixelBuffer conversion
 
-    // Clear session so a fresh one is created on next start
-    streamSession = nil
-    deviceSelector = nil
+extension UIImage {
+  fileprivate func pixelBuffer() -> CVPixelBuffer? {
+    guard let cgImage = self.cgImage else { return nil }
+    let width = cgImage.width
+    let height = cgImage.height
 
-    isRunning = false
-    MetaGlassesManager.shared.isStreamActive = false
-  }
+    let attrs =
+      [
+        kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue!,
+        kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue!,
+      ] as CFDictionary
 
-  // MARK: - Video Frame Handling
+    var pixelBuffer: CVPixelBuffer?
+    let status = CVPixelBufferCreate(
+      kCFAllocatorDefault,
+      width,
+      height,
+      kCVPixelFormatType_32ARGB,
+      attrs,
+      &pixelBuffer
+    )
 
-  private var frameCount = 0
+    guard status == kCVReturnSuccess, let buffer = pixelBuffer else { return nil }
 
-  @MainActor
-  private func handleVideoFrame(_ videoFrame: VideoFrame) {
-    frameCount += 1
+    CVPixelBufferLockBaseAddress(buffer, [])
+    defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
 
-    // Update preview
-    if let uiImage = videoFrame.makeUIImage() {
-      previewImageView.image = uiImage
-    }
+    guard
+      let context = CGContext(
+        data: CVPixelBufferGetBaseAddress(buffer),
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue
+      )
+    else { return nil }
 
-    // Convert to CVPixelBuffer and send to delegate
-    let sampleBuffer = videoFrame.sampleBuffer
-    if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-      delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
-    }
+    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+    return buffer
   }
 }
