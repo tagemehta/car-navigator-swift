@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
   @ObservedObject var settings: Settings
   @State private var showingHelpModal = false
+  @State private var showingRestartAlert = false
+  @State private var previousLanguage: String = ""
 
   var body: some View {
     NavigationStack {
@@ -15,6 +17,18 @@ struct SettingsView: View {
             Text("Help & Guide")
           }
           .accessibilityLabel("Help and Guide. Learn how to use CurbToCar")
+        }
+
+        // MARK: - Language
+        Section(header: Text("Language")) {
+          Picker("Language", selection: $settings.appLanguageRaw) {
+            ForEach(SupportedLanguage.allCases) { language in
+              Text(language.displayName).tag(language.rawValue)
+            }
+          }
+          Text("Changes the language for all text and speech in the app.")
+            .font(.caption)
+            .foregroundColor(.secondary)
         }
 
         // MARK: - Navigation Feedback
@@ -69,7 +83,7 @@ struct SettingsView: View {
             Slider(value: $settings.directionLeftThreshold, in: 0.1...0.4, step: 0.01)
               .accessibilityLabel("Left Threshold")
           }
-          
+
           VStack(alignment: .leading) {
             Text("Right Threshold: \(Int(settings.directionRightThreshold * 100))%")
             Text("How far right the target must be before announcing 'right'.")
@@ -151,19 +165,19 @@ struct SettingsView: View {
               Text(curve.rawValue).tag(curve)
             }
           }
-        
+
           VStack(alignment: .leading) {
             Text("Min Distance: \(String(format: "%.1f", settings.distanceMin))m")
             Slider(value: $settings.distanceMin, in: 0.1...1.0, step: 0.1)
               .accessibilityLabel("Minimum Distance")
           }
-        
+
           VStack(alignment: .leading) {
             Text("Max Distance: \(String(format: "%.1f", settings.distanceMax))m")
             Slider(value: $settings.distanceMax, in: 1.0...20.0, step: 0.5)
               .accessibilityLabel("Maximum Distance")
           }
-        
+
           VStack(alignment: .leading) {
             Text("Min Volume: \(Int(settings.volumeMin * 100))%")
             Slider(value: $settings.volumeMin, in: 0.0...0.5, step: 0.05)
@@ -275,6 +289,20 @@ struct SettingsView: View {
       .navigationTitle("Settings")
       .sheet(isPresented: $showingHelpModal) {
         HelpModalView()
+      }
+      .onAppear {
+        previousLanguage = settings.appLanguageRaw
+      }
+      .onChange(of: settings.appLanguageRaw) { oldValue, newValue in
+        if !previousLanguage.isEmpty && oldValue != newValue {
+          showingRestartAlert = true
+        }
+        previousLanguage = newValue
+      }
+      .alert("Restart Required", isPresented: $showingRestartAlert) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("Please close and reopen the app for the language change to take full effect.")
       }
     }
   }

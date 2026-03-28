@@ -43,14 +43,31 @@ final class DirectionSpeechController {
     let announcement: String
     if newDir == lastDirection {
       if elapsed > config.speechRepeatInterval {
-        announcement = "Still \(newDir.rawValue), \(distanceText)"
+        if distanceText.isEmpty {
+          announcement = String(
+            localized: "Still \(newDir.localizedName)",
+            comment: "Speech: direction unchanged, no distance")
+        } else {
+          announcement = String(
+            format: NSLocalizedString(
+              "Still %@, %@",
+              comment: "Speech: direction unchanged, with distance"),
+            newDir.localizedName, distanceText)
+        }
       } else {
         return  // Skip announcement
       }
     } else {
       if elapsed > config.directionChangeInterval {
-        announcement =
-          distanceText.isEmpty ? newDir.rawValue : "\(newDir.rawValue), \(distanceText)"
+        if distanceText.isEmpty {
+          announcement = newDir.localizedName
+        } else {
+          announcement = String(
+            format: NSLocalizedString(
+              "%@, %@",
+              comment: "Speech: new direction with distance"),
+            newDir.localizedName, distanceText)
+        }
         lastDirection = newDir
       } else {
         return  // Skip announcement

@@ -61,7 +61,8 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
     self.pipeline = AppContainer.shared.makePipeline(
       classes: dependencies.targetClasses,
       description: dependencies.targetTextDescription,
-      isParatransitMode: dependencies.isParatransitMode
+      isParatransitMode: dependencies.isParatransitMode,
+      settings: dependencies.settings
     )
     self.dependencies = dependencies
     super.init()

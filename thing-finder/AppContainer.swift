@@ -27,9 +27,9 @@ public final class AppContainer {
   func makePipeline(
     classes: [String],
     description: String,
-    isParatransitMode: Bool = false
+    isParatransitMode: Bool = false,
+    settings: Settings
   ) -> FramePipelineCoordinator {
-    let settings = Settings()
     // MARK: Concrete service wiring
     // 1. Detector
     let mlModel: VNCoreMLModel = {

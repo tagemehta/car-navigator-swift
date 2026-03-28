@@ -134,7 +134,8 @@ final class NavAnnouncer {
       }
       lastStatus[candidate.id] = .waiting
 
-      speaker.speak("Waiting for verification")
+      speaker.speak(
+        String(localized: "Waiting for verification", comment: "Speech: verification in progress"))
       cache.lastWaitingTime = now
     }
   }
@@ -207,11 +208,16 @@ final class NavAnnouncer {
 
     let phrase: String
     switch view {
-    case .front: phrase = "Front view of car"
-    case .rear: phrase = "Rear view of car"
-    case .left: phrase = "Left side of car"
-    case .right: phrase = "Right side of car"
-    case .side: phrase = "Side of car"
+    case .front:
+      phrase = String(localized: "Front view of car", comment: "Speech: vehicle viewed from front")
+    case .rear:
+      phrase = String(localized: "Rear view of car", comment: "Speech: vehicle viewed from rear")
+    case .left:
+      phrase = String(localized: "Left side of car", comment: "Speech: vehicle viewed from left")
+    case .right:
+      phrase = String(localized: "Right side of car", comment: "Speech: vehicle viewed from right")
+    case .side:
+      phrase = String(localized: "Side of car", comment: "Speech: vehicle viewed from side")
     case .unknown: return
     }
 

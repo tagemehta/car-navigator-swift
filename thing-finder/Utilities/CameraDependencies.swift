@@ -25,7 +25,7 @@ extension CameraDependencies {
   static func makeDefault(
     targetClasses: [String],
     targetTextDescription: String,
-    settings: Settings = Settings(),
+    settings: Settings,
     isParatransitMode: Bool = false
   ) -> CameraDependencies {
     let model = try! VNCoreMLModel(for: yolo11n(configuration: .init()).model)

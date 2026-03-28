@@ -8,6 +8,53 @@ enum Direction: String {
   case left = "on your left"
   case right = "on your right"
   case center = "straight ahead"
+
+  /// Localized display name for spoken/displayed direction guidance.
+  var localizedName: String {
+    switch self {
+    case .left:
+      return String(localized: "on your left", comment: "Direction guidance: target is to the left")
+    case .right:
+      return String(
+        localized: "on your right", comment: "Direction guidance: target is to the right")
+    case .center:
+      return String(
+        localized: "straight ahead", comment: "Direction guidance: target is straight ahead")
+    }
+  }
+}
+
+/// Supported languages for in-app localization and TTS.
+enum SupportedLanguage: String, CaseIterable, Identifiable {
+  case system = "system"
+  case english = "en"
+  case spanish = "es"
+
+  var id: String { rawValue }
+
+  var displayName: String {
+    switch self {
+    case .system:
+      return String(localized: "System Default", comment: "Language option: follow device language")
+    case .english:
+      return "English"
+    case .spanish:
+      return "Español"
+    }
+  }
+
+  /// The BCP 47 language code to use, resolving "system" to the device language.
+  var resolvedLanguageCode: String {
+    switch self {
+    case .system:
+      let deviceLang = Locale.current.language.languageCode?.identifier ?? "en"
+      return ["en", "es"].contains(deviceLang) ? deviceLang : "en"
+    case .english:
+      return "en"
+    case .spanish:
+      return "es"
+    }
+  }
 }
 
 /// Settings model that stores user preferences for the navigation experience.
@@ -117,6 +164,16 @@ public class Settings: ObservableObject {
 
   /// Enable debug overlay with verification messages
   @AppStorage("debug_overlay_enabled") var debugOverlayEnabled: Bool = false
+
+  // MARK: - Language Settings
+
+  /// App language override ("system" follows device language)
+  @AppStorage("app_language") var appLanguageRaw: String = SupportedLanguage.system.rawValue
+
+  var appLanguage: SupportedLanguage {
+    get { SupportedLanguage(rawValue: appLanguageRaw) ?? .system }
+    set { appLanguageRaw = newValue.rawValue }
+  }
 
   // MARK: - Meta Glasses Settings
 
@@ -290,6 +347,10 @@ extension Settings {
 
     // Meta Glasses Settings
     useMetaGlasses = false
+
+    // Language Settings
+    appLanguageRaw = SupportedLanguage.system.rawValue
+    LanguageManager.applyLanguage(.system)
 
     // Force UserDefaults to synchronize changes
     UserDefaults.standard.synchronize()

@@ -4,6 +4,19 @@ import SwiftUI
 
 @main
 struct ThingFinderApp: App {
+  @AppStorage("app_language") private var appLanguageRaw: String = SupportedLanguage.system.rawValue
+  @StateObject private var sharedSettings = Settings()
+
+  private var appLanguage: SupportedLanguage {
+    SupportedLanguage(rawValue: appLanguageRaw) ?? .system
+  }
+
+  init() {
+    let language =
+      SupportedLanguage(
+        rawValue: UserDefaults.standard.string(forKey: "app_language")
+          ?? SupportedLanguage.system.rawValue) ?? .system
+    LanguageManager.applyLanguage(language)
   @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
 
   init() {
@@ -18,6 +31,11 @@ struct ThingFinderApp: App {
   var body: some Scene {
     WindowGroup {
       MainTabView()
+        .environmentObject(sharedSettings)
+        .environment(\.locale, LanguageManager.locale(for: appLanguage))
+        .onChange(of: appLanguageRaw) { _, newValue in
+          LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
+        }
         .environmentObject(glassesEnvironment.wearablesViewModel)
         .environmentObject(glassesEnvironment.streamSessionViewModel)
         .onOpenURL { url in
@@ -80,6 +98,7 @@ private struct ExperimentalDisclaimerView: View {
 struct MainTabView: View {
   @AppStorage("hasAcceptedExperimentalDisclaimer") private var hasAcceptedExperimentalDisclaimer:
     Bool = false
+  @EnvironmentObject var sharedSettings: Settings
 
   var body: some View {
     TabView {
@@ -91,7 +110,7 @@ struct MainTabView: View {
       }
 
       NavigationStack {
-        SettingsView(settings: Settings())
+        SettingsView(settings: sharedSettings)
       }
       .tabItem {
         Label("Settings", systemImage: "gear")

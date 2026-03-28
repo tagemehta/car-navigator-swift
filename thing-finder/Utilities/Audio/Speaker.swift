@@ -2,9 +2,10 @@ import AVFoundation
 
 class Speaker: SpeechOutput {
   private let synthesizer = AVSpeechSynthesizer()
-  private let rate: Float
+  private let settings: Settings
+
   public init(settings: Settings) {
-    self.rate = Float(AVSpeechUtteranceMinimumSpeechRate + Float(settings.speechRate)*(AVSpeechUtteranceMaximumSpeechRate - AVSpeechUtteranceMinimumSpeechRate))
+    self.settings = settings
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(handlePauseAllAudio),
@@ -23,8 +24,14 @@ class Speaker: SpeechOutput {
     // Create an utterance with the text
     let utterance = AVSpeechUtterance(string: text)
 
-    // Configure the utterance (optional)
-    utterance.voice = AVSpeechSynthesisVoice(language: "en-US")  // Set the language
+    // Configure the utterance with the user's chosen language
+    let languageCode = settings.appLanguage.resolvedLanguageCode
+    utterance.voice = AVSpeechSynthesisVoice(language: languageCode)
+
+    // Compute rate dynamically from current settings
+    let rate = Float(
+      AVSpeechUtteranceMinimumSpeechRate + Float(settings.speechRate)
+        * (AVSpeechUtteranceMaximumSpeechRate - AVSpeechUtteranceMinimumSpeechRate))
     utterance.rate = rate  // Speed of speech (0.0 to 1.0)
     utterance.pitchMultiplier = 1.0  // Pitch (0.5 to 2.0)
 

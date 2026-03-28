@@ -167,15 +167,28 @@ public enum RejectReason: String, Codable {
   /// User-friendly description for announcements
   public var userFriendlyDescription: String {
     switch self {
-    case .unclearImage: return "Picture too blurry"
-    case .lowConfidence: return "Not confident enough"
-    case .insufficientInfo: return "Need a better view"
-    case .apiError: return "Detection error"
-    case .ambiguous: return "Ambiguous result"
-    case .licensePlateNotVisible: return "License plate not visible"
-    case .wrongModelOrColor: return "Wrong make or model"
-    case .licensePlateMismatch: return "License plate doesn't match"
-    case .wrongObjectClass: return "Not a vehicle"
+    case .unclearImage:
+      return String(
+        localized: "Picture too blurry", comment: "Reject reason: image quality too low")
+    case .lowConfidence:
+      return String(
+        localized: "Not confident enough", comment: "Reject reason: low detection confidence")
+    case .insufficientInfo:
+      return String(
+        localized: "Need a better view", comment: "Reject reason: insufficient information")
+    case .apiError: return String(localized: "Detection error", comment: "Reject reason: API error")
+    case .ambiguous:
+      return String(localized: "Ambiguous result", comment: "Reject reason: ambiguous detection")
+    case .licensePlateNotVisible:
+      return String(
+        localized: "License plate not visible", comment: "Reject reason: plate not visible")
+    case .wrongModelOrColor:
+      return String(localized: "Wrong make or model", comment: "Reject reason: wrong vehicle")
+    case .licensePlateMismatch:
+      return String(
+        localized: "License plate doesn't match", comment: "Reject reason: plate mismatch")
+    case .wrongObjectClass:
+      return String(localized: "Not a vehicle", comment: "Reject reason: wrong object class")
     case .success: return ""
     }
   }

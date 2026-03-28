@@ -1,0 +1,12 @@
+{
+  "developmentRegion" : "en",
+  "project" : "thing-finder.xcodeproj",
+  "targetLocale" : "en",
+  "toolInfo" : {
+    "toolBuildNumber" : "17E192",
+    "toolID" : "com.apple.dt.xcode",
+    "toolName" : "Xcode",
+    "toolVersion" : "26.4"
+  },
+  "version" : "1.0"
+}

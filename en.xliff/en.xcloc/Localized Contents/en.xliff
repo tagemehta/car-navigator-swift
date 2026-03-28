@@ -1,0 +1,1077 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
+  <file original="thing-finder/AppShortcuts.xcstrings" source-language="en" target-language="en" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.4" build-num="17E192"/>
+    </header>
+    <body>
+      <trans-unit id="Find my car with ${applicationName}" xml:space="preserve">
+        <source>
+          <mrk mtype="x-set" mid="0">Find my car with ${applicationName}</mrk>
+          <mrk mtype="x-set" mid="1">Find my ride with ${applicationName}</mrk>
+          <mrk mtype="x-set" mid="2">${applicationName} search</mrk>
+        </source>
+        <target state="new">
+          <mrk mtype="x-set" mid="0">Find my car with ${applicationName}</mrk>
+          <mrk mtype="x-set" mid="1">Find my ride with ${applicationName}</mrk>
+          <mrk mtype="x-set" mid="2">${applicationName} search</mrk>
+        </target>
+        <note/>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="thing-finder/InfoPlist.xcstrings" source-language="en" target-language="en" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.4" build-num="17E192"/>
+    </header>
+    <body>
+      <trans-unit id="CFBundleDisplayName" xml:space="preserve">
+        <source>CurbToCar</source>
+        <target state="translated">CurbToCar</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="CFBundleName" xml:space="preserve">
+        <source>CurbToCar</source>
+        <target state="translated">CurbToCar</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="NSBluetoothAlwaysUsageDescription" xml:space="preserve">
+        <source>Needed to connect to Meta Wearables</source>
+        <target state="translated">Needed to connect to Meta Wearables</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
+        <source>Camera is used to detect and identify vehicles</source>
+        <target state="translated">Camera is used to detect and identify vehicles</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="NSLocationWhenInUseUsageDescription" xml:space="preserve">
+        <source>The app uses your compass to help navigate you to your car</source>
+        <target state="new">The app uses your compass to help navigate you to your car</target>
+        <note>Privacy - Location When In Use Usage Description</note>
+      </trans-unit>
+      <trans-unit id="NSPhotoLibraryUsageDescription" xml:space="preserve">
+        <source>The app save screenshots for debugging</source>
+        <target state="new">The app save screenshots for debugging</target>
+        <note>Privacy - Photo Library Usage Description</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="thing-finder/Localizable.xcstrings" source-language="en" target-language="en" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.4" build-num="17E192"/>
+    </header>
+    <body>
+      <trans-unit id="" xml:space="preserve">
+        <source/>
+        <target state="new"/>
+        <note/>
+      </trans-unit>
+      <trans-unit id="%@ has been copied to your clipboard." xml:space="preserve">
+        <source>%@ has been copied to your clipboard.</source>
+        <target state="new">%@ has been copied to your clipboard.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="%@ – %@" xml:space="preserve">
+        <source>%1$@ – %2$@</source>
+        <target state="new">%1$@ – %2$@</target>
+        <note>Speech: rejected with reason</note>
+      </trans-unit>
+      <trans-unit id="%@ – %@ %@" xml:space="preserve">
+        <source>%1$@ – %2$@ %3$@</source>
+        <target state="new">%1$@ – %2$@ %3$@</target>
+        <note>Speech: rejected with direction</note>
+      </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve">
+        <source>%1$@, %2$@</source>
+        <target state="new">%1$@, %2$@</target>
+        <note>Speech: new direction with distance</note>
+      </trans-unit>
+      <trans-unit id="%lf" xml:space="preserve">
+        <source>%lf</source>
+        <target state="new">%lf</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="%lld" xml:space="preserve">
+        <source>%lld</source>
+        <target state="new">%lld</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="%lld device(s) available" xml:space="preserve">
+        <source>%lld device(s) available</source>
+        <target state="new">%lld device(s) available</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste" xml:space="preserve">
+        <source>1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste</source>
+        <target state="new">1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="2. **Point Camera**: Aim at the pickup area where vehicles arrive. Magic tap to pause/resume camera." xml:space="preserve">
+        <source>2. **Point Camera**: Aim at the pickup area where vehicles arrive. Magic tap to pause/resume camera.</source>
+        <target state="new">2. **Point Camera**: Aim at the pickup area where vehicles arrive. Magic tap to pause/resume camera.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="3. **Follow Audio Cues**: Listen for directional guidance and announcements" xml:space="preserve">
+        <source>3. **Follow Audio Cues**: Listen for directional guidance and announcements</source>
+        <target state="new">3. **Follow Audio Cues**: Listen for directional guidance and announcements</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="4. **Locate Vehicle**: Audio beeps become faster as you center the car and haptics (if enabled) become faster as you get closer" xml:space="preserve">
+        <source>4. **Locate Vehicle**: Audio beeps become faster as you center the car and haptics (if enabled) become faster as you get closer</source>
+        <target state="new">4. **Locate Vehicle**: Audio beeps become faster as you center the car and haptics (if enabled) become faster as you get closer</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Add details about the object (e.g., 'red backpack with white stripes')" xml:space="preserve">
+        <source>Add details about the object (e.g., 'red backpack with white stripes')</source>
+        <target state="new">Add details about the object (e.g., 'red backpack with white stripes')</target>
+        <note>SearchMode: Object Finder placeholder</note>
+      </trans-unit>
+      <trans-unit id="Adjust how fast announcements are spoken" xml:space="preserve">
+        <source>Adjust how fast announcements are spoken</source>
+        <target state="new">Adjust how fast announcements are spoken</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Adjusts the speed of spoken directions." xml:space="preserve">
+        <source>Adjusts the speed of spoken directions.</source>
+        <target state="new">Adjusts the speed of spoken directions.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ambiguous result" xml:space="preserve">
+        <source>Ambiguous result</source>
+        <target state="new">Ambiguous result</target>
+        <note>Reject reason: ambiguous detection</note>
+      </trans-unit>
+      <trans-unit id="Announce 'Waiting for verification' messages." xml:space="preserve">
+        <source>Announce 'Waiting for verification' messages.</source>
+        <target state="new">Announce 'Waiting for verification' messages.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Announce All Detected Cars" xml:space="preserve">
+        <source>Announce All Detected Cars</source>
+        <target state="new">Announce All Detected Cars</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Announce Options" xml:space="preserve">
+        <source>Announce Options</source>
+        <target state="new">Announce Options</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Announce Retry Messages" xml:space="preserve">
+        <source>Announce Retry Messages</source>
+        <target state="new">Announce Retry Messages</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Announce Waiting Messages" xml:space="preserve">
+        <source>Announce Waiting Messages</source>
+        <target state="new">Announce Waiting Messages</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Announce every detected car, not just the target." xml:space="preserve">
+        <source>Announce every detected car, not just the target.</source>
+        <target state="new">Announce every detected car, not just the target.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Announce status messages like 'Picture too blurry, trying again'." xml:space="preserve">
+        <source>Announce status messages like 'Picture too blurry, trying again'.</source>
+        <target state="new">Announce status messages like 'Picture too blurry, trying again'.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Audio Beeps" xml:space="preserve">
+        <source>Audio Beeps</source>
+        <target state="new">Audio Beeps</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Audio not working" xml:space="preserve">
+        <source>Audio not working</source>
+        <target state="new">Audio not working</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Back" xml:space="preserve">
+        <source>Back</source>
+        <target state="new">Back</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Beep Intervals" xml:space="preserve">
+        <source>Beep Intervals</source>
+        <target state="new">Beep Intervals</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Beep Smoothing" xml:space="preserve">
+        <source>Beep Smoothing</source>
+        <target state="new">Beep Smoothing</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Before connecting, you need to enable Developer Mode in the Meta AI app:" xml:space="preserve">
+        <source>Before connecting, you need to enable Developer Mode in the Meta AI app:</source>
+        <target state="new">Before connecting, you need to enable Developer Mode in the Meta AI app:</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="By continuing, you acknowledge and accept the above." xml:space="preserve">
+        <source>By continuing, you acknowledge and accept the above.</source>
+        <target state="new">By continuing, you acknowledge and accept the above.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Can't see the plate, retrying" xml:space="preserve">
+        <source>Can't see the plate, retrying</source>
+        <target state="new">Can't see the plate, retrying</target>
+        <note>Speech: retry due to plate not visible</note>
+      </trans-unit>
+      <trans-unit id="Cancel" xml:space="preserve">
+        <source>Cancel</source>
+        <target state="new">Cancel</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Car Description" xml:space="preserve">
+        <source>Car Description</source>
+        <target state="new">Car Description</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Check that 'Speech Guidance' and 'Audio Beeps' are enabled in settings." xml:space="preserve">
+        <source>Check that 'Speech Guidance' and 'Audio Beeps' are enabled in settings.</source>
+        <target state="new">Check that 'Speech Guidance' and 'Audio Beeps' are enabled in settings.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Choose what information you want announced (all cars, retry messages, waiting status)" xml:space="preserve">
+        <source>Choose what information you want announced (all cars, retry messages, waiting status)</source>
+        <target state="new">Choose what information you want announced (all cars, retry messages, waiting status)</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Clear" xml:space="preserve">
+        <source>Clear</source>
+        <target state="new">Clear</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Clear All" xml:space="preserve">
+        <source>Clear All</source>
+        <target state="new">Clear All</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Clipboard is empty" xml:space="preserve">
+        <source>Clipboard is empty</source>
+        <target state="new">Clipboard is empty</target>
+        <note>Alert: clipboard has no text</note>
+      </trans-unit>
+      <trans-unit id="Complete the setup in Meta AI app, then return here." xml:space="preserve">
+        <source>Complete the setup in Meta AI app, then return here.</source>
+        <target state="new">Complete the setup in Meta AI app, then return here.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Connect Glasses" xml:space="preserve">
+        <source>Connect Glasses</source>
+        <target state="new">Connect Glasses</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Connect Meta Glasses" xml:space="preserve">
+        <source>Connect Meta Glasses</source>
+        <target state="new">Connect Meta Glasses</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Connect to Meta AI" xml:space="preserve">
+        <source>Connect to Meta AI</source>
+        <target state="new">Connect to Meta AI</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Connected" xml:space="preserve">
+        <source>Connected</source>
+        <target state="new">Connected</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Connected!" xml:space="preserve">
+        <source>Connected!</source>
+        <target state="new">Connected!</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Connection Error" xml:space="preserve">
+        <source>Connection Error</source>
+        <target state="new">Connection Error</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Contact Us" xml:space="preserve">
+        <source>Contact Us</source>
+        <target state="new">Contact Us</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Contact us at:" xml:space="preserve">
+        <source>Contact us at:</source>
+        <target state="new">Contact us at:</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Continue" xml:space="preserve">
+        <source>Continue</source>
+        <target state="new">Continue</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Control how often the same direction is repeated (1-10 seconds)" xml:space="preserve">
+        <source>Control how often the same direction is repeated (1-10 seconds)</source>
+        <target state="new">Control how often the same direction is repeated (1-10 seconds)</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="CurbToCar" xml:space="preserve">
+        <source>CurbToCar</source>
+        <target state="new">CurbToCar</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="CurbToCar App Feedback" xml:space="preserve">
+        <source>CurbToCar App Feedback</source>
+        <target state="new">CurbToCar App Feedback</target>
+        <note>Email subject for feedback</note>
+      </trans-unit>
+      <trans-unit id="Customization Tips" xml:space="preserve">
+        <source>Customization Tips</source>
+        <target state="new">Customization Tips</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Debug Overlay" xml:space="preserve">
+        <source>Debug Overlay</source>
+        <target state="new">Debug Overlay</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Describe it in detail (e.g., silver laptop with a white and green laptop sticker)" xml:space="preserve">
+        <source>Describe it in detail (e.g., silver laptop with a white and green laptop sticker)</source>
+        <target state="new">Describe it in detail (e.g., silver laptop with a white and green laptop sticker)</target>
+        <note>Placeholder: object description input</note>
+      </trans-unit>
+      <trans-unit id="Describe your car (e.g., white Toyota Camry)" xml:space="preserve">
+        <source>Describe your car (e.g., white Toyota Camry)</source>
+        <target state="new">Describe your car (e.g., white Toyota Camry)</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Describe your ride (e.g., white Toyota Camry with license plate ABC123)" xml:space="preserve">
+        <source>Describe your ride (e.g., white Toyota Camry with license plate ABC123)</source>
+        <target state="new">Describe your ride (e.g., white Toyota Camry with license plate ABC123)</target>
+        <note>Placeholder: vehicle description input</note>
+      </trans-unit>
+      <trans-unit id="Describe your vehicle (e.g., 'blue Toyota Prius with license plate ABC123')" xml:space="preserve">
+        <source>Describe your vehicle (e.g., 'blue Toyota Prius with license plate ABC123')</source>
+        <target state="new">Describe your vehicle (e.g., 'blue Toyota Prius with license plate ABC123')</target>
+        <note>SearchMode: Uber Finder placeholder</note>
+      </trans-unit>
+      <trans-unit id="Detection error" xml:space="preserve">
+        <source>Detection error</source>
+        <target state="new">Detection error</target>
+        <note>Reject reason: API error</note>
+      </trans-unit>
+      <trans-unit id="Detection error, retrying" xml:space="preserve">
+        <source>Detection error, retrying</source>
+        <target state="new">Detection error, retrying</target>
+        <note>Speech: retry due to API error</note>
+      </trans-unit>
+      <trans-unit id="Developer Options" xml:space="preserve">
+        <source>Developer Options</source>
+        <target state="new">Developer Options</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Direction Settings" xml:space="preserve">
+        <source>Direction Settings</source>
+        <target state="new">Direction Settings</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Directional beeps that increase in frequency as you get closer to your vehicle" xml:space="preserve">
+        <source>Directional beeps that increase in frequency as you get closer to your vehicle</source>
+        <target state="new">Directional beeps that increase in frequency as you get closer to your vehicle</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Disconnect Glasses" xml:space="preserve">
+        <source>Disconnect Glasses</source>
+        <target state="new">Disconnect Glasses</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Done" xml:space="preserve">
+        <source>Done</source>
+        <target state="new">Done</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Double tap to search with this description" xml:space="preserve">
+        <source>Double tap to search with this description</source>
+        <target state="new">Double tap to search with this description</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart." xml:space="preserve">
+        <source>Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart.</source>
+        <target state="new">Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Email Copied" xml:space="preserve">
+        <source>Email Copied</source>
+        <target state="new">Email Copied</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Email Feedback" xml:space="preserve">
+        <source>Email Feedback</source>
+        <target state="new">Email Feedback</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Enable for public transit buses. Matches by route number and agency logo instead of make and model." xml:space="preserve">
+        <source>Enable for public transit buses. Matches by route number and agency logo instead of make and model.</source>
+        <target state="new">Enable for public transit buses. Matches by route number and agency logo instead of make and model.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Enable or disable audio beeps for feedback." xml:space="preserve">
+        <source>Enable or disable audio beeps for feedback.</source>
+        <target state="new">Enable or disable audio beeps for feedback.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Enable or disable haptic pulses for feedback." xml:space="preserve">
+        <source>Enable or disable haptic pulses for feedback.</source>
+        <target state="new">Enable or disable haptic pulses for feedback.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled." xml:space="preserve">
+        <source>Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled.</source>
+        <target state="new">Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button." xml:space="preserve">
+        <source>Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button.</source>
+        <target state="new">Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ensure your glasses are open and on your head" xml:space="preserve">
+        <source>Ensure your glasses are open and on your head</source>
+        <target state="new">Ensure your glasses are open and on your head</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Experimental Product" xml:space="preserve">
+        <source>Experimental Product</source>
+        <target state="new">Experimental Product</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Find" xml:space="preserve">
+        <source>Find</source>
+        <target state="new">Find</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Find My Car" xml:space="preserve">
+        <source>Find My Car</source>
+        <target state="new">Find My Car</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Find My Ride" xml:space="preserve">
+        <source>Find My Ride</source>
+        <target state="new">Find My Ride</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Find your vehicle with a simple description" xml:space="preserve">
+        <source>Find your vehicle with a simple description</source>
+        <target state="new">Find your vehicle with a simple description</target>
+        <note>SearchMode: Uber Finder description</note>
+      </trans-unit>
+      <trans-unit id="Finding Your Ride" xml:space="preserve">
+        <source>Finding Your Ride</source>
+        <target state="new">Finding Your Ride</target>
+        <note>Nav title: searching for vehicle</note>
+      </trans-unit>
+      <trans-unit id="Finding: %@" xml:space="preserve">
+        <source>Finding: %@</source>
+        <target state="new">Finding: %@</target>
+        <note>Nav title: searching for object class</note>
+      </trans-unit>
+      <trans-unit id="Fine-tune minimum and maximum beep frequency for comfort" xml:space="preserve">
+        <source>Fine-tune minimum and maximum beep frequency for comfort</source>
+        <target state="new">Fine-tune minimum and maximum beep frequency for comfort</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="For buses with route numbers and logos" xml:space="preserve">
+        <source>For buses with route numbers and logos</source>
+        <target state="new">For buses with route numbers and logos</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Found %@" xml:space="preserve">
+        <source>Found %@</source>
+        <target state="new">Found %@</target>
+        <note>Speech: vehicle description matched</note>
+      </trans-unit>
+      <trans-unit id="Found %@. Warning: Plate not visible yet" xml:space="preserve">
+        <source>Found %@. Warning: Plate not visible yet</source>
+        <target state="new">Found %@. Warning: Plate not visible yet</target>
+        <note>Speech: vehicle found but plate not confirmed</note>
+      </trans-unit>
+      <trans-unit id="Found match" xml:space="preserve">
+        <source>Found match</source>
+        <target state="new">Found match</target>
+        <note>Speech: generic match found</note>
+      </trans-unit>
+      <trans-unit id="Found matching plate %@" xml:space="preserve">
+        <source>Found matching plate %@</source>
+        <target state="new">Found matching plate %@</target>
+        <note>Speech: license plate matched</note>
+      </trans-unit>
+      <trans-unit id="Front view of car" xml:space="preserve">
+        <source>Front view of car</source>
+        <target state="new">Front view of car</target>
+        <note>Speech: vehicle viewed from front</note>
+      </trans-unit>
+      <trans-unit id="Getting Started" xml:space="preserve">
+        <source>Getting Started</source>
+        <target state="new">Getting Started</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Haptic Feedback" xml:space="preserve">
+        <source>Haptic Feedback</source>
+        <target state="new">Haptic Feedback</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Haptic/Beep Settings" xml:space="preserve">
+        <source>Haptic/Beep Settings</source>
+        <target state="new">Haptic/Beep Settings</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Help" xml:space="preserve">
+        <source>Help</source>
+        <target state="new">Help</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Help &amp; Guide" xml:space="preserve">
+        <source>Help &amp; Guide</source>
+        <target state="new">Help &amp; Guide</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Help and Guide. Learn how to use CurbToCar" xml:space="preserve">
+        <source>Help and Guide. Learn how to use CurbToCar</source>
+        <target state="new">Help and Guide. Learn how to use CurbToCar</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="How often the same direction is repeated." xml:space="preserve">
+        <source>How often the same direction is repeated.</source>
+        <target state="new">How often the same direction is repeated.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="I Agree / Continue" xml:space="preserve">
+        <source>I Agree / Continue</source>
+        <target state="new">I Agree / Continue</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Important:" xml:space="preserve">
+        <source>Important:</source>
+        <target state="new">Important:</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Left side of car" xml:space="preserve">
+        <source>Left side of car</source>
+        <target state="new">Left side of car</target>
+        <note>Speech: vehicle viewed from left</note>
+      </trans-unit>
+      <trans-unit id="License plate doesn't match" xml:space="preserve">
+        <source>License plate doesn't match</source>
+        <target state="new">License plate doesn't match</target>
+        <note>Reject reason: plate mismatch</note>
+      </trans-unit>
+      <trans-unit id="License plate not visible" xml:space="preserve">
+        <source>License plate not visible</source>
+        <target state="new">License plate not visible</target>
+        <note>Reject reason: plate not visible</note>
+      </trans-unit>
+      <trans-unit id="Longest time between beeps/pulses when target is at the edge." xml:space="preserve">
+        <source>Longest time between beeps/pulses when target is at the edge.</source>
+        <target state="new">Longest time between beeps/pulses when target is at the edge.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="MIT Assistive Technology Club" xml:space="preserve">
+        <source>MIT Assistive Technology Club</source>
+        <target state="new">MIT Assistive Technology Club</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Make sure your glasses are open and powered on" xml:space="preserve">
+        <source>Make sure your glasses are open and powered on</source>
+        <target state="new">Make sure your glasses are open and powered on</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Max Interval: %@s" xml:space="preserve">
+        <source>Max Interval: %@s</source>
+        <target state="new">Max Interval: %@s</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Maximum Beep Interval" xml:space="preserve">
+        <source>Maximum Beep Interval</source>
+        <target state="new">Maximum Beep Interval</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Meta Glasses" xml:space="preserve">
+        <source>Meta Glasses</source>
+        <target state="new">Meta Glasses</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Meta Ray-Ban Glasses" xml:space="preserve">
+        <source>Meta Ray-Ban Glasses</source>
+        <target state="new">Meta Ray-Ban Glasses</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Meta glasses not connecting" xml:space="preserve">
+        <source>Meta glasses not connecting</source>
+        <target state="new">Meta glasses not connecting</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Min Interval: %@s" xml:space="preserve">
+        <source>Min Interval: %@s</source>
+        <target state="new">Min Interval: %@s</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Minimum Beep Interval" xml:space="preserve">
+        <source>Minimum Beep Interval</source>
+        <target state="new">Minimum Beep Interval</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Minimum time before repeating 'waiting' phrases." xml:space="preserve">
+        <source>Minimum time before repeating 'waiting' phrases.</source>
+        <target state="new">Minimum time before repeating 'waiting' phrases.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Navigate Before Plate Match" xml:space="preserve">
+        <source>Navigate Before Plate Match</source>
+        <target state="new">Navigate Before Plate Match</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Navigation Feedback" xml:space="preserve">
+        <source>Navigation Feedback</source>
+        <target state="new">Navigation Feedback</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Need More Help?" xml:space="preserve">
+        <source>Need More Help?</source>
+        <target state="new">Need More Help?</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Need a better view" xml:space="preserve">
+        <source>Need a better view</source>
+        <target state="new">Need a better view</target>
+        <note>Reject reason: insufficient information</note>
+      </trans-unit>
+      <trans-unit id="Need a better view, retrying" xml:space="preserve">
+        <source>Need a better view, retrying</source>
+        <target state="new">Need a better view, retrying</target>
+        <note>Speech: retry due to insufficient info</note>
+      </trans-unit>
+      <trans-unit id="No vehicles detected" xml:space="preserve">
+        <source>No vehicles detected</source>
+        <target state="new">No vehicles detected</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Not Connected" xml:space="preserve">
+        <source>Not Connected</source>
+        <target state="new">Not Connected</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Not a vehicle" xml:space="preserve">
+        <source>Not a vehicle</source>
+        <target state="new">Not a vehicle</target>
+        <note>Reject reason: wrong object class</note>
+      </trans-unit>
+      <trans-unit id="Not confident enough" xml:space="preserve">
+        <source>Not confident enough</source>
+        <target state="new">Not confident enough</target>
+        <note>Reject reason: low detection confidence</note>
+      </trans-unit>
+      <trans-unit id="Not sure yet, taking another shot" xml:space="preserve">
+        <source>Not sure yet, taking another shot</source>
+        <target state="new">Not sure yet, taking another shot</target>
+        <note>Speech: retry due to low confidence</note>
+      </trans-unit>
+      <trans-unit id="OK" xml:space="preserve">
+        <source>OK</source>
+        <target state="new">OK</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Object Class" xml:space="preserve">
+        <source>Object Class</source>
+        <target state="new">Object Class</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Opens email composer to send feedback to the development team" xml:space="preserve">
+        <source>Opens email composer to send feedback to the development team</source>
+        <target state="new">Opens email composer to send feedback to the development team</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Paste from Clipboard" xml:space="preserve">
+        <source>Paste from Clipboard</source>
+        <target state="new">Paste from Clipboard</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Paste from clipboard" xml:space="preserve">
+        <source>Paste from clipboard</source>
+        <target state="new">Paste from clipboard</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Pastes text from clipboard into the description field" xml:space="preserve">
+        <source>Pastes text from clipboard into the description field</source>
+        <target state="new">Pastes text from clipboard into the description field</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Pause" xml:space="preserve">
+        <source>Pause</source>
+        <target state="new">Pause</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Picture too blurry" xml:space="preserve">
+        <source>Picture too blurry</source>
+        <target state="new">Picture too blurry</target>
+        <note>Reject reason: image quality too low</note>
+      </trans-unit>
+      <trans-unit id="Picture too blurry, trying again" xml:space="preserve">
+        <source>Picture too blurry, trying again</source>
+        <target state="new">Picture too blurry, trying again</target>
+        <note>Speech: retry due to blurry image</note>
+      </trans-unit>
+      <trans-unit id="Plate not visible yet" xml:space="preserve">
+        <source>Plate not visible yet</source>
+        <target state="new">Plate not visible yet</target>
+        <note>Speech: partial match, no plate</note>
+      </trans-unit>
+      <trans-unit id="Please share your thoughts, report issues, or suggest features. Your input helps us make the app better for everyone." xml:space="preserve">
+        <source>Please share your thoughts, report issues, or suggest features. Your input helps us make the app better for everyone.</source>
+        <target state="new">Please share your thoughts, report issues, or suggest features. Your input helps us make the app better for everyone.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Rear view of car" xml:space="preserve">
+        <source>Rear view of car</source>
+        <target state="new">Rear view of car</target>
+        <note>Speech: vehicle viewed from rear</note>
+      </trans-unit>
+      <trans-unit id="Recent Searches" xml:space="preserve">
+        <source>Recent Searches</source>
+        <target state="new">Recent Searches</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Recent search: %@, %@%@" xml:space="preserve">
+        <source>Recent search: %1$@, %2$@%3$@</source>
+        <target state="new">Recent search: %1$@, %2$@%3$@</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Repeat Interval" xml:space="preserve">
+        <source>Repeat Interval</source>
+        <target state="new">Repeat Interval</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Repeat Interval: %@s" xml:space="preserve">
+        <source>Repeat Interval: %@s</source>
+        <target state="new">Repeat Interval: %@s</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Rescan" xml:space="preserve">
+        <source>Rescan</source>
+        <target state="new">Rescan</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Reset to Defaults" xml:space="preserve">
+        <source>Reset to Defaults</source>
+        <target state="new">Reset to Defaults</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Results unclear, retrying" xml:space="preserve">
+        <source>Results unclear, retrying</source>
+        <target state="new">Results unclear, retrying</target>
+        <note>Speech: retry due to ambiguous result</note>
+      </trans-unit>
+      <trans-unit id="Resume" xml:space="preserve">
+        <source>Resume</source>
+        <target state="new">Resume</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Right side of car" xml:space="preserve">
+        <source>Right side of car</source>
+        <target state="new">Right side of car</target>
+        <note>Speech: vehicle viewed from right</note>
+      </trans-unit>
+      <trans-unit id="Search for specific objects from a list of 80+ classes" xml:space="preserve">
+        <source>Search for specific objects from a list of 80+ classes</source>
+        <target state="new">Search for specific objects from a list of 80+ classes</target>
+        <note>SearchMode: Object Finder description</note>
+      </trans-unit>
+      <trans-unit id="Send feedback email" xml:space="preserve">
+        <source>Send feedback email</source>
+        <target state="new">Send feedback email</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Settings" xml:space="preserve">
+        <source>Settings</source>
+        <target state="new">Settings</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Shortest time between beeps/pulses when target is centered." xml:space="preserve">
+        <source>Shortest time between beeps/pulses when target is centered.</source>
+        <target state="new">Shortest time between beeps/pulses when target is centered.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Show verification details and debug messages." xml:space="preserve">
+        <source>Show verification details and debug messages.</source>
+        <target state="new">Show verification details and debug messages.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Side of car" xml:space="preserve">
+        <source>Side of car</source>
+        <target state="new">Side of car</target>
+        <note>Speech: vehicle viewed from side</note>
+      </trans-unit>
+      <trans-unit id="Siri Shortcuts" xml:space="preserve">
+        <source>Siri Shortcuts</source>
+        <target state="new">Siri Shortcuts</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Smoothing: %@" xml:space="preserve">
+        <source>Smoothing: %@</source>
+        <target state="new">Smoothing: %@</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Smooths out rapid changes in beep frequency." xml:space="preserve">
+        <source>Smooths out rapid changes in beep frequency.</source>
+        <target state="new">Smooths out rapid changes in beep frequency.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Speech Guidance" xml:space="preserve">
+        <source>Speech Guidance</source>
+        <target state="new">Speech Guidance</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Speech Rate" xml:space="preserve">
+        <source>Speech Rate</source>
+        <target state="new">Speech Rate</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Speech Rate: %@%%" xml:space="preserve">
+        <source>Speech Rate: %@%%</source>
+        <target state="new">Speech Rate: %@%%</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Spoken directions like 'left', 'right', 'straight ahead' to guide you" xml:space="preserve">
+        <source>Spoken directions like 'left', 'right', 'straight ahead' to guide you</source>
+        <target state="new">Spoken directions like 'left', 'right', 'straight ahead' to guide you</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Start Searching" xml:space="preserve">
+        <source>Start Searching</source>
+        <target state="new">Start Searching</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Start navigation before a license plate match is confirmed." xml:space="preserve">
+        <source>Start navigation before a license plate match is confirmed.</source>
+        <target state="new">Start navigation before a license plate match is confirmed.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Start receiving guidance before license plate is fully verified" xml:space="preserve">
+        <source>Start receiving guidance before license plate is fully verified</source>
+        <target state="new">Start receiving guidance before license plate is fully verified</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Start searching for your car with a description" xml:space="preserve">
+        <source>Start searching for your car with a description</source>
+        <target state="new">Start searching for your car with a description</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Status" xml:space="preserve">
+        <source>Status</source>
+        <target state="new">Status</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Step 1: Enable Developer Mode" xml:space="preserve">
+        <source>Step 1: Enable Developer Mode</source>
+        <target state="new">Step 1: Enable Developer Mode</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Step 2: Grant Camera Access" xml:space="preserve">
+        <source>Step 2: Grant Camera Access</source>
+        <target state="new">Step 2: Grant Camera Access</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Still %@, %@" xml:space="preserve">
+        <source>Still %1$@, %2$@</source>
+        <target state="new">Still %1$@, %2$@</target>
+        <note>Speech: direction unchanged, with distance</note>
+      </trans-unit>
+      <trans-unit id="Stream video from Meta Ray-Ban glasses instead of phone camera." xml:space="preserve">
+        <source>Stream video from Meta Ray-Ban glasses instead of phone camera.</source>
+        <target state="new">Stream video from Meta Ray-Ban glasses instead of phone camera.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Tap the button below to open Meta AI and grant camera streaming permission to this app." xml:space="preserve">
+        <source>Tap the button below to open Meta AI and grant camera streaming permission to this app.</source>
+        <target state="new">Tap the button below to open Meta AI and grant camera streaming permission to this app.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="The glasses camera will only be used when:" xml:space="preserve">
+        <source>The glasses camera will only be used when:</source>
+        <target state="new">The glasses camera will only be used when:</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Then Siri will ask you to describe your car, and automatically launch the camera" xml:space="preserve">
+        <source>Then Siri will ask you to describe your car, and automatically launch the camera</source>
+        <target state="new">Then Siri will ask you to describe your car, and automatically launch the camera</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services. This app is not intended to replace any mobility aid." xml:space="preserve">
+        <source>This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services. This app is not intended to replace any mobility aid.</source>
+        <target state="new">This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services. This app is not intended to replace any mobility aid.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Transit Mode" xml:space="preserve">
+        <source>Transit Mode</source>
+        <target state="new">Transit Mode</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Transit mode" xml:space="preserve">
+        <source>Transit mode</source>
+        <target state="new">Transit mode</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Troubleshooting" xml:space="preserve">
+        <source>Troubleshooting</source>
+        <target state="new">Troubleshooting</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Try Again" xml:space="preserve">
+        <source>Try Again</source>
+        <target state="new">Try Again</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Use Meta Glasses Camera" xml:space="preserve">
+        <source>Use Meta Glasses Camera</source>
+        <target state="new">Use Meta Glasses Camera</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Use Siri to quickly start finding your ride hands-free" xml:space="preserve">
+        <source>Use Siri to quickly start finding your ride hands-free</source>
+        <target state="new">Use Siri to quickly start finding your ride hands-free</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:" xml:space="preserve">
+        <source>Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:</source>
+        <target state="new">Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Vehicle Description" xml:space="preserve">
+        <source>Vehicle Description</source>
+        <target state="new">Vehicle Description</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Verification failed" xml:space="preserve">
+        <source>Verification failed</source>
+        <target state="new">Verification failed</target>
+        <note>Speech: generic verification failure</note>
+      </trans-unit>
+      <trans-unit id="Vibration patterns that pulse faster when approaching your target" xml:space="preserve">
+        <source>Vibration patterns that pulse faster when approaching your target</source>
+        <target state="new">Vibration patterns that pulse faster when approaching your target</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Waiting Phrase Cooldown" xml:space="preserve">
+        <source>Waiting Phrase Cooldown</source>
+        <target state="new">Waiting Phrase Cooldown</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Waiting Phrase Cooldown: %llds" xml:space="preserve">
+        <source>Waiting Phrase Cooldown: %llds</source>
+        <target state="new">Waiting Phrase Cooldown: %llds</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Waiting for permission..." xml:space="preserve">
+        <source>Waiting for permission...</source>
+        <target state="new">Waiting for permission...</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Waiting for verification" xml:space="preserve">
+        <source>Waiting for verification</source>
+        <target state="new">Waiting for verification</target>
+        <note>Speech: verification in progress</note>
+      </trans-unit>
+      <trans-unit id="What are you looking for?" xml:space="preserve">
+        <source>What are you looking for?</source>
+        <target state="new">What are you looking for?</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="What does your car look like?" xml:space="preserve">
+        <source>What does your car look like?</source>
+        <target state="new">What does your car look like?</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Wrong make or model" xml:space="preserve">
+        <source>Wrong make or model</source>
+        <target state="new">Wrong make or model</target>
+        <note>Reject reason: wrong vehicle</note>
+      </trans-unit>
+      <trans-unit id="Wrong vehicle announced" xml:space="preserve">
+        <source>Wrong vehicle announced</source>
+        <target state="new">Wrong vehicle announced</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." xml:space="preserve">
+        <source>Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected.</source>
+        <target state="new">Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="assistivetech@mit.edu" xml:space="preserve">
+        <source>assistivetech@mit.edu</source>
+        <target state="new">assistivetech@mit.edu</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="car was last seen %lld degrees to the left" xml:space="preserve">
+        <source>car was last seen %lld degrees to the left</source>
+        <target state="new">car was last seen %lld degrees to the left</target>
+        <note>Speech: lost car direction left</note>
+      </trans-unit>
+      <trans-unit id="car was last seen %lld degrees to the right" xml:space="preserve">
+        <source>car was last seen %lld degrees to the right</source>
+        <target state="new">car was last seen %lld degrees to the right</target>
+        <note>Speech: lost car direction right</note>
+      </trans-unit>
+      <trans-unit id="on your left" xml:space="preserve">
+        <source>on your left</source>
+        <target state="new">on your left</target>
+        <note>Direction guidance: target is to the left</note>
+      </trans-unit>
+      <trans-unit id="on your right" xml:space="preserve">
+        <source>on your right</source>
+        <target state="new">on your right</target>
+        <note>Direction guidance: target is to the right</note>
+      </trans-unit>
+      <trans-unit id="straight ahead" xml:space="preserve">
+        <source>straight ahead</source>
+        <target state="new">straight ahead</target>
+        <note>Direction guidance: target is straight ahead</note>
+      </trans-unit>
+      <trans-unit id="• **'Hey Siri, CurbToCar search'**" xml:space="preserve">
+        <source>• **'Hey Siri, CurbToCar search'**</source>
+        <target state="new">• **'Hey Siri, CurbToCar search'**</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• **'Hey Siri, find my car with CurbToCar'**" xml:space="preserve">
+        <source>• **'Hey Siri, find my car with CurbToCar'**</source>
+        <target state="new">• **'Hey Siri, find my car with CurbToCar'**</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• **'Hey Siri, find my ride with CurbToCar'**" xml:space="preserve">
+        <source>• **'Hey Siri, find my ride with CurbToCar'**</source>
+        <target state="new">• **'Hey Siri, find my ride with CurbToCar'**</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app" xml:space="preserve">
+        <source>• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app</source>
+        <target state="new">• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• **Hands-Free**: Keep your phone in your pocket while glasses do the work" xml:space="preserve">
+        <source>• **Hands-Free**: Keep your phone in your pocket while glasses do the work</source>
+        <target state="new">• **Hands-Free**: Keep your phone in your pocket while glasses do the work</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• **Permissions**: Grant camera access when prompted" xml:space="preserve">
+        <source>• **Permissions**: Grant camera access when prompted</source>
+        <target state="new">• **Permissions**: Grant camera access when prompted</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• Glasses are connected via Bluetooth" xml:space="preserve">
+        <source>• Glasses are connected via Bluetooth</source>
+        <target state="new">• Glasses are connected via Bluetooth</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• Glasses are open (unfolded)" xml:space="preserve">
+        <source>• Glasses are open (unfolded)</source>
+        <target state="new">• Glasses are open (unfolded)</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="• Meta Glasses mode is enabled in Settings" xml:space="preserve">
+        <source>• Meta Glasses mode is enabled in Settings</source>
+        <target state="new">• Meta Glasses mode is enabled in Settings</target>
+        <note/>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

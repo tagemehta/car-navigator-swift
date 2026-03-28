@@ -1,0 +1,2082 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@ – %@" : {
+      "comment" : "Speech: rejected with reason",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ – %2$@"
+          }
+        }
+      }
+    },
+    "%@ – %@ %@" : {
+      "comment" : "Speech: rejected with direction",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ – %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "%@ has been copied to your clipboard." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ha sido copiado a tu portapapeles."
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "comment" : "Speech: new direction with distance",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%lf" : {
+
+    },
+    "%lld" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld device(s) available" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dispositivo(s) disponible(s)"
+          }
+        }
+      }
+    },
+    "• **'Hey Siri, CurbToCar search'**" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **'Oye Siri, búsqueda de CurbToCar'**"
+          }
+        }
+      }
+    },
+    "• **'Hey Siri, find my car with CurbToCar'**" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **'Oye Siri, encuentra mi coche con CurbToCar'**"
+          }
+        }
+      }
+    },
+    "• **'Hey Siri, find my ride with CurbToCar'**" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **'Oye Siri, encuentra mi vehículo con CurbToCar'**"
+          }
+        }
+      }
+    },
+    "• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **Conectar**: Toca 'Conectar Gafas' para emparejar con la aplicación Meta AI"
+          }
+        }
+      }
+    },
+    "• **Hands-Free**: Keep your phone in your pocket while glasses do the work" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **Manos Libres**: Guarda tu teléfono en el bolsillo mientras las gafas hacen el trabajo"
+          }
+        }
+      }
+    },
+    "• **Permissions**: Grant camera access when prompted" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **Permisos**: Conceder acceso a la cámara cuando se solicite"
+          }
+        }
+      }
+    },
+    "• Glasses are connected via Bluetooth" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• Las gafas están conectadas por Bluetooth"
+          }
+        }
+      }
+    },
+    "• Glasses are open (unfolded)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• Las gafas están abiertas (desplegadas)"
+          }
+        }
+      }
+    },
+    "• Meta Glasses mode is enabled in Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• El modo Meta Glasses está habilitado en Configuraciones"
+          }
+        }
+      }
+    },
+    "1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1. **Ingresar detalles del viaje**: Proporcione la descripción de su vehículo y matrícula a través de dictado, escritura o copiado/pegado"
+          }
+        }
+      }
+    },
+    "2. **Point Camera**: Aim at the pickup area where vehicles arrive. Magic tap to pause/resume camera." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. **Apunte la cámara**: Apunte al área de recogida donde llegan los vehículos. Toque mágico para pausar/reanudar la cámara."
+          }
+        }
+      }
+    },
+    "3. **Follow Audio Cues**: Listen for directional guidance and announcements" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3. **Sigue las indicaciones de audio**: Escucha las orientaciones direccionales y anuncios"
+          }
+        }
+      }
+    },
+    "4. **Locate Vehicle**: Audio beeps become faster as you center the car and haptics (if enabled) become faster as you get closer" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4. **Localizar Vehículo**: Los pitidos de audio se vuelven más rápidos a medida que centras el coche y las vibraciones (si están habilitadas) se aceleran a medida que te acercas"
+          }
+        }
+      }
+    },
+    "Add details about the object (e.g., 'red backpack with white stripes')" : {
+      "comment" : "SearchMode: Object Finder placeholder",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir detalles sobre el objeto (p. ej., 'mochila roja con rayas blancas')"
+          }
+        }
+      }
+    },
+    "Adjust how fast announcements are spoken" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustar la velocidad con la que se anuncian"
+          }
+        }
+      }
+    },
+    "Adjusts the speed of spoken directions." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajusta la velocidad de las indicaciones habladas."
+          }
+        }
+      }
+    },
+    "Ambiguous result" : {
+      "comment" : "Reject reason: ambiguous detection",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resultado ambiguo"
+          }
+        }
+      }
+    },
+    "Announce 'Waiting for verification' messages." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anunciar mensajes de 'Esperando verificación'"
+          }
+        }
+      }
+    },
+    "Announce All Detected Cars" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anunciar todos los coches detectados"
+          }
+        }
+      }
+    },
+    "Announce every detected car, not just the target." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anuncie cada coche detectado, no solo el objetivo."
+          }
+        }
+      }
+    },
+    "Announce Options" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opciones de Anuncio"
+          }
+        }
+      }
+    },
+    "Announce Retry Messages" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anunciar mensajes de reintento"
+          }
+        }
+      }
+    },
+    "Announce status messages like 'Picture too blurry, trying again'." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anunciar mensajes de estado como 'La imagen está borrosa, intentando de nuevo'."
+          }
+        }
+      }
+    },
+    "Announce Waiting Messages" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anunciar mensajes en espera"
+          }
+        }
+      }
+    },
+    "assistivetech@mit.edu" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "assistivetech@mit.edu"
+          }
+        }
+      }
+    },
+    "Audio Beeps" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulsos de audio"
+          }
+        }
+      }
+    },
+    "Audio not working" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio no funciona"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atrás"
+          }
+        }
+      }
+    },
+    "Beep Intervals" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalos de Pitidos"
+          }
+        }
+      }
+    },
+    "Beep Smoothing" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suavizado de Pitidos"
+          }
+        }
+      }
+    },
+    "Before connecting, you need to enable Developer Mode in the Meta AI app:" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antes de conectar, necesitas habilitar el Modo Desarrollador en la aplicación Meta AI:"
+          }
+        }
+      }
+    },
+    "By continuing, you acknowledge and accept the above." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al continuar, reconoces y aceptas lo anterior."
+          }
+        }
+      }
+    },
+    "Can't see the plate, retrying" : {
+      "comment" : "Speech: retry due to plate not visible",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede ver la matrícula, reintentando"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar"
+          }
+        }
+      }
+    },
+    "Car Description" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descripción del coche"
+          }
+        }
+      }
+    },
+    "car was last seen %d degrees to the left" : {
+      "comment" : "Speech: lost car direction left"
+    },
+    "car was last seen %d degrees to the right" : {
+      "comment" : "Speech: lost car direction right"
+    },
+    "Changes the language for all text and speech in the app." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia el idioma de todo el texto y la voz en la aplicación."
+          }
+        }
+      }
+    },
+    "Check that 'Speech Guidance' and 'Audio Beeps' are enabled in settings." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica que 'Guía por voz' y 'Pitidos de audio' estén habilitados en configuración."
+          }
+        }
+      }
+    },
+    "Choose what information you want announced (all cars, retry messages, waiting status)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige qué información deseas anunciar (todos los coches, mensajes de reintento, estado de espera)"
+          }
+        }
+      }
+    },
+    "Clear" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar"
+          }
+        }
+      }
+    },
+    "Clear All" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar Todo"
+          }
+        }
+      }
+    },
+    "Clipboard is empty" : {
+      "comment" : "Alert: clipboard has no text",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portapapeles está vacío"
+          }
+        }
+      }
+    },
+    "Complete the setup in Meta AI app, then return here." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa la configuración en la app de Meta AI, luego regresa aquí."
+          }
+        }
+      }
+    },
+    "Connect Glasses" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar Gafas"
+          }
+        }
+      }
+    },
+    "Connect Meta Glasses" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar Meta Gafas"
+          }
+        }
+      }
+    },
+    "Connect to Meta AI" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar a Meta AI"
+          }
+        }
+      }
+    },
+    "Connected" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado"
+          }
+        }
+      }
+    },
+    "Connected!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Conectado!"
+          }
+        }
+      }
+    },
+    "Connection Error" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error de conexión"
+          }
+        }
+      }
+    },
+    "Contact Us" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contáctenos"
+          }
+        }
+      }
+    },
+    "Contact us at:" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contáctenos en:"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        }
+      }
+    },
+    "Control how often the same direction is repeated (1-10 seconds)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controla la frecuencia con la que se repite la misma dirección (1-10 segundos)"
+          }
+        }
+      }
+    },
+    "CurbToCar" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CurbToCar"
+          }
+        }
+      }
+    },
+    "CurbToCar App Feedback" : {
+      "comment" : "Email subject for feedback",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comentarios de la App CurbToCar"
+          }
+        }
+      }
+    },
+    "Customization Tips" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consejos de personalización"
+          }
+        }
+      }
+    },
+    "Debug Overlay" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Superposición de depuración"
+          }
+        }
+      }
+    },
+    "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)" : {
+      "comment" : "Placeholder: object description input",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descríbelo en detalle (p. ej., computadora portátil plateada con una pegatina de computadora portátil blanca y verde)"
+          }
+        }
+      }
+    },
+    "Describe your car (e.g., white Toyota Camry)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe tu auto (p. ej., Toyota Camry blanco)"
+          }
+        }
+      }
+    },
+    "Describe your ride (e.g., white Toyota Camry with license plate ABC123)" : {
+      "comment" : "Placeholder: vehicle description input",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe tu vehículo (p. ej., Toyota Camry blanco con matrícula ABC123)"
+          }
+        }
+      }
+    },
+    "Describe your vehicle (e.g., 'blue Toyota Prius with license plate ABC123')" : {
+      "comment" : "SearchMode: Uber Finder placeholder",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe tu vehículo (por ejemplo, 'Toyota Prius azul con matrícula ABC123')"
+          }
+        }
+      }
+    },
+    "Detection error" : {
+      "comment" : "Reject reason: API error",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error de detección"
+          }
+        }
+      }
+    },
+    "Detection error, retrying" : {
+      "comment" : "Speech: retry due to API error",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error de detección, reintentando"
+          }
+        }
+      }
+    },
+    "Developer Options" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opciones de Desarrollador"
+          }
+        }
+      }
+    },
+    "Direction Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración de Dirección"
+          }
+        }
+      }
+    },
+    "Directional beeps that increase in frequency as you get closer to your vehicle" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pípitoss direccionaless que aumentan en frecuencia a medida que te acercas a tu vehículo"
+          }
+        }
+      }
+    },
+    "Disconnect Glasses" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desconectar Gafas"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hecho"
+          }
+        }
+      }
+    },
+    "Double tap to search with this description" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque dos veces para buscar con esta descripción"
+          }
+        }
+      }
+    },
+    "Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique la descripción del vehículo y la matrícula que ingresó. Use 'Reescanear' para reiniciar."
+          }
+        }
+      }
+    },
+    "Email Copied" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correo electrónico copiado"
+          }
+        }
+      }
+    },
+    "Email Feedback" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comentarios por Correo Electrónico"
+          }
+        }
+      }
+    },
+    "Enable for public transit buses. Matches by route number and agency logo instead of make and model." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Habilitar para autobuses de transporte público. Coincide por número de ruta y logotipo de la agencia en lugar de por marca y modelo."
+          }
+        }
+      }
+    },
+    "Enable or disable audio beeps for feedback." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activar o desactivar pitidos de audio para comentarios."
+          }
+        }
+      }
+    },
+    "Enable or disable haptic pulses for feedback." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activar o desactivar pulsos hápticos para comentarios."
+          }
+        }
+      }
+    },
+    "Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asegúrate de que haya buena iluminación y apunta la cámara al área de recogida. Intenta el botón 'Reescanear'."
+          }
+        }
+      }
+    },
+    "Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asegúrese de que la aplicación Meta AI esté instalada, las gafas estén encendidas y el Bluetooth esté activado."
+          }
+        }
+      }
+    },
+    "Ensure your glasses are open and on your head" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asegúrate de que tus gafas estén abiertas y en tu cabeza"
+          }
+        }
+      }
+    },
+    "Experimental Product" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Producto Experimental"
+          }
+        }
+      }
+    },
+    "Find" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar"
+          }
+        }
+      }
+    },
+    "Find My Car" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encuentra Mi Coche"
+          }
+        }
+      }
+    },
+    "Find My Ride" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encuentra Mi Vehículo"
+          }
+        }
+      }
+    },
+    "Find your vehicle with a simple description" : {
+      "comment" : "SearchMode: Uber Finder description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encuentra tu vehículo con una descripción sencilla"
+          }
+        }
+      }
+    },
+    "Fine-tune minimum and maximum beep frequency for comfort" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustar finamente la frecuencia mínima y máxima de los pitos para comodidad"
+          }
+        }
+      }
+    },
+    "For buses with route numbers and logos" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para autobuses con números de ruta y logotipos"
+          }
+        }
+      }
+    },
+    "Found %@" : {
+      "comment" : "Speech: vehicle description matched",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrado %@"
+          }
+        }
+      }
+    },
+    "Found %@. Warning: Plate not visible yet" : {
+      "comment" : "Speech: vehicle found but plate not confirmed",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrado %@. Advertencia: Placa aún no visible"
+          }
+        }
+      }
+    },
+    "Found match" : {
+      "comment" : "Speech: generic match found",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se encontró una coincidencia"
+          }
+        }
+      }
+    },
+    "Found matching plate %@" : {
+      "comment" : "Speech: license plate matched",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Placa coincidente encontrada %@"
+          }
+        }
+      }
+    },
+    "Front view of car" : {
+      "comment" : "Speech: vehicle viewed from front",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista frontal del coche"
+          }
+        }
+      }
+    },
+    "Getting Started" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeros pasos"
+          }
+        }
+      }
+    },
+    "Haptic Feedback" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retroalimentación háptica"
+          }
+        }
+      }
+    },
+    "Haptic/Beep Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración de Vibración/Pitido"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda"
+          }
+        }
+      }
+    },
+    "Help & Guide" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda y Guía"
+          }
+        }
+      }
+    },
+    "Help and Guide. Learn how to use CurbToCar" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda y Guía. Aprende a usar CurbToCar"
+          }
+        }
+      }
+    },
+    "How often the same direction is repeated." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con qué frecuencia se repite la misma dirección."
+          }
+        }
+      }
+    },
+    "I Agree / Continue" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acepto / Continuar"
+          }
+        }
+      }
+    },
+    "Important:" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importante:"
+          }
+        }
+      }
+    },
+    "Key" : {
+      "extractionState" : "manual"
+    },
+    "Language" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idioma"
+          }
+        }
+      }
+    },
+    "Left side of car" : {
+      "comment" : "Speech: vehicle viewed from left",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lado izquierdo del coche"
+          }
+        }
+      }
+    },
+    "License plate doesn't match" : {
+      "comment" : "Reject reason: plate mismatch",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La matrícula no coincide"
+          }
+        }
+      }
+    },
+    "License plate not visible" : {
+      "comment" : "Reject reason: plate not visible",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matrícula no visible"
+          }
+        }
+      }
+    },
+    "Longest time between beeps/pulses when target is at the edge." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mayor tiempo entre pitidos/pulsos cuando el objetivo está en el límite."
+          }
+        }
+      }
+    },
+    "Make sure your glasses are open and powered on" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asegúrate de que tus gafas estén abiertas y encendidas"
+          }
+        }
+      }
+    },
+    "Max Interval: %@s" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo Máximo: %@s"
+          }
+        }
+      }
+    },
+    "Maximum Beep Interval" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo Máximo de Pitido"
+          }
+        }
+      }
+    },
+    "Meta Glasses" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta Gafas"
+          }
+        }
+      }
+    },
+    "Meta glasses not connecting" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta gafas no se conectan"
+          }
+        }
+      }
+    },
+    "Meta Ray-Ban Glasses" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta Gafas Ray-Ban"
+          }
+        }
+      }
+    },
+    "Min Interval: %@s" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo Mínimo: %@s"
+          }
+        }
+      }
+    },
+    "Minimum Beep Interval" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo Mínimo de Pitido"
+          }
+        }
+      }
+    },
+    "Minimum time before repeating 'waiting' phrases." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo mínimo antes de repetir frases de \"espera\"."
+          }
+        }
+      }
+    },
+    "MIT Assistive Technology Club" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Club de Tecnología de Asistencia del MIT"
+          }
+        }
+      }
+    },
+    "Navigate Before Plate Match" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navegar Antes de Emparejar Placas"
+          }
+        }
+      }
+    },
+    "Navigation Feedback" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Realimentación de Navegación"
+          }
+        }
+      }
+    },
+    "Need a better view" : {
+      "comment" : "Reject reason: insufficient information",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesita una mejor vista"
+          }
+        }
+      }
+    },
+    "Need a better view, retrying" : {
+      "comment" : "Speech: retry due to insufficient info",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesita una mejor vista, reintentando"
+          }
+        }
+      }
+    },
+    "Need More Help?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Necesitas más ayuda?"
+          }
+        }
+      }
+    },
+    "No vehicles detected" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ningún vehículo detectado"
+          }
+        }
+      }
+    },
+    "Not a vehicle" : {
+      "comment" : "Reject reason: wrong object class",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No es un vehículo"
+          }
+        }
+      }
+    },
+    "Not confident enough" : {
+      "comment" : "Reject reason: low detection confidence",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No lo suficientemente confiado"
+          }
+        }
+      }
+    },
+    "Not Connected" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Conectado"
+          }
+        }
+      }
+    },
+    "Not sure yet, taking another shot" : {
+      "comment" : "Speech: retry due to low confidence",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no estoy seguro, intentándolo de nuevo"
+          }
+        }
+      }
+    },
+    "Object Class" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clase de Objeto"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceptar"
+          }
+        }
+      }
+    },
+    "on your left" : {
+      "comment" : "Direction guidance: target is to the left",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a tu izquierda"
+          }
+        }
+      }
+    },
+    "on your right" : {
+      "comment" : "Direction guidance: target is to the right",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a tu derecha"
+          }
+        }
+      }
+    },
+    "Opens email composer to send feedback to the development team" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el editor de correo electrónico para enviar comentarios al equipo de desarrollo"
+          }
+        }
+      }
+    },
+    "Paste from clipboard" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegar desde el portapapeles"
+          }
+        }
+      }
+    },
+    "Paste from Clipboard" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegar desde el portapapeles"
+          }
+        }
+      }
+    },
+    "Pastes text from clipboard into the description field" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pega texto del portapapeles en el campo de descripción"
+          }
+        }
+      }
+    },
+    "Pause" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa"
+          }
+        }
+      }
+    },
+    "Picture too blurry" : {
+      "comment" : "Reject reason: image quality too low",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imagen demasiado borrosa"
+          }
+        }
+      }
+    },
+    "Picture too blurry, trying again" : {
+      "comment" : "Speech: retry due to blurry image",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imagen demasiado borrosa, intentando de nuevo"
+          }
+        }
+      }
+    },
+    "Plate not visible yet" : {
+      "comment" : "Speech: partial match, no plate",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Placa aún no visible"
+          }
+        }
+      }
+    },
+    "Please close and reopen the app for the language change to take full effect." : {
+
+    },
+    "Please share your thoughts, report issues, or suggest features. Your input helps us make the app better for everyone." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por favor, comparte tus ideas, informa de problemas o sugiere funciones. Tu opinión nos ayuda a mejorar la aplicación para todos."
+          }
+        }
+      }
+    },
+    "Rear view of car" : {
+      "comment" : "Speech: vehicle viewed from rear",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista trasera del coche"
+          }
+        }
+      }
+    },
+    "Recent search: %@, %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recent search: %1$@, %2$@%3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Búsqueda reciente: %1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
+    "Recent Searches" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Búsquedas recientes"
+          }
+        }
+      }
+    },
+    "Repeat Interval" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo de repetición"
+          }
+        }
+      }
+    },
+    "Repeat Interval: %@s" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo de repetición: %@s"
+          }
+        }
+      }
+    },
+    "Rescan" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a escanear"
+          }
+        }
+      }
+    },
+    "Reset to Defaults" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer a los Valores Predeterminados"
+          }
+        }
+      }
+    },
+    "Restart Required" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinicio requerido"
+          }
+        }
+      }
+    },
+    "Results unclear, retrying" : {
+      "comment" : "Speech: retry due to ambiguous result",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resultados poco claros, reintentando"
+          }
+        }
+      }
+    },
+    "Resume" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanudar"
+          }
+        }
+      }
+    },
+    "Right side of car" : {
+      "comment" : "Speech: vehicle viewed from right",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lado derecho del coche"
+          }
+        }
+      }
+    },
+    "Search for specific objects from a list of 80+ classes" : {
+      "comment" : "SearchMode: Object Finder description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar objetos específicos de una lista de más de 80 clases"
+          }
+        }
+      }
+    },
+    "Send feedback email" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar correo de comentarios"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración"
+          }
+        }
+      }
+    },
+    "Shortest time between beeps/pulses when target is centered." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menor tiempo entre pitidos/pulsos cuando el objetivo está centrado."
+          }
+        }
+      }
+    },
+    "Show verification details and debug messages." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar detalles de verificación y mensajes de depuración"
+          }
+        }
+      }
+    },
+    "Side of car" : {
+      "comment" : "Speech: vehicle viewed from side",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lado del coche"
+          }
+        }
+      }
+    },
+    "Siri Shortcuts" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atajos de Siri"
+          }
+        }
+      }
+    },
+    "Smoothing: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suavizado: %@"
+          }
+        }
+      }
+    },
+    "Smooths out rapid changes in beep frequency." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suaviza cambios rápidos en la frecuencia de los pitidos."
+          }
+        }
+      }
+    },
+    "Speech Guidance" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guía de Voz"
+          }
+        }
+      }
+    },
+    "Speech Rate" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velocidad del habla"
+          }
+        }
+      }
+    },
+    "Speech Rate: %@%%" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velocidad del habla: %@%%"
+          }
+        }
+      }
+    },
+    "Spoken directions like 'left', 'right', 'straight ahead' to guide you" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indicaciones orales como 'izquierda', 'derecha', 'recto' para guiarte"
+          }
+        }
+      }
+    },
+    "Start navigation before a license plate match is confirmed." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar navegación antes de confirmar la coincidencia de matrícula."
+          }
+        }
+      }
+    },
+    "Start receiving guidance before license plate is fully verified" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comience a recibir orientación antes de que la matrícula esté completamente verificada"
+          }
+        }
+      }
+    },
+    "Start Searching" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar Búsqueda"
+          }
+        }
+      }
+    },
+    "Start searching for your car with a description" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empieza a buscar tu coche con una descripción"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado"
+          }
+        }
+      }
+    },
+    "Step 1: Enable Developer Mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paso 1: Activar el modo de desarrollador"
+          }
+        }
+      }
+    },
+    "Step 2: Grant Camera Access" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paso 2: Concede acceso a la cámara"
+          }
+        }
+      }
+    },
+    "Still %@" : {
+      "comment" : "Speech: direction unchanged, no distance"
+    },
+    "Still %@, %@" : {
+      "comment" : "Speech: direction unchanged, with distance",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Still %1$@, %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía %1$@,  %2$@"
+          }
+        }
+      }
+    },
+    "straight ahead" : {
+      "comment" : "Direction guidance: target is straight ahead",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "recto"
+          }
+        }
+      }
+    },
+    "Stream video from Meta Ray-Ban glasses instead of phone camera." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transmitir video desde las gafas Meta Ray-Ban en lugar de la cámara del teléfono."
+          }
+        }
+      }
+    },
+    "System Default" : {
+      "comment" : "Language option: follow device language",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Predeterminado del sistema"
+          }
+        }
+      }
+    },
+    "Tap the button below to open Meta AI and grant camera streaming permission to this app." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el botón de abajo para abrir Meta AI y conceder permiso de transmisión de cámara a esta app."
+          }
+        }
+      }
+    },
+    "The glasses camera will only be used when:" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cámara de las gafas se usará solo cuando:"
+          }
+        }
+      }
+    },
+    "Then Siri will ask you to describe your car, and automatically launch the camera" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luego Siri te pedirá que describas tu coche y lanzará automáticamente la cámara"
+          }
+        }
+      }
+    },
+    "This app is an experimental product. While we make every effort to provide accurate results, we cannot guarantee accuracy. You should use discretion and secondary methods to verify information related to your car and services. This app is not intended to replace any mobility aid." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta aplicación es un producto experimental. Aunque hacemos todo lo posible por proporcionar resultados precisos, no podemos garantizar la exactitud. Deberías usar tu criterio y métodos secundarios para verificar la información relacionada con tu coche y servicios. Esta aplicación no está destinada a reemplazar ningún dispositivo de movilidad."
+          }
+        }
+      }
+    },
+    "Transit mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de tránsito"
+          }
+        }
+      }
+    },
+    "Transit Mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de tránsito"
+          }
+        }
+      }
+    },
+    "Troubleshooting" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solución de problemas"
+          }
+        }
+      }
+    },
+    "Try Again" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intentar nuevamente"
+          }
+        }
+      }
+    },
+    "Use Meta Glasses Camera" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar cámara de Meta Glasses"
+          }
+        }
+      }
+    },
+    "Use Siri to quickly start finding your ride hands-free" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa Siri para comenzar rápidamente a encontrar tu viaje con manos libres"
+          }
+        }
+      }
+    },
+    "Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliza tus gafas inteligentes Meta Ray-Ban para detección en primera persona sin manos:"
+          }
+        }
+      }
+    },
+    "Vehicle Description" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descripción del Vehículo"
+          }
+        }
+      }
+    },
+    "Verification failed" : {
+      "comment" : "Speech: generic verification failure",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificación fallida"
+          }
+        }
+      }
+    },
+    "Vibration patterns that pulse faster when approaching your target" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patrones de vibración que pulsan más rápido al acercarse a su objetivo"
+          }
+        }
+      }
+    },
+    "Waiting for permission..." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando permiso..."
+          }
+        }
+      }
+    },
+    "Waiting for verification" : {
+      "comment" : "Speech: verification in progress",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando verificación"
+          }
+        }
+      }
+    },
+    "Waiting Phrase Cooldown" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frase de Espera en Enfriamiento"
+          }
+        }
+      }
+    },
+    "Waiting Phrase Cooldown: %llds" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frase de Espera en Enfriamiento: %llds"
+          }
+        }
+      }
+    },
+    "What are you looking for?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué estás buscando?"
+          }
+        }
+      }
+    },
+    "What does your car look like?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Cómo es tu coche?"
+          }
+        }
+      }
+    },
+    "Wrong make or model" : {
+      "comment" : "Reject reason: wrong vehicle",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fabricante o modelo incorrecto"
+          }
+        }
+      }
+    },
+    "Wrong vehicle announced" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vehículo incorrecto anunciado"
+          }
+        }
+      }
+    },
+    "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus gafas Meta Ray-Ban están ahora conectadas. La aplicación usará la cámara de las gafas cuando estén abiertas y conectadas."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
