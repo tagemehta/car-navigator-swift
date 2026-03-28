@@ -17,6 +17,15 @@ struct ThingFinderApp: App {
         rawValue: UserDefaults.standard.string(forKey: "app_language")
           ?? SupportedLanguage.system.rawValue) ?? .system
     LanguageManager.applyLanguage(language)
+  @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
+
+  init() {
+    // Configure Wearables SDK on launch (matches Meta sample pattern)
+    do {
+      try Wearables.configure()
+    } catch {
+      print("[ThingFinderApp] Failed to configure Wearables SDK: \(error)")
+    }
   }
 
   var body: some Scene {
@@ -27,13 +36,20 @@ struct ThingFinderApp: App {
         .onChange(of: appLanguageRaw) { _, newValue in
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
         }
+        .environmentObject(glassesEnvironment.wearablesViewModel)
+        .environmentObject(glassesEnvironment.streamSessionViewModel)
         .onOpenURL { url in
           // Handle callback from Meta AI app after registration/permission flows
-          guard url.scheme == "thingfinder" else { return }
+          // Filter for DAT SDK URLs using metaWearablesAction param (matches Meta sample)
+          guard
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            components.queryItems?.contains(where: { $0.name == "metaWearablesAction" }) == true
+          else { return }
           Task {
             do {
               _ = try await Wearables.shared.handleUrl(url)
-              print("[ThingFinderApp] Handled Meta AI callback URL: \(url)")
+            } catch let error as RegistrationError {
+              print("[ThingFinderApp] Registration error: \(error.description)")
             } catch {
               print("[ThingFinderApp] Failed to handle URL: \(error)")
             }

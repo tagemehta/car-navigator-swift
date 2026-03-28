@@ -2,24 +2,15 @@
  * MetaGlassesFrameProvider.swift
  *
  * FrameProvider implementation for Meta glasses using the DAT SDK.
- * Uses MockDevice for testing without physical glasses.
+ *
+ * Lightweight adapter that delegates to StreamSessionViewModel.
+ * Responsibility: forward frames from the view model to the FrameProviderDelegate.
  */
 
 import CoreMedia
 import MWDATCamera
 import MWDATCore
 import UIKit
-
-#if DEBUG && canImport(MWDATMockDevice)
-  import MWDATMockDevice
-#endif
-
-/// Configuration for the mock video source used when testing without physical glasses.
-/// Change `mockVideoFileName` and `mockVideoFileExtension` to use a different video file.
-enum MetaGlassesConfig {
-  static let mockVideoFileName = "videoplayback.hevc"
-  static let mockVideoFileExtension = "mp4"
-}
 
 final class MetaGlassesFrameProvider: NSObject, FrameProvider {
 
@@ -29,27 +20,28 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   weak var delegate: FrameProviderDelegate?
   let sourceType: CaptureSourceType = .metaGlasses
   private(set) var isRunning: Bool = false
-  private var isStarting: Bool = false
 
-  // MARK: - Meta DAT SDK
+  // MARK: - Private
 
-  private var streamSession: StreamSession?
-  private var deviceSelector: AutoDeviceSelector?
-  private var stateListenerToken: AnyListenerToken?
-  private var videoFrameListenerToken: AnyListenerToken?
-  private var errorListenerToken: AnyListenerToken?
+  private let streamSessionVM: StreamSessionViewModel
+  private var frameObservationTask: Task<Void, Never>?
+  /// Tracks the last frame sent to the delegate to avoid reprocessing the same UIImage.
+  private weak var lastFrameRef: UIImage?
 
-  // Preview layer for displaying video
   private let previewImageView: UIImageView = {
-    let imageView = UIImageView()
-    imageView.contentMode = .scaleAspectFill
-    imageView.clipsToBounds = true
-    return imageView
+    let iv = UIImageView()
+    iv.contentMode = .scaleAspectFill
+    iv.clipsToBounds = true
+    return iv
   }()
 
   // MARK: - Init
 
-  override init() {
+  init(
+    streamSessionViewModel: StreamSessionViewModel = MetaGlassesEnvironment.shared
+      .streamSessionViewModel
+  ) {
+    self.streamSessionVM = streamSessionViewModel
     super.init()
     previewView.addSubview(previewImageView)
     previewImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -62,184 +54,63 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   }
 
   deinit {
-    // Clean up stream session
-    Task { @MainActor [streamSession] in
-      await streamSession?.stop()
-    }
+    frameObservationTask?.cancel()
   }
 
   // MARK: - FrameProvider Methods
 
   func setupSession() {
-    guard streamSession == nil else { return }
-
-    // Must be called on MainActor for MWDATCamera
-    Task { @MainActor in
-      self.setupSessionOnMain()
-    }
-  }
-
-  @MainActor
-  private func setupSessionOnMain() {
-    guard streamSession == nil else { return }
-
-    let wearables = Wearables.shared
-    deviceSelector = AutoDeviceSelector(wearables: wearables)
-
-    let config = StreamSessionConfig(
-      videoCodec: .raw,
-      resolution: .low,
-      frameRate: 24
-    )
-
-    guard let selector = deviceSelector else {
-      print("[MetaGlassesFrameProvider] Failed to create device selector")
-      return
-    }
-    streamSession = StreamSession(streamSessionConfig: config, deviceSelector: selector)
-
-    // Subscribe to video frames
-    videoFrameListenerToken = streamSession?.videoFramePublisher.listen { [weak self] videoFrame in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        self.handleVideoFrame(videoFrame)
-      }
-    }
-
-    // Subscribe to state changes
-    stateListenerToken = streamSession?.statePublisher.listen { [weak self] state in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        switch state {
-        case .streaming:
-          self.isRunning = true
-          MetaGlassesManager.shared.isStreamActive = true
-          MetaGlassesManager.shared.streamStartFailed = false
-        case .stopped, .paused:
-          self.isRunning = false
-          MetaGlassesManager.shared.isStreamActive = false
-        case .waitingForDevice:
-          MetaGlassesManager.shared.isStreamActive = false
-        default:
-          break
+    // Start observing frames from the view model
+    frameObservationTask?.cancel()
+    lastFrameRef = nil
+    frameObservationTask = Task { @MainActor [weak self] in
+      guard let self else { return }
+      while !Task.isCancelled {
+        if let frame = self.streamSessionVM.currentVideoFrame, frame !== self.lastFrameRef {
+          self.lastFrameRef = frame
+          self.previewImageView.image = frame
+          // Use zero-copy pixel buffer extracted directly from the SDK's CMSampleBuffer
+          if let pixelBuffer = self.streamSessionVM.currentPixelBuffer {
+            self.delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
+          }
         }
+        try? await Task.sleep(nanoseconds: 33_000_000)  // ~30fps polling
       }
     }
-
-    // Subscribe to errors
-    errorListenerToken = streamSession?.errorPublisher.listen { _ in }
   }
 
   func start() {
-    guard !isRunning, !isStarting else { return }
-    isStarting = true
-
+    guard !isRunning else { return }
+    // Set synchronously so a concurrent stop() sees the updated flag immediately
+    isRunning = true
     Task { @MainActor [weak self] in
       guard let self else { return }
-      defer { self.isStarting = false }
-
-      // Reset failure flag for fresh attempt
-      MetaGlassesManager.shared.streamStartFailed = false
-
-      // Ensure session is set up before starting
-      if self.streamSession == nil {
-        self.setupSessionOnMain()
-      }
-
-      // Wait briefly for devices to become available if needed
-      var devices = Wearables.shared.devices
-      if devices.isEmpty {
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        devices = Wearables.shared.devices
-      }
-
-      if !devices.isEmpty {
-        // Check and request permissions
-        do {
-          let permission = Permission.camera
-
-          var needsRequest = false
-          do {
-            let status = try await Wearables.shared.checkPermissionStatus(permission)
-            needsRequest = (status != .granted)
-          } catch {
-            needsRequest = true
-          }
-
-          if needsRequest {
-            MetaGlassesManager.shared.isPermissionRequestInProgress = true
-            let requestStatus = try await Wearables.shared.requestPermission(permission)
-            MetaGlassesManager.shared.isPermissionRequestInProgress = false
-            if requestStatus != .granted {
-              MetaGlassesManager.shared.isStreamActive = false
-              MetaGlassesManager.shared.streamStartFailed = true
-              MetaGlassesManager.shared.errorMessage =
-                "Camera permission required. Please grant access in Meta AI app."
-              return
-            }
-          }
-        } catch {
-          MetaGlassesManager.shared.isPermissionRequestInProgress = false
-          MetaGlassesManager.shared.isStreamActive = false
-          MetaGlassesManager.shared.streamStartFailed = true
-          MetaGlassesManager.shared.errorMessage =
-            "Camera permission required. Please grant access in Meta AI app."
-          return
-        }
-      } else {
-        MetaGlassesManager.shared.isStreamActive = false
-        MetaGlassesManager.shared.streamStartFailed = true
+      let started = await self.streamSessionVM.handleStartStreaming()
+      // Re-check isRunning: stop() may have been called while we were awaiting permission
+      guard self.isRunning else {
+        if started { await self.streamSessionVM.stopStreaming() }
         return
       }
-
-      // Start the session
-      guard self.streamSession != nil else { return }
-      await self.streamSession?.start()
+      if started {
+        self.setupSession()
+      } else {
+        self.isRunning = false
+      }
     }
   }
 
-  func stop() {
-    guard isRunning || isStarting || streamSession != nil else { return }
-
-    Task { @MainActor in
-      await self.teardownSession()
-    }
-  }
-
-  @MainActor
-  private func teardownSession() async {
-    await streamSession?.stop()
-
-    // Clear listener tokens
-    stateListenerToken = nil
-    videoFrameListenerToken = nil
-    errorListenerToken = nil
-
-    // Clear session so a fresh one is created on next start
-    streamSession = nil
-    deviceSelector = nil
-
+  @MainActor func stop() {
+    guard isRunning else { return }
+    // Set synchronously so a concurrent start() Task sees the updated flag after its await
     isRunning = false
-    MetaGlassesManager.shared.isStreamActive = false
-  }
-
-  // MARK: - Video Frame Handling
-
-  private var frameCount = 0
-
-  @MainActor
-  private func handleVideoFrame(_ videoFrame: VideoFrame) {
-    frameCount += 1
-
-    // Update preview
-    if let uiImage = videoFrame.makeUIImage() {
-      previewImageView.image = uiImage
-    }
-
-    // Convert to CVPixelBuffer and send to delegate
-    let sampleBuffer = videoFrame.sampleBuffer
-    if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-      delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
+    frameObservationTask?.cancel()
+    frameObservationTask = nil
+    // Capture the current generation so the stop is skipped if a new provider
+    // calls startStreaming() before this async task executes.
+    let gen = streamSessionVM.streamGeneration
+    Task { @MainActor [weak self] in
+      await self?.streamSessionVM.stopStreaming(ifGeneration: gen)
     }
   }
+
 }

@@ -48,17 +48,11 @@ struct ContentView: View {
             Button(action: {
               playbackControl()
             }) {
-              Group {
-                if isCameraRunning {
-                  Text("Pause")
-                } else {
-                  Text("Resume")
-                }
-              }
-              .font(.system(size: 28, weight: .bold))
-              .foregroundColor(.white)
-              .padding()
-              .background(isCameraRunning ? Color.red.opacity(0.8) : Color.green.opacity(0.8))
+              Text(isCameraRunning ? "Pause" : "Resume")
+                .font(.title2.bold())
+                .foregroundColor(.white)
+                .padding()
+                .background(isCameraRunning ? Color.red.opacity(0.8) : Color.green.opacity(0.8))
               // .clipShape(Circle())
             }
             // Reset Detection Pipeline
@@ -77,7 +71,7 @@ struct ContentView: View {
               }
             }) {
               Text("Rescan")
-                .font(.system(size: 28, weight: .bold))
+                .font(.title2.bold())
                 .foregroundColor(.white)
                 .padding()
                 .background(Color.blue.opacity(0.8))

@@ -5,11 +5,12 @@
 //  Settings section for Meta Ray-Ban glasses configuration.
 //
 
+import MWDATCore
 import SwiftUI
 
 struct MetaGlassesSettingsSection: View {
   @ObservedObject var settings: Settings
-  @StateObject private var manager = MetaGlassesManager.shared
+  @EnvironmentObject private var wearablesVM: WearablesViewModel
   @State private var showingSetupSheet = false
   @State private var showingSuccessSheet = false
 
@@ -23,53 +24,24 @@ struct MetaGlassesSettingsSection: View {
       if settings.useMetaGlasses {
         connectionStatusView
 
-        if manager.isRegistered || manager.hasEverRegistered {
+        if wearablesVM.registrationState == .registered {
           disconnectButton
         } else {
           connectButton
         }
 
         // Device count
-        if !manager.availableDevices.isEmpty {
-          Text("\(manager.availableDevices.count) device(s) available")
+        if !wearablesVM.devices.isEmpty {
+          Text("\(wearablesVM.devices.count) device(s) available")
             .font(.caption)
             .foregroundColor(.secondary)
-        }
-
-        #if DEBUG && canImport(MWDATMockDevice)
-          // Mock device controls for testing
-          Divider()
-          Text("Testing (Debug Only)")
-            .font(.caption)
-            .foregroundColor(.secondary)
-
-          if manager.hasMockDevice {
-            Button("Remove Mock Device") {
-              manager.removeMockDevice()
-            }
-            .foregroundColor(.orange)
-          } else {
-            Button("Add Mock Device") {
-              manager.addMockDevice()
-            }
-            Text("Uses bundled video file for testing without glasses.")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-        #endif
-
-        // Error display
-        if let error = manager.errorMessage {
-          Text(error)
-            .font(.caption)
-            .foregroundColor(.red)
         }
       }
     }
-    .onChange(of: manager.shouldShowRegistrationSuccess) { _, shouldShow in
+    .onChange(of: wearablesVM.showGettingStartedSheet) { _, shouldShow in
       if shouldShow {
         showingSuccessSheet = true
-        manager.shouldShowRegistrationSuccess = false
+        wearablesVM.showGettingStartedSheet = false
       }
     }
     .sheet(isPresented: $showingSuccessSheet) {
@@ -80,18 +52,51 @@ struct MetaGlassesSettingsSection: View {
   // MARK: - Connection Status
 
   private var connectionStatusView: some View {
-    HStack {
-      Text("Status")
-      Spacer()
-      if manager.isRegistered || manager.hasEverRegistered {
-        Label("Connected", systemImage: "checkmark.circle.fill")
-          .foregroundColor(.green)
-      } else {
-        Label("Not Connected", systemImage: "xmark.circle")
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Circle()
+          .fill(statusColor)
+          .frame(width: 8, height: 8)
+        Text(statusText)
+          .font(.subheadline)
           .foregroundColor(.secondary)
       }
+
+      if wearablesVM.showError {
+        Text(wearablesVM.errorMessage)
+          .font(.caption)
+          .foregroundColor(.red)
+      }
     }
-    .padding(.top, 4)
+    .padding(.vertical, 4)
+  }
+
+  private var statusColor: Color {
+    switch wearablesVM.registrationState {
+    case .registered:
+      return .green
+    case .registering:
+      return .orange
+    case .available, .unavailable:
+      return .gray
+    @unknown default:
+      return .gray
+    }
+  }
+
+  private var statusText: String {
+    switch wearablesVM.registrationState {
+    case .registered:
+      return "Connected"
+    case .registering:
+      return "Connecting to Meta AI..."
+    case .available:
+      return "Available - not connected"
+    case .unavailable:
+      return "Not available"
+    @unknown default:
+      return "Unknown status"
+    }
   }
 
   // MARK: - Buttons
@@ -101,10 +106,11 @@ struct MetaGlassesSettingsSection: View {
       showingSetupSheet = true
     } label: {
       HStack {
-        Image(systemName: "eyeglasses")
+        Image(systemName: "link")
         Text("Connect Glasses")
       }
     }
+    .buttonStyle(.bordered)
     .sheet(isPresented: $showingSetupSheet) {
       MetaGlassesSetupView()
     }
@@ -112,7 +118,7 @@ struct MetaGlassesSettingsSection: View {
 
   private var disconnectButton: some View {
     Button(role: .destructive) {
-      manager.disconnectGlasses()
+      wearablesVM.disconnectGlasses()
     } label: {
       HStack {
         Image(systemName: "xmark.circle")
