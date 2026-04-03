@@ -32,7 +32,7 @@ struct SettingsView: View {
         }
 
         // MARK: - Navigation Feedback
-        Section(header: Text("Navigation Feedback")) {
+        Section(header: Text("Navigation Settings")) {
           Toggle("Audio Beeps", isOn: $settings.enableBeeps)
           Text("Enable or disable audio beeps for feedback.")
             .font(.caption)

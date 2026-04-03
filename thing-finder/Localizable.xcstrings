@@ -211,6 +211,16 @@
         }
       }
     },
+    "Add to favorites" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade a favoritos"
+          }
+        }
+      }
+    },
     "Adjust how fast announcements are spoken" : {
       "localizations" : {
         "es" : {
@@ -424,10 +434,26 @@
       }
     },
     "car was last seen %d degrees to the left" : {
-      "comment" : "Speech: lost car direction left"
+      "comment" : "Speech: lost car direction left",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El coche fue visto por última vez a %d grados a la izquierda"
+          }
+        }
+      }
     },
     "car was last seen %d degrees to the right" : {
-      "comment" : "Speech: lost car direction right"
+      "comment" : "Speech: lost car direction right",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El coche fue visto por última vez a %d grados a la derecha"
+          }
+        }
+      }
     },
     "Changes the language for all text and speech in the app." : {
       "localizations" : {
@@ -479,6 +505,16 @@
         }
       }
     },
+    "Clear all recent searches" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar todas las búsquedas recientes"
+          }
+        }
+      }
+    },
     "Clipboard is empty" : {
       "comment" : "Alert: clipboard has no text",
       "localizations" : {
@@ -526,16 +562,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conectar a Meta AI"
-          }
-        }
-      }
-    },
-    "Connected" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectado"
           }
         }
       }
@@ -641,6 +667,26 @@
         }
       }
     },
+    "Delete favorite" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar favorito"
+          }
+        }
+      }
+    },
+    "Delete search" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar elemento de búsqueda"
+          }
+        }
+      }
+    },
     "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)" : {
       "comment" : "Placeholder: object description input",
       "localizations" : {
@@ -658,6 +704,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Describe tu auto (p. ej., Toyota Camry blanco)"
+          }
+        }
+      }
+    },
+    "Describe your paratransit vehicle (e.g., white accesslink van)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe tu vehículo paratransit (p. ej., van accesslink blanco)"
           }
         }
       }
@@ -866,6 +922,32 @@
         }
       }
     },
+    "Favorite: %@, %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Favorite: %1$@, %2$@%3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorito: %1$@, %2$@%3$@"
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoritos"
+          }
+        }
+      }
+    },
     "Find" : {
       "localizations" : {
         "es" : {
@@ -882,6 +964,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Encuentra Mi Coche"
+          }
+        }
+      }
+    },
+    "Find My Paratransit" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encuentra Mi Paratransit"
           }
         }
       }
@@ -1228,6 +1320,16 @@
         }
       }
     },
+    "Moves this search back to recent searches" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traslada esta búsqueda a búsquedas recientes"
+          }
+        }
+      }
+    },
     "Navigate Before Plate Match" : {
       "localizations" : {
         "es" : {
@@ -1244,6 +1346,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Realimentación de Navegación"
+          }
+        }
+      }
+    },
+    "Navigation Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración de Navegación"
           }
         }
       }
@@ -1312,16 +1424,6 @@
         }
       }
     },
-    "Not Connected" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Conectado"
-          }
-        }
-      }
-    },
     "Not sure yet, taking another shot" : {
       "comment" : "Speech: retry due to low confidence",
       "localizations" : {
@@ -1381,6 +1483,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abre el editor de correo electrónico para enviar comentarios al equipo de desarrollo"
+          }
+        }
+      }
+    },
+    "Paratransit Description" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descripción Paratránsito"
           }
         }
       }
@@ -1459,7 +1571,14 @@
       }
     },
     "Please close and reopen the app for the language change to take full effect." : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por favor, cierra y vuelve a abrir la app para que el cambio de idioma tenga efecto completo."
+          }
+        }
+      }
     },
     "Please share your thoughts, report issues, or suggest features. Your input helps us make the app better for everyone." : {
       "localizations" : {
@@ -1504,6 +1623,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Búsquedas recientes"
+          }
+        }
+      }
+    },
+    "Remove from favorites" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar de favoritos"
+          }
+        }
+      }
+    },
+    "Removes all non-favorite searches from history" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina todas las búsquedas no favoritas del historial"
+          }
+        }
+      }
+    },
+    "Removes this search from favorites" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina esta búsqueda de favoritos"
+          }
+        }
+      }
+    },
+    "Removes this search from history" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina esta búsqueda del historial"
           }
         }
       }
@@ -1586,6 +1745,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lado derecho del coche"
+          }
+        }
+      }
+    },
+    "Saves this search to favorites" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda esta búsqueda en favoritos"
           }
         }
       }
@@ -1762,12 +1931,12 @@
         }
       }
     },
-    "Status" : {
+    "Start searching for your paratransit vehicle with a description" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estado"
+            "value" : "Empieza a buscar tu vehículo de paratransporte con una descripción"
           }
         }
       }
@@ -1793,7 +1962,15 @@
       }
     },
     "Still %@" : {
-      "comment" : "Speech: direction unchanged, no distance"
+      "comment" : "Speech: direction unchanged, no distance",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía %@"
+          }
+        }
+      }
     },
     "Still %@, %@" : {
       "comment" : "Speech: direction unchanged, with distance",
@@ -2042,6 +2219,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Cómo es tu coche?"
+          }
+        }
+      }
+    },
+    "What does your paratransit vehicle look like?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Cómo es tu vehículo de paratránsito?"
           }
         }
       }

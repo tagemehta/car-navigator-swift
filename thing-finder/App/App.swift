@@ -6,6 +6,7 @@ import SwiftUI
 struct ThingFinderApp: App {
   @AppStorage("app_language") private var appLanguageRaw: String = SupportedLanguage.system.rawValue
   @StateObject private var sharedSettings = Settings()
+  @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
 
   private var appLanguage: SupportedLanguage {
     SupportedLanguage(rawValue: appLanguageRaw) ?? .system
@@ -17,9 +18,7 @@ struct ThingFinderApp: App {
         rawValue: UserDefaults.standard.string(forKey: "app_language")
           ?? SupportedLanguage.system.rawValue) ?? .system
     LanguageManager.applyLanguage(language)
-  @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
 
-  init() {
     // Configure Wearables SDK on launch (matches Meta sample pattern)
     do {
       try Wearables.configure()
@@ -40,6 +39,7 @@ struct ThingFinderApp: App {
         .environmentObject(glassesEnvironment.streamSessionViewModel)
         .onOpenURL { url in
           // Handle callback from Meta AI app after registration/permission flows
+          guard FeatureFlags.metaGlassesEnabled else { return }
           // Filter for DAT SDK URLs using metaWearablesAction param (matches Meta sample)
           guard
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false),

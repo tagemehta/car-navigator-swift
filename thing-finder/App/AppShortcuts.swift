@@ -26,12 +26,13 @@ struct FindCarIntent: AppIntent {
 
 struct FindParatransitIntent: AppIntent {
   static var title: LocalizedStringResource = "Find My Paratransit"
-  static var description = IntentDescription("Start searching for your paratransit vehicle with a description")
+  static var description = IntentDescription(
+    "Start searching for your paratransit vehicle with a description")
   static var openAppWhenRun: Bool = true
 
   @Parameter(
     title: "Paratransit Description",
-    description: "Describe your paratransit vehicle (e.g., blue bus with wheelchair ramp)",
+    description: "Describe your paratransit vehicle (e.g., white accesslink van)",
     requestValueDialog: "What does your paratransit vehicle look like?"
   )
   var paratransitDescription: String
@@ -56,7 +57,7 @@ struct ThingFinderShortcuts: AppShortcutsProvider {
       ],
       shortTitle: "Find My Car",
       systemImageName: "car.fill"
-    );
+    )
     AppShortcut(
       intent: FindParatransitIntent(),
       phrases: [
