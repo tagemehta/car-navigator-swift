@@ -1,12 +1,14 @@
 // MARK: - App Entry
-import MWDATCore
+// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// import MWDATCore
 import SwiftUI
 
 @main
 struct ThingFinderApp: App {
   @AppStorage("app_language") private var appLanguageRaw: String = SupportedLanguage.system.rawValue
   @StateObject private var sharedSettings = Settings()
-  @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
+  // COMMENTED OUT FOR APP STORE SUBMISSION
+  // @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
 
   private var appLanguage: SupportedLanguage {
     SupportedLanguage(rawValue: appLanguageRaw) ?? .system
@@ -19,12 +21,13 @@ struct ThingFinderApp: App {
           ?? SupportedLanguage.system.rawValue) ?? .system
     LanguageManager.applyLanguage(language)
 
+    // COMMENTED OUT FOR APP STORE SUBMISSION
     // Configure Wearables SDK on launch (matches Meta sample pattern)
-    do {
-      try Wearables.configure()
-    } catch {
-      print("[ThingFinderApp] Failed to configure Wearables SDK: \(error)")
-    }
+    // do {
+    //   try Wearables.configure()
+    // } catch {
+    //   print("[ThingFinderApp] Failed to configure Wearables SDK: \(error)")
+    // }
   }
 
   var body: some Scene {
@@ -35,26 +38,27 @@ struct ThingFinderApp: App {
         .onChange(of: appLanguageRaw) { _, newValue in
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
         }
-        .environmentObject(glassesEnvironment.wearablesViewModel)
-        .environmentObject(glassesEnvironment.streamSessionViewModel)
-        .onOpenURL { url in
-          // Handle callback from Meta AI app after registration/permission flows
-          guard FeatureFlags.metaGlassesEnabled else { return }
-          // Filter for DAT SDK URLs using metaWearablesAction param (matches Meta sample)
-          guard
-            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-            components.queryItems?.contains(where: { $0.name == "metaWearablesAction" }) == true
-          else { return }
-          Task {
-            do {
-              _ = try await Wearables.shared.handleUrl(url)
-            } catch let error as RegistrationError {
-              print("[ThingFinderApp] Registration error: \(error.description)")
-            } catch {
-              print("[ThingFinderApp] Failed to handle URL: \(error)")
-            }
-          }
-        }
+      // COMMENTED OUT FOR APP STORE SUBMISSION
+      // .environmentObject(glassesEnvironment.wearablesViewModel)
+      // .environmentObject(glassesEnvironment.streamSessionViewModel)
+      // .onOpenURL { url in
+      //   // Handle callback from Meta AI app after registration/permission flows
+      //   guard FeatureFlags.metaGlassesEnabled else { return }
+      //   // Filter for DAT SDK URLs using metaWearablesAction param (matches Meta sample)
+      //   guard
+      //     let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+      //     components.queryItems?.contains(where: { $0.name == "metaWearablesAction" }) == true
+      //   else { return }
+      //   Task {
+      //     do {
+      //       _ = try await Wearables.shared.handleUrl(url)
+      //     } catch let error as RegistrationError {
+      //       print("[ThingFinderApp] Registration error: \(error.description)")
+      //     } catch {
+      //       print("[ThingFinderApp] Failed to handle URL: \(error)")
+      //     }
+      //   }
+      // }
     }
   }
 }

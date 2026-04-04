@@ -1,3 +1,7 @@
+// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// Uncomment this file when ready to use Meta glasses in production
+
+/*
 //
 //  MetaGlassesSetupView.swift
 //  thing-finder
@@ -291,3 +295,4 @@ struct MetaGlassesSetupView: View {
 #Preview {
   MetaGlassesSetupView()
 }
+*/

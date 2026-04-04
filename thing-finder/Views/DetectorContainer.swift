@@ -18,8 +18,9 @@ struct DetectorContainer: View {
 
   // MARK: – Dependencies
   @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
-  @EnvironmentObject private var wearablesVM: WearablesViewModel
-  @EnvironmentObject private var streamSessionVM: StreamSessionViewModel
+  // COMMENTED OUT FOR APP STORE SUBMISSION
+  // @EnvironmentObject private var wearablesVM: WearablesViewModel
+  // @EnvironmentObject private var streamSessionVM: StreamSessionViewModel
 
   // Track capture source as state so we can update it reactively
   @State private var currentCaptureSource: CaptureSourceType = .avFoundation
@@ -53,14 +54,15 @@ struct DetectorContainer: View {
   /// Determines the capture source based on settings and Meta glasses state.
   /// Falls back to phone camera immediately on failure or when glasses aren't usable.
   private func computeCaptureSource() -> CaptureSourceType {
-    if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses {
-      // Use glasses if registered AND (streaming or has an active device ready)
-      if wearablesVM.registrationState == .registered
-        && (streamSessionVM.isStreaming || streamSessionVM.hasActiveDevice)
-      {
-        return .metaGlasses
-      }
-    }
+    // COMMENTED OUT FOR APP STORE SUBMISSION
+    // if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses {
+    //   // Use glasses if registered AND (streaming or has an active device ready)
+    //   if wearablesVM.registrationState == .registered
+    //     && (streamSessionVM.isStreaming || streamSessionVM.hasActiveDevice)
+    //   {
+    //     return .metaGlasses
+    //   }
+    // }
     if settings.useARMode {
       return .arKit
     }
@@ -108,14 +110,14 @@ struct DetectorContainer: View {
       currentCaptureSource = computeCaptureSource()
     }
     // Re-evaluate capture source when relevant states change
-    .onChange(of: wearablesVM.registrationState) { _, _ in
-      currentCaptureSource = computeCaptureSource()
-    }
-    .onChange(of: streamSessionVM.isStreaming) { _, _ in
-      currentCaptureSource = computeCaptureSource()
-    }
-    .onChange(of: streamSessionVM.hasActiveDevice) { _, _ in
-      currentCaptureSource = computeCaptureSource()
-    }
+    // .onChange(of: wearablesVM.registrationState) { _, _ in
+    //   currentCaptureSource = computeCaptureSource()
+    // }
+    // .onChange(of: streamSessionVM.isStreaming) { _, _ in
+    //   currentCaptureSource = computeCaptureSource()
+    // }
+    // .onChange(of: streamSessionVM.hasActiveDevice) { _, _ in
+    //   currentCaptureSource = computeCaptureSource()
+    // }
   }
 }

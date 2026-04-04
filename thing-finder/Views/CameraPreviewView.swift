@@ -121,8 +121,9 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         return ARVideoCapture()
       case .videoFile:
         return VideoFileFrameProvider()
-      case .metaGlasses:
-        return MetaGlassesFrameProvider()
+      // COMMENTED OUT FOR APP STORE SUBMISSION
+      // case .metaGlasses:
+      //   return MetaGlassesFrameProvider()
       default:
         return VideoCapture()
       }

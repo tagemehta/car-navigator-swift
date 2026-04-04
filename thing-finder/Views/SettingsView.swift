@@ -259,11 +259,12 @@ struct SettingsView: View {
         // }
 
         // MARK: - Meta Glasses
-        if FeatureFlags.metaGlassesEnabled {
-          Section(header: Text("Meta Glasses")) {
-            MetaGlassesSettingsSection(settings: settings)
-          }
-        }
+        // COMMENTED OUT FOR APP STORE SUBMISSION
+        // if FeatureFlags.metaGlassesEnabled {
+        //   Section(header: Text("Meta Glasses")) {
+        //     MetaGlassesSettingsSection(settings: settings)
+        //   }
+        // }
 
         // MARK: - Developer Options
         Section(header: Text("Developer Options")) {

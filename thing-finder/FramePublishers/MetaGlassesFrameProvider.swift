@@ -1,3 +1,6 @@
+// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// Uncomment this file when ready to use Meta glasses in production
+
 /*
  * MetaGlassesFrameProvider.swift
  *
@@ -7,6 +10,7 @@
  * Responsibility: forward frames from the view model to the FrameProviderDelegate.
  */
 
+/*
 import CoreMedia
 import MWDATCamera
 import MWDATCore
@@ -114,3 +118,4 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
   }
 
 }
+*/

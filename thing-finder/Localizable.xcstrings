@@ -51,6 +51,7 @@
 
     },
     "%lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -61,6 +62,7 @@
       }
     },
     "%lld device(s) available" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -111,6 +113,7 @@
       }
     },
     "• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -121,6 +124,7 @@
       }
     },
     "• **Hands-Free**: Keep your phone in your pocket while glasses do the work" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -131,6 +135,7 @@
       }
     },
     "• **Permissions**: Grant camera access when prompted" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -141,6 +146,7 @@
       }
     },
     "• Glasses are connected via Bluetooth" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -151,6 +157,7 @@
       }
     },
     "• Glasses are open (unfolded)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -161,6 +168,7 @@
       }
     },
     "• Meta Glasses mode is enabled in Settings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -384,6 +392,7 @@
       }
     },
     "Back" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -414,6 +423,7 @@
       }
     },
     "Before connecting, you need to enable Developer Mode in the Meta AI app:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -445,6 +455,7 @@
       }
     },
     "Cancel" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -558,6 +569,7 @@
       }
     },
     "Complete the setup in Meta AI app, then return here." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -568,6 +580,7 @@
       }
     },
     "Connect Glasses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -578,6 +591,7 @@
       }
     },
     "Connect Meta Glasses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -588,6 +602,7 @@
       }
     },
     "Connect to Meta AI" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -598,6 +613,7 @@
       }
     },
     "Connected!" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -608,6 +624,7 @@
       }
     },
     "Connection Error" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -638,6 +655,7 @@
       }
     },
     "Continue" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -836,6 +854,7 @@
       }
     },
     "Disconnect Glasses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -970,6 +989,7 @@
       }
     },
     "Ensure your glasses are open and on your head" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1254,6 +1274,7 @@
       }
     },
     "Important:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1339,6 +1360,7 @@
       }
     },
     "Make sure your glasses are open and powered on" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1369,6 +1391,7 @@
       }
     },
     "Meta Glasses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1390,6 +1413,7 @@
       }
     },
     "Meta Ray-Ban Glasses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2086,6 +2110,7 @@
       }
     },
     "Step 1: Enable Developer Mode" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2096,6 +2121,7 @@
       }
     },
     "Step 2: Grant Camera Access" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2145,6 +2171,7 @@
       }
     },
     "Stream video from Meta Ray-Ban glasses instead of phone camera." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2166,6 +2193,7 @@
       }
     },
     "Tap the button below to open Meta AI and grant camera streaming permission to this app." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2176,6 +2204,7 @@
       }
     },
     "The glasses camera will only be used when:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2238,6 +2267,7 @@
       }
     },
     "Try Again" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2258,6 +2288,7 @@
       }
     },
     "Use Meta Glasses Camera" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2289,6 +2320,7 @@
       }
     },
     "Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2330,6 +2362,7 @@
       }
     },
     "Waiting for permission..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2423,6 +2456,7 @@
       }
     },
     "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {

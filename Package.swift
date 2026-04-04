@@ -17,15 +17,17 @@ let package = Package(
   ],
   dependencies: [
     // Dependencies declare other packages that this package depends on.
-    .package(url: "https://github.com/facebook/meta-wearables-dat-ios", from: "0.5.0")
+    // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+    // .package(url: "https://github.com/facebook/meta-wearables-dat-ios", from: "0.5.0")
   ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.
     .target(
       name: "ThingFinder",
       dependencies: [
-        .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
-        .product(name: "MWDATCamera", package: "meta-wearables-dat-ios"),
+        // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+        // .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
+        // .product(name: "MWDATCamera", package: "meta-wearables-dat-ios"),
       ],
       path: "thing-finder",
       resources: [

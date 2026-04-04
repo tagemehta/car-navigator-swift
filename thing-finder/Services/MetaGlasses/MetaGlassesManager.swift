@@ -1,3 +1,7 @@
+// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// Uncomment this file when ready to use Meta glasses in production
+
+/*
 //
 //  MetaGlassesManager.swift
 //  thing-finder
@@ -337,3 +341,4 @@ public final class MetaGlassesManager: ObservableObject {
     }
   #endif
 }
+*/

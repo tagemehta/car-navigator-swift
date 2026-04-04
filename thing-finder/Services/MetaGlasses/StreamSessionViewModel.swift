@@ -1,3 +1,7 @@
+// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// Uncomment this file when ready to use Meta glasses in production
+
+/*
 //
 //  StreamSessionViewModel.swift
 //  thing-finder
@@ -196,6 +200,6 @@ final class StreamSessionViewModel: ObservableObject {
 
 enum StreamingStatus {
   case streaming
-  case waiting
   case stopped
 }
+*/

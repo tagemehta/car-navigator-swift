@@ -1,3 +1,7 @@
+// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// Uncomment this file when ready to use Meta glasses in production
+
+/*
 //
 //  MetaGlassesEnvironment.swift
 //  thing-finder
@@ -21,3 +25,4 @@ final class MetaGlassesEnvironment: ObservableObject {
     self.streamSessionViewModel = StreamSessionViewModel(wearables: Wearables.shared)
   }
 }
+*/
