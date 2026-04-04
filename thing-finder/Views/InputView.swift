@@ -226,16 +226,13 @@ struct InputView: View {
           if searchMode == .uberFinder {
             Toggle(isOn: $isParatransitMode) {
               VStack(alignment: .leading, spacing: 2) {
-                Text("Transit Mode")
-                Text("For buses with route numbers and logos")
+                Text("Paratransit Mode")
+                Text("For LLM based vehicle detection using logos or text")
                   .font(.caption)
                   .foregroundColor(.secondary)
               }
             }
-            .accessibilityLabel("Transit mode")
-            .accessibilityHint(
-              "Enable for public transit buses. Matches by route number and agency logo instead of make and model."
-            )
+            .accessibilityLabel("Paratransit mode")
           }
         }
 
@@ -264,63 +261,58 @@ struct InputView: View {
               .font(.headline)
           ) {
             ForEach(favoriteItems, id: \.id) { item in
-              HStack(spacing: 12) {
-                Button {
-                  description = item.description
-                  searchMode = item.mode
-                  isParatransitMode = item.isParatransitMode
-                  showPlaceholder = false
-                  saveToHistory(
-                    item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                  isShowingCamera = true
-                } label: {
-                  HStack {
-                    Image(systemName: "star.fill")
-                      .foregroundColor(.yellow)
-                      .accessibilityHidden(true)
-                    Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
-                      .foregroundColor(.secondary)
-                      .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                      Text(item.description)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .foregroundColor(.primary)
-                      if item.mode == .uberFinder && item.isParatransitMode {
-                        Text("Transit Mode")
-                          .font(.caption2)
-                          .foregroundColor(.secondary)
-                      }
+              Button {
+                description = item.description
+                searchMode = item.mode
+                isParatransitMode = item.isParatransitMode
+                showPlaceholder = false
+                saveToHistory(
+                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
+                isShowingCamera = true
+              } label: {
+                HStack {
+                  Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
+                    .accessibilityHidden(true)
+                  Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+                  VStack(alignment: .leading, spacing: 2) {
+                    Text(item.description)
+                      .lineLimit(1)
+                      .truncationMode(.tail)
+                      .foregroundColor(.primary)
+                    if item.mode == .uberFinder && item.isParatransitMode {
+                      Text("Paratransit Mode")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                   }
+                  .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .accessibilityLabel(
-                  "Favorite: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Transit mode" : "")"
-                )
-                .accessibilityHint("Double tap to search with this description")
-
-                Button {
-                  toggleFavorite(item)
-                } label: {
-                  Image(systemName: "star.slash")
-                    .font(.body)
-                    .foregroundColor(.orange)
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Remove from favorites")
-                .accessibilityHint("Moves this search back to recent searches")
-
+              }
+              .accessibilityLabel(
+                "Favorite: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Paratransit mode" : "")"
+              )
+              .accessibilityHint("Double tap to search with this description")
+              .accessibilityAction(named: "Remove from favorites") {
+                toggleFavorite(item)
+              }
+              .accessibilityAction(named: "Delete") {
+                deleteItem(item)
+              }
+              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
                   deleteItem(item)
                 } label: {
-                  Image(systemName: "trash")
-                    .font(.body)
-                    .foregroundColor(.red)
+                  Label("Delete", systemImage: "trash")
                 }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Delete favorite")
-                .accessibilityHint("Removes this search from favorites")
+                Button {
+                  toggleFavorite(item)
+                } label: {
+                  Label("Unfavorite", systemImage: "star.slash")
+                }
+                .tint(.orange)
               }
             }
           }
@@ -347,60 +339,55 @@ struct InputView: View {
             }
           ) {
             ForEach(recentItems, id: \.id) { item in
-              HStack(spacing: 12) {
-                Button {
-                  description = item.description
-                  searchMode = item.mode
-                  isParatransitMode = item.isParatransitMode
-                  showPlaceholder = false
-                  saveToHistory(
-                    item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                  isShowingCamera = true
-                } label: {
-                  HStack {
-                    Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
-                      .foregroundColor(.secondary)
-                      .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                      Text(item.description)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .foregroundColor(.primary)
-                      if item.mode == .uberFinder && item.isParatransitMode {
-                        Text("Transit Mode")
-                          .font(.caption2)
-                          .foregroundColor(.secondary)
-                      }
+              Button {
+                description = item.description
+                searchMode = item.mode
+                isParatransitMode = item.isParatransitMode
+                showPlaceholder = false
+                saveToHistory(
+                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
+                isShowingCamera = true
+              } label: {
+                HStack {
+                  Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+                  VStack(alignment: .leading, spacing: 2) {
+                    Text(item.description)
+                      .lineLimit(1)
+                      .truncationMode(.tail)
+                      .foregroundColor(.primary)
+                    if item.mode == .uberFinder && item.isParatransitMode {
+                      Text("Paratransit Mode")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                   }
+                  .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .accessibilityLabel(
-                  "Recent search: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Transit mode" : "")"
-                )
-                .accessibilityHint("Double tap to search with this description")
-
-                Button {
-                  toggleFavorite(item)
-                } label: {
-                  Image(systemName: "star")
-                    .font(.body)
-                    .foregroundColor(.yellow)
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Add to favorites")
-                .accessibilityHint("Saves this search to favorites")
-
+              }
+              .accessibilityLabel(
+                "Recent search: \(item.description), \(item.mode.description)\(item.isParatransitMode ? ", Paratransit mode" : "")"
+              )
+              .accessibilityHint("Double tap to search with this description")
+              .accessibilityAction(named: "Add to favorites") {
+                toggleFavorite(item)
+              }
+              .accessibilityAction(named: "Delete") {
+                deleteItem(item)
+              }
+              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
                   deleteItem(item)
                 } label: {
-                  Image(systemName: "trash")
-                    .font(.body)
-                    .foregroundColor(.red)
+                  Label("Delete", systemImage: "trash")
                 }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Delete search")
-                .accessibilityHint("Removes this search from history")
+                Button {
+                  toggleFavorite(item)
+                } label: {
+                  Label("Favorite", systemImage: "star")
+                }
+                .tint(.yellow)
               }
             }
           }

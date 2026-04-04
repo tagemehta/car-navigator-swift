@@ -84,7 +84,7 @@ Thing Finder is an assistive technology iOS app for blind users that helps ident
 | File | Purpose |
 |------|---------|
 | `InputView.swift` | Home screen. Text field for vehicle description, object class picker, "Find My Ride" button → navigates to `ContentView`. |
-| `ContentView.swift` | Detection screen wrapper. Contains `DetectorContainer`, Pause/Resume/Rescan buttons. Changing `detectorKey` UUID forces full pipeline reset. |
+| `ContentView.swift` | Detection screen wrapper. Contains `DetectorContainer`, Pause/Resume/Double Check buttons. Changing `detectorKey` UUID forces full pipeline reset. |
 | `DetectorContainer.swift` | Owns `CameraViewModel` as `@StateObject`. Composes camera preview + bounding box overlay + FPS display + optional debug overlay. |
 | `CameraPreviewView.swift` | `UIViewControllerRepresentable` wrapping `FrameProvider`. Coordinator holds the actual capture instance. |
 | `BoundingBox.swift` | Renders colored rectangles over detected objects. |

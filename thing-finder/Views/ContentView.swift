@@ -70,7 +70,7 @@ struct ContentView: View {
                 }
               }
             }) {
-              Text("Rescan")
+              Text("Double Check")
                 .font(.title2.bold())
                 .foregroundColor(.white)
                 .padding()

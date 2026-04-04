@@ -90,6 +90,16 @@
         }
       }
     },
+    "• **'Hey Siri, find my paratransit vehicle with CurbToCar'**" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• **'Oye Siri, encuentra mi vehículo de paratránsito con CurbToCar'**"
+          }
+        }
+      }
+    },
     "• **'Hey Siri, find my ride with CurbToCar'**" : {
       "localizations" : {
         "es" : {
@@ -161,6 +171,7 @@
       }
     },
     "1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -262,12 +273,32 @@
         }
       }
     },
+    "Announce All Cars" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anunciar todos los coches"
+          }
+        }
+      }
+    },
     "Announce All Detected Cars" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anunciar todos los coches detectados"
+          }
+        }
+      }
+    },
+    "Announce every car that the app sees, not just the one you are looking for." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anuncia todos los coches que ve la app, no solo el que buscas."
           }
         }
       }
@@ -667,7 +698,18 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
     "Delete favorite" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -678,6 +720,7 @@
       }
     },
     "Delete search" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -812,6 +855,16 @@
         }
       }
     },
+    "Double Check" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "volver a comprobar"
+          }
+        }
+      }
+    },
     "Double tap to search with this description" : {
       "localizations" : {
         "es" : {
@@ -822,7 +875,19 @@
         }
       }
     },
+    "Double-check the vehicle description and license plate you entered. Use 'Double Check' to restart." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisa bien la descripción del vehículo y la matrícula que has introducido. Usa 'Doble verificación' para reiniciar."
+          }
+        }
+      }
+    },
     "Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -853,6 +918,7 @@
       }
     },
     "Enable for public transit buses. Matches by route number and agency logo instead of make and model." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -882,17 +948,18 @@
         }
       }
     },
-    "Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button." : {
+    "Ensure good lighting and point camera at the pickup area." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Asegúrate de que haya buena iluminación y apunta la cámara al área de recogida. Intenta el botón 'Reescanear'."
+            "value" : "Asegúrate de tener buena iluminación y apunta la cámara en la zona de recogida."
           }
         }
       }
     },
     "Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -918,6 +985,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Producto Experimental"
+          }
+        }
+      }
+    },
+    "Favorite" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al favorito"
           }
         }
       }
@@ -1010,11 +1087,22 @@
       }
     },
     "For buses with route numbers and logos" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Para autobuses con números de ruta y logotipos"
+          }
+        }
+      }
+    },
+    "For LLM based vehicle detection using logos or text" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para detección de vehículos basada en LLM usando logotipos o texto"
           }
         }
       }
@@ -1124,6 +1212,17 @@
         }
       }
     },
+    "Help and Guide" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda y guía"
+          }
+        }
+      }
+    },
     "Help and Guide. Learn how to use CurbToCar" : {
       "localizations" : {
         "es" : {
@@ -1165,7 +1264,15 @@
       }
     },
     "Key" : {
-      "extractionState" : "manual"
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clave"
+          }
+        }
+      }
     },
     "Language" : {
       "localizations" : {
@@ -1173,6 +1280,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Idioma"
+          }
+        }
+      }
+    },
+    "Learn how to use CurbToCar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprende a usar CurbToCar"
           }
         }
       }
@@ -1261,6 +1379,7 @@
       }
     },
     "Meta glasses not connecting" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1321,6 +1440,7 @@
       }
     },
     "Moves this search back to recent searches" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1497,6 +1617,26 @@
         }
       }
     },
+    "Paratransit mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de Paratránsito"
+          }
+        }
+      }
+    },
+    "Paratransit Mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de Paratránsito"
+          }
+        }
+      }
+    },
     "Paste from clipboard" : {
       "localizations" : {
         "es" : {
@@ -1648,6 +1788,7 @@
       }
     },
     "Removes this search from favorites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1658,6 +1799,7 @@
       }
     },
     "Removes this search from history" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1688,6 +1830,7 @@
       }
     },
     "Rescan" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1750,6 +1893,7 @@
       }
     },
     "Saves this search to favorites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2041,7 +2185,7 @@
         }
       }
     },
-    "Then Siri will ask you to describe your car, and automatically launch the camera" : {
+    "Then Siri will ask you to describe your vehicle, and automatically launch the camera" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2062,6 +2206,7 @@
       }
     },
     "Transit mode" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2072,6 +2217,7 @@
       }
     },
     "Transit Mode" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2101,6 +2247,16 @@
         }
       }
     },
+    "Unfavorite" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar favorito"
+          }
+        }
+      }
+    },
     "Use Meta Glasses Camera" : {
       "localizations" : {
         "es" : {
@@ -2111,7 +2267,18 @@
         }
       }
     },
+    "Use Siri to quickly start finding your ride" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa Siri para empezar a encontrar rápidamente tu transporte"
+          }
+        }
+      }
+    },
     "Use Siri to quickly start finding your ride hands-free" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2245,6 +2412,7 @@
       }
     },
     "Wrong vehicle announced" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {

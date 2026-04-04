@@ -15,7 +15,15 @@ struct HelpModalView: View {
             iconColor: .blue
           ) {
             Text(
-              "1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste"
+              .init(
+                "1. **Enter Ride Details**: Provide your vehicle's description and license plate through dictation, typing or copy/paste."
+                  + " The description should include the make, model and color of your vehicle, or as many of those things you that you know."
+              )
+
+            )
+            Text(
+              "For paratransit vehicles, you can provide a more general description, like bus number, colors, logos, vehicle type or size."
+                + "Since paratransit mode relies fully on llms to verify your vehicle, it may be more unreliable"
             )
             Text(
               "2. **Point Camera**: Aim at the pickup area where vehicles arrive. Magic tap to pause/resume camera."
@@ -34,11 +42,14 @@ struct HelpModalView: View {
             icon: "mic.fill",
             iconColor: .purple
           ) {
-            Text("Use Siri to quickly start finding your ride hands-free")
+            Text("Use Siri to quickly start finding your ride")
             Text("• **'Hey Siri, find my car with CurbToCar'**")
             Text("• **'Hey Siri, find my ride with CurbToCar'**")
             Text("• **'Hey Siri, CurbToCar search'**")
-            Text("Then Siri will ask you to describe your car, and automatically launch the camera")
+            Text("• **'Hey Siri, find my paratransit vehicle with CurbToCar'**")
+            Text(
+              "Then Siri will ask you to describe your vehicle, and automatically launch the camera"
+            )
           }
 
           Divider()
@@ -65,6 +76,11 @@ struct HelpModalView: View {
             HelpItem(
               title: "Navigate Before Plate Match",
               description: "Start receiving guidance before license plate is fully verified"
+            )
+            HelpItem(
+              title: "Announce All Cars",
+              description:
+                "Announce every car that the app sees, not just the one you are looking for."
             )
           }
 
@@ -122,17 +138,7 @@ struct HelpModalView: View {
             HelpItem(
               title: "No vehicles detected",
               description:
-                "Ensure good lighting and point camera at the pickup area. Try the 'Rescan' button."
-            )
-            HelpItem(
-              title: "Wrong vehicle announced",
-              description:
-                "Double-check the vehicle description and license plate you entered. Use 'Rescan' to restart."
-            )
-            HelpItem(
-              title: "Meta glasses not connecting",
-              description:
-                "Ensure Meta AI app is installed, glasses are powered on, and Bluetooth is enabled."
+                "Ensure good lighting and point camera at the pickup area."
             )
             HelpItem(
               title: "Audio not working",
