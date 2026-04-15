@@ -88,6 +88,9 @@ struct ContentView: View {
     .onRotate { _ in
       // Orientation changes are handled inside DetectorContainer
     }
+    // session_ended is recorded from InputView when isShowingCamera
+    // transitions back to false, so it fires only on explicit navigation
+    // back — not on tab switches or other temporary disappearances.
     .accessibilityAction(.magicTap) {
       playbackControl()
     }

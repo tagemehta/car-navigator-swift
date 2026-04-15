@@ -11,3 +11,5 @@ results/*
 thing-finder/Secrets.xcconfig
 **.JPG
 **.mp4
+**/node_modules/**
+**/.next/**

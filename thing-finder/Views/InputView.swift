@@ -14,6 +14,7 @@ struct InputView: View {
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
   @AppStorage("InputView.isParatransitMode") private var isParatransitMode = false
   @State private var shortcutNavigationState = ShortcutNavigationState.shared
+  @EnvironmentObject private var settings: Settings
 
   private var historyItems: [SearchHistoryItem] {
     (try? JSONDecoder().decode([SearchHistoryItem].self, from: Data(searchHistoryData.utf8))) ?? []
@@ -123,6 +124,16 @@ struct InputView: View {
         comment: "Placeholder: object description input")
   }
 
+  private func recordSessionStarted() {
+    let parsed = DescriptionParser.extractPlate(from: description)
+    let strategy: String = isParatransitMode ? "paratransit" : "hybrid"
+    TelemetryService.shared.recordSessionStarted(
+      hasPlate: parsed.plate != nil,
+      strategy: strategy,
+      searchMode: searchMode.rawValue
+    )
+  }
+
   private func checkForShortcutNavigation() {
     if let carDesc = shortcutNavigationState.consumePendingDescription() {
       description = carDesc
@@ -130,6 +141,7 @@ struct InputView: View {
       showPlaceholder = false
       isParatransitMode = false
       saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
+      recordSessionStarted()
       isShowingCamera = true
     }
 
@@ -139,6 +151,7 @@ struct InputView: View {
       showPlaceholder = false
       isParatransitMode = true
       saveToHistory(paratransitDesc, mode: .uberFinder, paratransit: true)
+      recordSessionStarted()
       isShowingCamera = true
     }
   }
@@ -239,6 +252,7 @@ struct InputView: View {
         Section {
           Button {
             saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
+            recordSessionStarted()
             isShowingCamera = true
           } label: {
             if searchMode == .uberFinder {
@@ -268,6 +282,7 @@ struct InputView: View {
                 showPlaceholder = false
                 saveToHistory(
                   item.description, mode: item.mode, paratransit: item.isParatransitMode)
+                recordSessionStarted()
                 isShowingCamera = true
               } label: {
                 HStack {
@@ -346,6 +361,7 @@ struct InputView: View {
                 showPlaceholder = false
                 saveToHistory(
                   item.description, mode: item.mode, paratransit: item.isParatransitMode)
+                recordSessionStarted()
                 isShowingCamera = true
               } label: {
                 HStack {
@@ -417,6 +433,11 @@ struct InputView: View {
       }
       .onDisappear {
         hideKeyboard()
+      }
+      .onChange(of: isShowingCamera) { _, showing in
+        if !showing {
+          TelemetryService.shared.recordSessionEnded()
+        }
       }
       .navigationDestination(isPresented: $isShowingCamera) {
         ContentView(

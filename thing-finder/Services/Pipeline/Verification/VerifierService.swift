@@ -151,6 +151,7 @@ public final class VerifierService: VerifierServiceProtocol {
       // For first-time verification show .waiting; for periodic re-verification keep current status to avoid extra speech.
       if cand.matchStatus == .unknown {
         store.update(id: cand.id) { $0.matchStatus = .waiting }
+        TelemetryService.shared.incrementCandidates(id: cand.id)
       }
 
       let verifyStartTime = Date()
@@ -189,6 +190,21 @@ public final class VerifierService: VerifierServiceProtocol {
           // -------- Post-verification bookkeeping --------
           let latency = Date().timeIntervalSince(verifyStartTime)
 
+          let telemetryOutcome: String
+          if outcome.isMatch {
+            telemetryOutcome = "match"
+          } else if let reason = outcome.rejectReason, reason.isRetryable {
+            telemetryOutcome = "retry"
+          } else {
+            telemetryOutcome = "reject"
+          }
+          TelemetryService.shared.recordVerificationAttempt(
+            verifier: strategyName,
+            outcome: telemetryOutcome,
+            durationMs: Int(latency * 1000),
+            rejectReason: outcome.rejectReason?.rawValue
+          )
+
           DebugPublisher.shared.info(
             "[Verifier][\(cand.id.uuidString.suffix(8))] Result: strategy=\(strategyName), match=\(outcome.isMatch), view=\(String(describing: outcome.vehicleView)), score=\(String(describing: outcome.viewScore)), reason=\(String(describing: outcome.rejectReason?.rawValue)), latency=\(String(format: "%.3f", latency))s"
           )
@@ -219,6 +235,16 @@ public final class VerifierService: VerifierServiceProtocol {
           if outcome.isMatch {
             DebugPublisher.shared.info(
               "[Verifier][\(cand.id.uuidString.suffix(8))] Matched candidate")
+            let currentStatus = store[cand.id]?.matchStatus
+            if currentStatus == .lost || currentStatus == nil {
+              let reason = currentStatus == nil ? "removed" : "lost"
+              DebugPublisher.shared.warning(
+                "[Verifier][\(cand.id.uuidString.suffix(8))] Match returned but candidate was \(reason) during API call (latency \(String(format: "%.3f", latency))s)"
+              )
+              TelemetryService.shared.recordMatchDiscarded(
+                reason: reason, latencyMs: Int(latency * 1000))
+              return
+            }
             store.update(id: cand.id) {
               $0.detectedDescription = outcome.description
               $0.lastVerified = Date()
