@@ -42,7 +42,6 @@ public final class TelemetryService {
   // MARK: - Public API
 
   public func recordSessionStarted(
-    vehicleType: String,
     hasPlate: Bool,
     strategy: String,
     searchMode: String
@@ -56,7 +55,6 @@ public final class TelemetryService {
     capture(
       "session_started",
       properties: [
-        "vehicle_type": vehicleType,
         "has_plate": hasPlate,
         "strategy": strategy,
         "search_mode": searchMode,

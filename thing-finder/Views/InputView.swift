@@ -129,7 +129,6 @@ struct InputView: View {
     let strategy: String = isParatransitMode ? "paratransit" : "hybrid"
     TelemetryService.shared.configure(settings: settings)
     TelemetryService.shared.recordSessionStarted(
-      vehicleType: selectedClasses.first ?? "unknown",
       hasPlate: parsed.plate != nil,
       strategy: strategy,
       searchMode: searchMode.rawValue
