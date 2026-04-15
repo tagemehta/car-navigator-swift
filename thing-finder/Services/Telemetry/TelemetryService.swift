@@ -103,6 +103,17 @@ public final class TelemetryService {
     totalCandidates += 1
   }
 
+  /// Call when the verifier returns a match but the candidate was lost or
+  /// removed from the store before the result could be applied.
+  public func recordMatchDiscarded(reason: String, latencyMs: Int) {
+    capture(
+      "match_discarded",
+      properties: [
+        "reason": reason,
+        "latency_ms": latencyMs,
+      ])
+  }
+
   /// Call when OCR is first attempted in this session.
   public func markOCRUsed() {
     usedOCR = true

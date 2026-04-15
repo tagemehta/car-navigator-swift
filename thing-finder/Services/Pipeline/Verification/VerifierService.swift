@@ -235,6 +235,15 @@ public final class VerifierService: VerifierServiceProtocol {
           if outcome.isMatch {
             DebugPublisher.shared.info(
               "[Verifier][\(cand.id.uuidString.suffix(8))] Matched candidate")
+            let currentStatus = store[cand.id]?.matchStatus
+            if currentStatus == .lost || currentStatus == nil {
+              let reason = currentStatus == nil ? "removed" : "lost"
+              DebugPublisher.shared.warning(
+                "[Verifier][\(cand.id.uuidString.suffix(8))] Match returned but candidate was \(reason) during API call (latency \(String(format: "%.3f", latency))s)"
+              )
+              TelemetryService.shared.recordMatchDiscarded(
+                reason: reason, latencyMs: Int(latency * 1000))
+            }
             store.update(id: cand.id) {
               $0.detectedDescription = outcome.description
               $0.lastVerified = Date()
