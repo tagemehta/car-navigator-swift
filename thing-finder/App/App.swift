@@ -20,7 +20,8 @@ struct ThingFinderApp: App {
         rawValue: UserDefaults.standard.string(forKey: "app_language")
           ?? SupportedLanguage.system.rawValue) ?? .system
     LanguageManager.applyLanguage(language)
-    TelemetryService.shared.configure(settings: Settings())
+    // PostHog SDK setup is deferred until consent is accepted
+    // (see TelemetryService.setupSDKIfConsented).
 
     // COMMENTED OUT FOR APP STORE SUBMISSION
     // Configure Wearables SDK on launch (matches Meta sample pattern)
@@ -40,8 +41,10 @@ struct ThingFinderApp: App {
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
         }
         .onChange(of: sharedSettings.telemetryConsentRaw) { _, _ in
-          // Re-configure so TelemetryService sees the updated consent state
-          TelemetryService.shared.configure(settings: sharedSettings)
+          // Attempt SDK setup now that consent may have changed.
+          // setupSDKIfConsented reads consent directly from UserDefaults
+          // and is a no-op if already configured or consent is not accepted.
+          TelemetryService.shared.setupSDKIfConsented()
         }
       // COMMENTED OUT FOR APP STORE SUBMISSION
       // .environmentObject(glassesEnvironment.wearablesViewModel)

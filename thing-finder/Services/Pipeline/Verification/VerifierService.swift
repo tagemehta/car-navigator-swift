@@ -151,7 +151,7 @@ public final class VerifierService: VerifierServiceProtocol {
       // For first-time verification show .waiting; for periodic re-verification keep current status to avoid extra speech.
       if cand.matchStatus == .unknown {
         store.update(id: cand.id) { $0.matchStatus = .waiting }
-        TelemetryService.shared.incrementCandidates()
+        TelemetryService.shared.incrementCandidates(id: cand.id)
       }
 
       let verifyStartTime = Date()

@@ -127,7 +127,6 @@ struct InputView: View {
   private func recordSessionStarted() {
     let parsed = DescriptionParser.extractPlate(from: description)
     let strategy: String = isParatransitMode ? "paratransit" : "hybrid"
-    TelemetryService.shared.configure(settings: settings)
     TelemetryService.shared.recordSessionStarted(
       hasPlate: parsed.plate != nil,
       strategy: strategy,
@@ -434,6 +433,11 @@ struct InputView: View {
       }
       .onDisappear {
         hideKeyboard()
+      }
+      .onChange(of: isShowingCamera) { _, showing in
+        if !showing {
+          TelemetryService.shared.recordSessionEnded()
+        }
       }
       .navigationDestination(isPresented: $isShowingCamera) {
         ContentView(
