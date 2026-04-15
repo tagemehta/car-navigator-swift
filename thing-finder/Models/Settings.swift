@@ -179,6 +179,23 @@ public class Settings: ObservableObject {
 
   /// Whether to use Meta glasses camera when available
   @AppStorage("use_meta_glasses") var useMetaGlasses: Bool = false
+
+  // MARK: - Telemetry Settings
+
+  /// Whether the user has responded to the analytics consent prompt.
+  @AppStorage("telemetry_consent") var telemetryConsentRaw: String = TelemetryConsent.notAsked.rawValue
+
+  var telemetryConsent: TelemetryConsent {
+    get { TelemetryConsent(rawValue: telemetryConsentRaw) ?? .notAsked }
+    set { telemetryConsentRaw = newValue.rawValue }
+  }
+}
+
+/// Whether the user has consented to anonymous usage analytics.
+enum TelemetryConsent: String {
+  case notAsked = "not_asked"
+  case accepted = "accepted"
+  case declined = "declined"
 }
 
 /// Volume curve types for distance mapping
@@ -350,6 +367,8 @@ extension Settings {
 
     // Language Settings
     appLanguageRaw = SupportedLanguage.system.rawValue
+
+    // Telemetry — preserve consent across resets (user's explicit choice)
     LanguageManager.applyLanguage(.system)
 
     // Force UserDefaults to synchronize changes

@@ -88,6 +88,9 @@ struct ContentView: View {
     .onRotate { _ in
       // Orientation changes are handled inside DetectorContainer
     }
+    .onDisappear {
+      TelemetryService.shared.recordSessionEnded()
+    }
     .accessibilityAction(.magicTap) {
       playbackControl()
     }

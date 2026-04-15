@@ -20,6 +20,7 @@ struct ThingFinderApp: App {
         rawValue: UserDefaults.standard.string(forKey: "app_language")
           ?? SupportedLanguage.system.rawValue) ?? .system
     LanguageManager.applyLanguage(language)
+    TelemetryService.shared.configure(settings: Settings())
 
     // COMMENTED OUT FOR APP STORE SUBMISSION
     // Configure Wearables SDK on launch (matches Meta sample pattern)
@@ -37,6 +38,10 @@ struct ThingFinderApp: App {
         .environment(\.locale, LanguageManager.locale(for: appLanguage))
         .onChange(of: appLanguageRaw) { _, newValue in
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
+        }
+        .onChange(of: sharedSettings.telemetryConsentRaw) { _, _ in
+          // Re-configure so TelemetryService sees the updated consent state
+          TelemetryService.shared.configure(settings: sharedSettings)
         }
       // COMMENTED OUT FOR APP STORE SUBMISSION
       // .environmentObject(glassesEnvironment.wearablesViewModel)
@@ -104,6 +109,10 @@ struct MainTabView: View {
     Bool = false
   @EnvironmentObject var sharedSettings: Settings
 
+  private var showTelemetryConsent: Bool {
+    hasAcceptedExperimentalDisclaimer && sharedSettings.telemetryConsent == .notAsked
+  }
+
   var body: some View {
     TabView {
       NavigationStack {
@@ -136,6 +145,17 @@ struct MainTabView: View {
     ) {
       ExperimentalDisclaimerView(
         hasAcceptedExperimentalDisclaimer: $hasAcceptedExperimentalDisclaimer
+      )
+    }
+    .fullScreenCover(
+      isPresented: Binding(
+        get: { showTelemetryConsent },
+        set: { _ in }
+      )
+    ) {
+      TelemetryConsentView(
+        onAccept: { sharedSettings.telemetryConsent = .accepted },
+        onDecline: { sharedSettings.telemetryConsent = .declined }
       )
     }
   }

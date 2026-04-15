@@ -17,6 +17,7 @@ extension VerifierService {
     orientation: CGImagePropertyOrientation,
     store: CandidateStore
   ) {
+    TelemetryService.shared.markOCRUsed()
     DispatchQueue.global(qos: .userInitiated).async {
       // Re-map bbox to pixel rect (may be slightly outdated, acceptable)
       let (rect, _) = self.imgUtils.unscaledBoundingBoxes(

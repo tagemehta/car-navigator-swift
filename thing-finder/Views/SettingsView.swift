@@ -266,6 +266,24 @@ struct SettingsView: View {
         //   }
         // }
 
+        // MARK: - Analytics
+        if settings.telemetryConsent != .notAsked {
+          Section(header: Text("Analytics")) {
+            Toggle(
+              "Share Anonymous Usage Data",
+              isOn: Binding(
+                get: { settings.telemetryConsent == .accepted },
+                set: { settings.telemetryConsent = $0 ? .accepted : .declined }
+              )
+            )
+            Text(
+              "Sends anonymous data about whether vehicles are found and where detection fails. No images, location, or license plate text is ever collected."
+            )
+            .font(.caption)
+            .foregroundColor(.secondary)
+          }
+        }
+
         // MARK: - Developer Options
         Section(header: Text("Developer Options")) {
           Toggle("Debug Overlay", isOn: $settings.debugOverlayEnabled)

@@ -41,6 +41,9 @@ public final class FramePipelineCoordinator: ObservableObject {
   private let targetClasses: [String]
   private let targetDescription: String
   private let settings: Settings
+
+  private var sessionFoundEmitted = false
+
   // MARK: Publishers
   @Published public private(set) var presentation: FramePresentation?
 
@@ -86,6 +89,10 @@ public final class FramePipelineCoordinator: ObservableObject {
         return targetClasses.contains(firstLabel.identifier)
       }, orientation: orientation)
 
+    if !detections.isEmpty {
+      TelemetryService.shared.recordFirstDetectionIfNeeded()
+    }
+
     // 2. Vision tracking updates existing candidates
     tracker.tick(pixelBuffer: pixelBuffer, orientation: orientation, store: store)
 
@@ -120,6 +127,11 @@ public final class FramePipelineCoordinator: ObservableObject {
     var machine = stateMachine
     machine.update(snapshot: Array(snapshot.values))
     let phase = machine.phase
+
+    if case .found = phase, !sessionFoundEmitted {
+      sessionFoundEmitted = true
+      TelemetryService.shared.markSessionFound()
+    }
 
     // 7.5 Determine target bounding box & approximate distance for navigation cues
     var targetBBox: CGRect?
