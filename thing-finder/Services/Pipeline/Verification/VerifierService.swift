@@ -243,6 +243,7 @@ public final class VerifierService: VerifierServiceProtocol {
               )
               TelemetryService.shared.recordMatchDiscarded(
                 reason: reason, latencyMs: Int(latency * 1000))
+              return
             }
             store.update(id: cand.id) {
               $0.detectedDescription = outcome.description
