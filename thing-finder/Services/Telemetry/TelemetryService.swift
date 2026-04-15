@@ -153,14 +153,17 @@ public final class TelemetryService {
     var found = false
     var candidates = 0
     var ocr = false
+    var hadSession = false
     queue.sync {
       guard sessionStartTime != nil else { return }
+      hadSession = true
       duration = sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
       found = sessionFound
       candidates = totalCandidates
       ocr = usedOCR
       sessionStartTime = nil
     }
+    guard hadSession else { return }
     capture(
       "session_ended",
       properties: [
