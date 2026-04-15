@@ -142,6 +142,7 @@ public enum RejectReason: String, Codable {
   case lowConfidence = "low_confidence"
   case insufficientInfo = "insufficient_info"
   case apiError = "api_error"
+  case noVehicleDetected = "no_vehicle_detected"
   case ambiguous = "ambiguous"
   case licensePlateNotVisible = "license_plate_not_visible"
 
@@ -156,7 +157,7 @@ public enum RejectReason: String, Codable {
   /// Whether this reason should trigger a retry rather than a hard rejection
   public var isRetryable: Bool {
     switch self {
-    case .unclearImage, .lowConfidence, .insufficientInfo, .apiError, .ambiguous,
+    case .unclearImage, .lowConfidence, .insufficientInfo, .apiError, .noVehicleDetected, .ambiguous,
       .licensePlateNotVisible:
       return true
     default:
@@ -177,6 +178,9 @@ public enum RejectReason: String, Codable {
       return String(
         localized: "Need a better view", comment: "Reject reason: insufficient information")
     case .apiError: return String(localized: "Detection error", comment: "Reject reason: API error")
+    case .noVehicleDetected:
+      return String(
+        localized: "No vehicle in frame", comment: "Reject reason: TrafficEye found no vehicle in crop")
     case .ambiguous:
       return String(localized: "Ambiguous result", comment: "Reject reason: ambiguous detection")
     case .licensePlateNotVisible:

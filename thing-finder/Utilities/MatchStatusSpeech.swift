@@ -115,6 +115,10 @@ enum MatchStatusSpeech {
       return String(
         localized: "Not sure yet, taking another shot",
         comment: "Speech: retry due to low confidence")
+    case .noVehicleDetected:
+      return String(
+        localized: "Can't make out the vehicle, retrying",
+        comment: "Speech: retry because TrafficEye found no vehicle in crop")
     case .apiError:
       return String(
         localized: "Detection error, retrying", comment: "Speech: retry due to API error")

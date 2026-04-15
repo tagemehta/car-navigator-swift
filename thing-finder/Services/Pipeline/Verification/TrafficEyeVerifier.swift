@@ -214,11 +214,11 @@ public final class TrafficEyeVerifier: ImageVerifier {
         }
 
         guard let mmr = result.mmr else {
-          // No vehicle detection at all
-          DebugPublisher.shared.error(
-            "[TrafficEye][\(candidateId.uuidString.suffix(8))] No vehicle MMR data in API response")
+          // API succeeded but found no recognizable vehicle in the crop — image quality issue, not an infra error
+          DebugPublisher.shared.warning(
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] No vehicle MMR data in API response (image crop likely too small or occluded)")
           let outcome = VerificationOutcome(
-            isMatch: false, description: "No vehicle detected", rejectReason: .apiError)
+            isMatch: false, description: "No vehicle detected", rejectReason: .noVehicleDetected)
           return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
