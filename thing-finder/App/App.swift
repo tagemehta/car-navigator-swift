@@ -41,10 +41,9 @@ struct ThingFinderApp: App {
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
         }
         .onChange(of: sharedSettings.telemetryConsentRaw) { _, _ in
-          // Attempt SDK setup now that consent may have changed.
-          // setupSDKIfConsented reads consent directly from UserDefaults
-          // and is a no-op if already configured or consent is not accepted.
+          // Initialize SDK on first acceptance; opt in/out on subsequent changes.
           TelemetryService.shared.setupSDKIfConsented()
+          TelemetryService.shared.updateConsentState()
         }
       // COMMENTED OUT FOR APP STORE SUBMISSION
       // .environmentObject(glassesEnvironment.wearablesViewModel)

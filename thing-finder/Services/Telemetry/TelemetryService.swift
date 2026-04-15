@@ -35,10 +35,25 @@ public final class TelemetryService {
       guard !key.isEmpty else { return }
       let config = PostHogConfig(apiKey: key)
       config.captureScreenViews = false
+      config.captureApplicationLifecycleEvents = false
       config.enableSwizzling = false
       config.surveys = false
       PostHogSDK.shared.setup(config)
+      PostHogSDK.shared.optIn()
       sdkConfigured = true
+    }
+  }
+
+  /// Call when consent changes. If the SDK has been set up, opts in or out
+  /// of PostHog data transmission accordingly.
+  public func updateConsentState() {
+    queue.sync {
+      guard sdkConfigured else { return }
+      if consentIsAccepted {
+        PostHogSDK.shared.optIn()
+      } else {
+        PostHogSDK.shared.optOut()
+      }
     }
   }
 
