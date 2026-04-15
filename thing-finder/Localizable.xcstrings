@@ -72,6 +72,9 @@
         }
       }
     },
+    "•" : {
+
+    },
     "• **'Hey Siri, CurbToCar search'**" : {
       "localizations" : {
         "es" : {
@@ -271,6 +274,9 @@
         }
       }
     },
+    "Analytics" : {
+
+    },
     "Announce 'Waiting for verification' messages." : {
       "localizations" : {
         "es" : {
@@ -442,6 +448,9 @@
           }
         }
       }
+    },
+    "Can't make out the vehicle, retrying" : {
+      "comment" : "Speech: retry because TrafficEye found no vehicle in crop"
     },
     "Can't see the plate, retrying" : {
       "comment" : "Speech: retry due to plate not visible",
@@ -1253,6 +1262,12 @@
         }
       }
     },
+    "Help Improve CurbToCar" : {
+
+    },
+    "Helps improve the app. No personal information is collected." : {
+
+    },
     "How often the same direction is repeated." : {
       "localizations" : {
         "es" : {
@@ -1535,6 +1550,15 @@
           }
         }
       }
+    },
+    "No Thanks" : {
+
+    },
+    "No thanks, don't share data" : {
+
+    },
+    "No vehicle in frame" : {
+      "comment" : "Reject reason: TrafficEye found no vehicle in crop"
     },
     "No vehicles detected" : {
       "localizations" : {
@@ -1948,6 +1972,9 @@
         }
       }
     },
+    "Sends anonymous data about whether vehicles are found and where detection fails. No images, location, or license plate text is ever collected." : {
+
+    },
     "Settings" : {
       "localizations" : {
         "es" : {
@@ -1957,6 +1984,15 @@
           }
         }
       }
+    },
+    "Share Anonymous Data" : {
+
+    },
+    "Share anonymous usage data" : {
+
+    },
+    "Share Anonymous Usage Data" : {
+
     },
     "Shortest time between beeps/pulses when target is centered." : {
       "localizations" : {
@@ -2403,6 +2439,9 @@
         }
       }
     },
+    "We'd like to collect anonymous usage data to understand how well the app finds vehicles and where it falls short." : {
+
+    },
     "What are you looking for?" : {
       "localizations" : {
         "es" : {
@@ -2433,6 +2472,12 @@
         }
       }
     },
+    "What we collect:" : {
+
+    },
+    "What we never collect:" : {
+
+    },
     "Wrong make or model" : {
       "comment" : "Reject reason: wrong vehicle",
       "localizations" : {
@@ -2454,6 +2499,9 @@
           }
         }
       }
+    },
+    "You can change this at any time in Settings." : {
+
     },
     "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
       "extractionState" : "stale",

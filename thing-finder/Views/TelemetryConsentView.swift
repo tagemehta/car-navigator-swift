@@ -83,3 +83,11 @@ private struct BulletRow: View {
     }
   }
 }
+
+#Preview {
+    TelemetryConsentView(
+        onAccept: {},
+        onDecline: {}
+    )
+}
+

@@ -25,6 +25,9 @@ public final class TelemetryService {
     let key = Bundle.main.infoDictionary?["POSTHOG_API_KEY"] as? String ?? ""
     guard !key.isEmpty else { return }
     let config = PostHogConfig(apiKey: key)
+    config.captureScreenViews = false
+    config.enableSwizzling = false
+    config.surveys = false
     PostHogSDK.shared.setup(config)
   }
 
