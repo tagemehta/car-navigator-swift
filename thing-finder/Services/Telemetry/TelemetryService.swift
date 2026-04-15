@@ -1,7 +1,6 @@
 /// TelemetryService
 /// -----------------
-/// Consent-gated analytics. Posts events to PostHog via a direct HTTP call —
-/// no SDK dependency required.
+/// Consent-gated analytics via the PostHog iOS SDK.
 ///
 /// Usage:
 ///   TelemetryService.shared.configure(settings: settings)
@@ -10,7 +9,7 @@
 /// All capture methods are no-ops when consent is .declined or .notAsked.
 
 import Foundation
-import UIKit
+import PostHog
 
 public final class TelemetryService {
 
@@ -23,6 +22,10 @@ public final class TelemetryService {
 
   public func configure(settings: Settings) {
     self.settings = settings
+    let key = Bundle.main.infoDictionary?["POSTHOG_API_KEY"] as? String ?? ""
+    guard !key.isEmpty else { return }
+    let config = PostHogConfig(apiKey: key)
+    PostHogSDK.shared.setup(config)
   }
 
   // MARK: - Session State
@@ -118,44 +121,8 @@ public final class TelemetryService {
 
   // MARK: - Private
 
-  private var apiKey: String {
-    Bundle.main.infoDictionary?["POSTHOG_API_KEY"] as? String ?? ""
-  }
-
-  private var distinctId: String {
-    let key = "telemetry_distinct_id"
-    if let stored = UserDefaults.standard.string(forKey: key) { return stored }
-    let newId = UUID().uuidString
-    UserDefaults.standard.set(newId, forKey: key)
-    return newId
-  }
-
   private func capture(_ event: String, properties: [String: Any]) {
     guard settings?.telemetryConsent == .accepted else { return }
-    let key = apiKey
-    guard !key.isEmpty else { return }
-
-    var payload: [String: Any] = [
-      "api_key": key,
-      "event": event,
-      "distinct_id": distinctId,
-      "properties": properties,
-    ]
-    payload["timestamp"] = ISO8601DateFormatter().string(from: Date())
-
-    guard let url = URL(string: "https://us.i.posthog.com/capture/"),
-      let body = try? JSONSerialization.data(withJSONObject: payload)
-    else { return }
-
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = body
-
-    URLSession.shared.dataTask(with: request) { _, _, error in
-      if let error = error {
-        print("[Telemetry] Capture failed: \(error.localizedDescription)")
-      }
-    }.resume()
+    PostHogSDK.shared.capture(event, properties: properties)
   }
 }
