@@ -10,6 +10,7 @@ extension InputView {
 }
 
 struct InputView: View {
+  @EnvironmentObject var settings: Settings
 
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
   @AppStorage("InputView.isParatransitMode") private var isParatransitMode = false
@@ -255,7 +256,7 @@ struct InputView: View {
               : false)
         }
 
-        if !favoriteItems.isEmpty {
+        if !favoriteItems.isEmpty && settings.showFavoritesAndRecents {
           Section(
             header: Text("Favorites")
               .font(.headline)
@@ -318,7 +319,7 @@ struct InputView: View {
           }
         }
 
-        if !recentItems.isEmpty {
+        if !recentItems.isEmpty && settings.showFavoritesAndRecents {
           Section(
             header: HStack {
               Text("Recent Searches")
@@ -432,4 +433,5 @@ struct InputView: View {
 
 #Preview {
   InputView()
+    .environmentObject(Settings())
 }

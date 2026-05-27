@@ -260,6 +260,16 @@
         }
       }
     },
+    "Advanced Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración avanzada"
+          }
+        }
+      }
+    },
     "Ambiguous result" : {
       "comment" : "Reject reason: ambiguous detection",
       "localizations" : {
@@ -864,6 +874,26 @@
         }
       }
     },
+    "Display Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración de pantalla"
+          }
+        }
+      }
+    },
+    "Display your favorite and recent searches on the home screen." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra tus búsquedas favoritas y recientes en la pantalla de inicio."
+          }
+        }
+      }
+    },
     "Done" : {
       "localizations" : {
         "es" : {
@@ -1269,6 +1299,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Acepto / Continuar"
+          }
+        }
+      }
+    },
+    "If you frequently get in the same car or paratransit vehicle" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si frecuentemente te subes al mismo coche o al mismo vehículo de transporte"
           }
         }
       }
@@ -1964,6 +2004,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Menor tiempo entre pitidos/pulsos cuando el objetivo está centrado."
+          }
+        }
+      }
+    },
+    "Show Advanced Settings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar configuración avanzada"
+          }
+        }
+      }
+    },
+    "Show Favorites and Recents" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoritos y recientes del programa"
           }
         }
       }

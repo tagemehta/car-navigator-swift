@@ -165,6 +165,7 @@ public class Settings: ObservableObject {
   /// Enable debug overlay with verification messages
   @AppStorage("debug_overlay_enabled") var debugOverlayEnabled: Bool = false
 
+  @AppStorage("show_advanced_settings") var showAdvancedSettings: Bool = false
   // MARK: - Language Settings
 
   /// App language override ("system" follows device language)
@@ -175,6 +176,8 @@ public class Settings: ObservableObject {
     set { appLanguageRaw = newValue.rawValue }
   }
 
+  /// MARK: - Display Settings
+  @AppStorage("show_favorites_and_recents") var showFavoritesAndRecents: Bool = false
   // MARK: - Meta Glasses Settings
 
   /// Whether to use Meta glasses camera when available
@@ -344,6 +347,10 @@ extension Settings {
     smoothingAlpha = 0.2
     developerMode = false
     debugOverlayEnabled = false
+    showAdvancedSettings = false
+
+    // Display Settings
+    showFavoritesAndRecents = false
 
     // Meta Glasses Settings
     useMetaGlasses = false

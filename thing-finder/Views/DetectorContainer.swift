@@ -96,11 +96,11 @@ struct DetectorContainer: View {
             .padding()
         }
         Spacer()
-      }
+      }.accessibilityHidden(true)
 
       // Optional debug overlay
       if settings.debugOverlayEnabled {
-        DebugOverlayView(model: debugOverlayModel, position: .bottom)
+        DebugOverlayView(model: debugOverlayModel, position: .bottom).accessibilityHidden(true)
       }
     }
     // Propagate orientation events so the model can react.
