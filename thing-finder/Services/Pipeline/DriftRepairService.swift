@@ -16,7 +16,7 @@
 //     marked stale - downstream consumers must check `isBoundingBoxFresh`.
 //
 //  Algorithm details:
-//  • Cosine similarity of feature-print embeddings must exceed `simThreshold` (default 0.901).
+//  • Cosine similarity of feature-print embeddings must exceed `simThreshold` (default 0.90).
 //  • Embeddings are generated lazily and cached for the current frame to avoid
 //    duplicate computation.
 //
