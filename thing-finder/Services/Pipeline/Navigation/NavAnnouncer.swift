@@ -147,7 +147,8 @@ final class NavAnnouncer {
       let phrase = MatchStatusSpeech.phrase(
         for: candidate.matchStatus, recognisedText: candidate.ocrText,
         detectedDescription: candidate.detectedDescription, rejectReason: candidate.rejectReason,
-        normalizedXPosition: candidate.lastBoundingBox.midX, settings: settings,
+        normalizedXPosition: candidate.isBoundingBoxFresh ? candidate.lastBoundingBox.midX : nil,
+        settings: settings,
         lastDirection: candidate.degrees,
         currentHeading: compass.degrees)
     else { return }

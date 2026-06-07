@@ -91,7 +91,6 @@ final class DriftRepairService: DriftRepairServiceProtocol {
           embedCache: &embedCache
         )
       else {
-        store.update(id: candidate.id) { $0.lastBoundingBox = .zero }  // this is marking for destruction
         continue
       }
 

@@ -58,6 +58,31 @@ final class CandidateTests: XCTestCase {
     XCTAssertFalse(Candidate.VehicleView.unknown.isSide)
   }
 
+  // MARK: - isBoundingBoxFresh Tests
+
+  func test_isBoundingBoxFresh_trueWhenMissCountIsZero() {
+    let candidate = TestCandidates.make()
+    XCTAssertEqual(candidate.missCount, 0)
+    XCTAssertTrue(candidate.isBoundingBoxFresh)
+  }
+
+  func test_isBoundingBoxFresh_falseWhenMissCountIsNonZero() {
+    var candidate = TestCandidates.make()
+    candidate.missCount = 1
+    XCTAssertFalse(candidate.isBoundingBoxFresh)
+
+    candidate.missCount = 10
+    XCTAssertFalse(candidate.isBoundingBoxFresh)
+  }
+
+  func test_isBoundingBoxFresh_resetsToTrueWhenMissCountReturnsToZero() {
+    var candidate = TestCandidates.make()
+    candidate.missCount = 5
+    XCTAssertFalse(candidate.isBoundingBoxFresh)
+    candidate.missCount = 0
+    XCTAssertTrue(candidate.isBoundingBoxFresh)
+  }
+
   // MARK: - isMatched Tests
 
   func test_isMatched_returnsTrueOnlyForFull() {
