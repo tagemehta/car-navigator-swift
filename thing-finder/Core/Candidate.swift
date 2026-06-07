@@ -64,8 +64,9 @@ public struct Candidate: Identifiable {
   public var isMatched: Bool { matchStatus == .full }
 
   /// True when `lastBoundingBox` was confirmed by a detection this frame
-  /// (`missCount == 0`). When false the box is stale and must not be used
-  /// for directional navigation or depth sampling.
+  /// (`missCount == 0`). When false the box is stale (either from missed
+  /// detections or zeroed by drift repair) and must not be used for
+  /// directional navigation or depth sampling.
   public var isBoundingBoxFresh: Bool { missCount == 0 }
 
   // MARK: View angle tracking

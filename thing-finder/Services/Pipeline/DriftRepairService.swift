@@ -11,8 +11,9 @@
 //  2. Find the best matching detection (IoU & cosine-similarity thresholds).
 //  3. If a match is found, snap the candidate’s `trackingRequest` back onto the
 //     detection observation and reset `missCount`.
-//  4. If **no** match is found the candidate is untouched – the
-//     `CandidateLifecycleService` will eventually mark it as lost.
+//  4. If **no** match is found the candidate's bbox is zeroed to accelerate
+//     eviction (IoU will fail, missCount increments rapidly). The bbox is
+//     marked stale - downstream consumers must check `isBoundingBoxFresh`.
 //
 //  Algorithm details:
 //  • Cosine similarity of feature-print embeddings must exceed `simThreshold` (default 0.901).
@@ -91,6 +92,12 @@ final class DriftRepairService: DriftRepairServiceProtocol {
           embedCache: &embedCache
         )
       else {
+        // No semantic match found - zero the bbox to accelerate eviction.
+        // The lifecycle service will see IoU(.zero, detections) = 0 and
+        // increment missCount rapidly, leading to faster cleanup.
+        // IMPORTANT: Downstream consumers MUST check isBoundingBoxFresh
+        // before using lastBoundingBox for navigation or depth.
+        store.update(id: candidate.id) { $0.lastBoundingBox = .zero }
         continue
       }
 

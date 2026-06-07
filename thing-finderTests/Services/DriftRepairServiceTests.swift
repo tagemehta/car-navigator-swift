@@ -77,8 +77,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // With no matching detections, candidate bbox must be unchanged (no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, originalBox)
+    // With no matching detections, candidate bbox is zeroed to accelerate eviction
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   func test_tick_emptyStore_returnsEarly() {
@@ -144,8 +144,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Candidate should be unchanged
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, originalBox)
+    // Candidate should be zeroed when missThreshold is 0
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   func test_init_customRepairStride() {
@@ -205,8 +205,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Without embedding, candidate cannot match — box must be left unchanged (no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candidate.lastBoundingBox)
+    // Without embedding, candidate cannot match — box is zeroed to accelerate eviction
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   func test_tick_candidateWithEmbedding_noDetections_boxUnchanged() {
@@ -229,8 +229,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // No detections means no match — box must be left unchanged (no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candidate.lastBoundingBox)
+    // No detections means no match — box is zeroed to accelerate eviction
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   // MARK: - Lost Candidate Recovery
@@ -253,8 +253,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Lost candidate processed — box must be left unchanged when no match found (no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candidate.lastBoundingBox)
+    // Lost candidate processed — box is zeroed when no match found to accelerate eviction
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   // MARK: - Similarity Threshold Configuration
@@ -276,8 +276,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // No crash, candidate processed — box must be left unchanged when no match found (no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candidate.lastBoundingBox)
+    // No crash, candidate processed — box is zeroed when no match found to accelerate eviction
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   // MARK: - Detection Consumption
@@ -400,8 +400,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Candidate should be left unchanged (similarity 0.50 < threshold 0.90 → no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candBox)
+    // Candidate box zeroed when similarity too low (0.50 < threshold 0.90)
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   func test_tick_exactThreshold_doesNotMatch() {
@@ -440,8 +440,8 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Similarity == threshold should NOT match — box must be left unchanged (no-op)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candBox)
+    // Similarity == threshold should NOT match — box is zeroed
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   func test_tick_multipleDetections_matchesBestSimilarity() {
@@ -570,9 +570,9 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Embedding provider was called but returned nil — no match, box must be unchanged (no-op)
+    // Embedding provider was called but returned nil — no match, box is zeroed
     XCTAssertEqual(mockEmbeddingProvider.computeCallCount, 1)
-    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, candBox)
+    XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
   // MARK: - Helpers
