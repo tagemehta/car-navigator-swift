@@ -12,3 +12,4 @@ thing-finder/Secrets.xcconfig
 **.JPG
 **.mp4
 evals/**
+build/**

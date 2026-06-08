@@ -1,7 +1,6 @@
 // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
 // Uncomment this file when ready to use Meta glasses in production
 
-/*
 //
 //  MetaGlassesSuccessView.swift
 //  thing-finder
@@ -23,10 +22,12 @@ struct MetaGlassesSuccessView: View {
           .font(.largeTitle)
           .imageScale(.large)
           .foregroundColor(.green)
+          .accessibilityHidden(true)
 
         Text("Connected!")
           .font(.title)
           .bold()
+          .accessibilityAddTraits(.isHeader)
 
         Text(
           "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected."
@@ -39,6 +40,7 @@ struct MetaGlassesSuccessView: View {
           HStack {
             Image(systemName: "info.circle")
               .foregroundColor(.blue)
+              .accessibilityHidden(true)
             Text("Important:")
               .bold()
           }
@@ -58,6 +60,10 @@ struct MetaGlassesSuccessView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+          "Important: the glasses camera will only be used when the glasses are open and unfolded, connected via Bluetooth, and Meta Glasses mode is enabled in Settings."
+        )
 
         Spacer()
 
@@ -77,4 +83,3 @@ struct MetaGlassesSuccessView: View {
 #Preview {
   MetaGlassesSuccessView()
 }
-*/

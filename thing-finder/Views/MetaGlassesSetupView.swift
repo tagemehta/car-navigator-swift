@@ -1,27 +1,29 @@
 // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
 // Uncomment this file when ready to use Meta glasses in production
 
-/*
 //
 //  MetaGlassesSetupView.swift
 //  thing-finder
 //
 //  Setup dialog flow for connecting Meta Ray-Ban glasses.
+//  4-step flow: Pre-flight → Register → Camera Permission → Success.
+//  Uses consolidated MetaGlassesViewModel (DAT SDK 0.7).
 //
 
 import SwiftUI
 
 /// Setup step for the Meta glasses onboarding flow
 enum MetaGlassesSetupStep: Int, CaseIterable {
-  case developerMode = 0
-  case requestPermission = 1
-  case success = 2
+  case preflight = 0
+  case register = 1
+  case cameraPermission = 2
+  case success = 3
 }
 
 struct MetaGlassesSetupView: View {
   @Environment(\.dismiss) private var dismiss
-  @EnvironmentObject private var wearablesVM: WearablesViewModel
-  @State private var currentStep: MetaGlassesSetupStep = .developerMode
+  @EnvironmentObject private var glassesVM: MetaGlassesViewModel
+  @State private var currentStep: MetaGlassesSetupStep = .preflight
 
   var body: some View {
     NavigationStack {
@@ -29,10 +31,12 @@ struct MetaGlassesSetupView: View {
         stepIndicator
 
         switch currentStep {
-        case .developerMode:
-          developerModeStep
-        case .requestPermission:
-          requestPermissionStep
+        case .preflight:
+          preflightStep
+        case .register:
+          registerStep
+        case .cameraPermission:
+          cameraPermissionStep
         case .success:
           successStep
         }
@@ -53,21 +57,25 @@ struct MetaGlassesSetupView: View {
       }
       .onAppear {
         // Determine initial step based on current state
-        switch wearablesVM.registrationState {
-        case .registered:
+        switch glassesVM.state {
+        case .ready, .streaming, .paused:
           currentStep = .success
+        case .registered:
+          currentStep = .cameraPermission
         case .registering:
-          currentStep = .requestPermission
+          currentStep = .register
         default:
-          break  // Stay on developerMode (step 1)
+          break
         }
       }
-      .onChange(of: wearablesVM.registrationState) { _, newState in
+      .onChange(of: glassesVM.state) { _, newState in
         switch newState {
         case .registered:
+          currentStep = .cameraPermission
+        case .ready, .streaming, .paused:
           currentStep = .success
-        case .registering:
-          currentStep = .requestPermission
+        case .failed:
+          break  // Stay on current step; error shown inline
         default:
           break
         }
@@ -86,33 +94,37 @@ struct MetaGlassesSetupView: View {
       }
     }
     .padding(.top)
+    // The dots are purely visual; expose a single spoken progress label instead.
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(
+      "Step \(currentStep.rawValue + 1) of \(MetaGlassesSetupStep.allCases.count)")
   }
 
-  // MARK: - Step 1: Developer Mode
+  // MARK: - Step 1: Pre-flight Checklist
 
-  private var developerModeStep: some View {
+  private var preflightStep: some View {
     VStack(alignment: .leading, spacing: 16) {
-      Text("Step 1: Enable Developer Mode")
+      Text("Before You Start")
         .font(.title2)
         .bold()
 
-      Text("Before connecting, you need to enable Developer Mode in the Meta AI app:")
+      Text("Make sure you've completed these steps in the Meta AI app:")
         .foregroundColor(.secondary)
 
       VStack(alignment: .leading, spacing: 12) {
         instructionRow(number: 1, text: "Open the **Meta AI** app on your phone")
-        instructionRow(number: 2, text: "Go to **Settings** → **App Info**")
-        instructionRow(number: 3, text: "Click on the app version 5 times")
-        instructionRow(number: 4, text: "Developer options should now be available")
+        instructionRow(number: 2, text: "Go to **Settings** → **Your glasses**")
+        instructionRow(number: 3, text: "Enable **Developer Mode**")
+        instructionRow(number: 4, text: "Ensure glasses are **open and powered on**")
       }
       .padding()
       .background(Color(.secondarySystemBackground))
       .cornerRadius(12)
 
       HStack {
-        Image(systemName: "info.circle.fill")
-          .foregroundColor(.blue)
-        Text("Make sure your glasses are open and powered on")
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundColor(.orange)
+        Text("Developer Mode turns off after firmware updates — re-enable if needed.")
           .font(.caption)
           .foregroundColor(.secondary)
       }
@@ -120,58 +132,64 @@ struct MetaGlassesSetupView: View {
     }
   }
 
-  // MARK: - Step 2: Request Permission
+  // MARK: - Step 2: Register with Meta AI
 
-  private var requestPermissionStep: some View {
+  private var registerStep: some View {
     VStack(alignment: .leading, spacing: 16) {
-      Text("Step 2: Grant Camera Access")
+      Text("Register with Meta AI")
         .font(.title2)
         .bold()
 
       Text(
-        "Tap the button below to open Meta AI and grant camera streaming permission to this app."
+        "Register this app with the Meta AI companion app. You'll be briefly redirected to Meta AI to approve."
       )
       .foregroundColor(.secondary)
 
       VStack(spacing: 16) {
-        if wearablesVM.showError {
+        if case .failed(let msg) = glassesVM.state {
           VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
               .font(.largeTitle)
               .foregroundColor(.orange)
-            Text("Connection Error")
+              .accessibilityHidden(true)
+            Text("Registration Error")
               .font(.headline)
-            Text(wearablesVM.errorMessage)
+              .accessibilityAddTraits(.isHeader)
+            Text(msg)
               .font(.caption)
               .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
 
             Button("Try Again") {
-              wearablesVM.dismissError()
-              wearablesVM.connectGlasses()
+              glassesVM.resetFailure()
+              glassesVM.connectGlasses()
             }
             .buttonStyle(.bordered)
           }
           .padding()
-        } else if wearablesVM.registrationState == .registering {
+        } else if glassesVM.state == .registering {
           VStack(spacing: 12) {
             ProgressView()
               .scaleEffect(1.5)
-            Text("Waiting for permission...")
+              .accessibilityHidden(true)
+            Text("Waiting for Meta AI...")
               .foregroundColor(.secondary)
-            Text("Complete the setup in Meta AI app, then return here.")
+            Text("Complete the registration in the Meta AI app, then return here.")
               .font(.caption)
               .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
           }
           .padding()
+          .accessibilityElement(children: .combine)
+          .accessibilityLabel(
+            "Waiting for Meta AI. Complete the registration in the Meta AI app, then return here.")
         } else {
           Button {
-            wearablesVM.connectGlasses()
+            glassesVM.connectGlasses()
           } label: {
             HStack {
               Image(systemName: "link")
-              Text("Connect to Meta AI")
+              Text("Register with Meta AI")
             }
             .frame(maxWidth: .infinity)
             .padding()
@@ -188,7 +206,7 @@ struct MetaGlassesSetupView: View {
       HStack {
         Image(systemName: "eyeglasses")
           .foregroundColor(.blue)
-        Text("Ensure your glasses are open and on your head")
+        Text("Ensure your glasses are open and connected via Bluetooth")
           .font(.caption)
           .foregroundColor(.secondary)
       }
@@ -196,20 +214,108 @@ struct MetaGlassesSetupView: View {
     }
   }
 
-  // MARK: - Step 3: Success
+  // MARK: - Step 3: Camera Permission
+
+  private var cameraPermissionStep: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      Text("Grant Camera Access")
+        .font(.title2)
+        .bold()
+
+      Text(
+        "Now grant camera streaming permission so the app can receive video from your glasses."
+      )
+      .foregroundColor(.secondary)
+
+      VStack(spacing: 16) {
+        if case .failed(let msg) = glassesVM.state {
+          VStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+              .font(.largeTitle)
+              .foregroundColor(.orange)
+              .accessibilityHidden(true)
+            Text("Permission Error")
+              .font(.headline)
+              .accessibilityAddTraits(.isHeader)
+            Text(msg)
+              .font(.caption)
+              .foregroundColor(.secondary)
+              .multilineTextAlignment(.center)
+
+            Button("Try Again") {
+              glassesVM.resetFailure()
+              Task {
+                await glassesVM.requestCameraPermission()
+              }
+            }
+            .buttonStyle(.bordered)
+          }
+          .padding()
+        } else if glassesVM.state == .requestingPermission {
+          VStack(spacing: 12) {
+            ProgressView()
+              .scaleEffect(1.5)
+              .accessibilityHidden(true)
+            Text("Requesting camera permission...")
+              .foregroundColor(.secondary)
+            Text("Grant access in the Meta AI app when prompted.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+              .multilineTextAlignment(.center)
+          }
+          .padding()
+          .accessibilityElement(children: .combine)
+          .accessibilityLabel(
+            "Requesting camera permission. Grant access in the Meta AI app when prompted.")
+        } else {
+          Button {
+            Task {
+              await glassesVM.requestCameraPermission()
+            }
+          } label: {
+            HStack {
+              Image(systemName: "camera")
+              Text("Grant Camera Permission")
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.accentColor)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+          }
+        }
+      }
+      .padding()
+      .background(Color(.secondarySystemBackground))
+      .cornerRadius(12)
+
+      HStack {
+        Image(systemName: "info.circle.fill")
+          .foregroundColor(.blue)
+        Text("You can choose \"Allow once\" or \"Allow always\" in Meta AI.")
+          .font(.caption)
+          .foregroundColor(.secondary)
+      }
+      .padding(.top, 8)
+    }
+  }
+
+  // MARK: - Step 4: Success
 
   private var successStep: some View {
     VStack(spacing: 24) {
       Image(systemName: "checkmark.circle.fill")
         .font(.system(size: 80))
         .foregroundColor(.green)
+        .accessibilityHidden(true)
 
-      Text("Connected!")
+      Text("All Set!")
         .font(.title)
         .bold()
+        .accessibilityAddTraits(.isHeader)
 
       Text(
-        "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected."
+        "Your Meta Ray-Ban glasses are connected and camera access is granted. The app will now stream from your glasses."
       )
       .multilineTextAlignment(.center)
       .foregroundColor(.secondary)
@@ -244,7 +350,7 @@ struct MetaGlassesSetupView: View {
 
   private var navigationButtons: some View {
     HStack {
-      if currentStep != .developerMode && currentStep != .success {
+      if currentStep != .preflight && currentStep != .success {
         Button("Back") {
           if let previous = MetaGlassesSetupStep(rawValue: currentStep.rawValue - 1) {
             currentStep = previous
@@ -256,13 +362,13 @@ struct MetaGlassesSetupView: View {
       Spacer()
 
       switch currentStep {
-      case .developerMode:
-        Button("Continue") {
-          currentStep = .requestPermission
+      case .preflight:
+        Button("I've Done This") {
+          currentStep = .register
         }
         .buttonStyle(.borderedProminent)
 
-      case .requestPermission:
+      case .register, .cameraPermission:
         EmptyView()
 
       case .success:
@@ -285,14 +391,17 @@ struct MetaGlassesSetupView: View {
         .frame(width: 20, height: 20)
         .background(Color.accentColor)
         .clipShape(Circle())
+        .accessibilityHidden(true)
 
       Text(LocalizedStringKey(text))
         .font(.subheadline)
     }
+    // Read as one item, e.g. "Step 1: Open the Meta AI app".
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(Text("Step \(number): ") + Text(LocalizedStringKey(text)))
   }
 }
 
 #Preview {
   MetaGlassesSetupView()
 }
-*/

@@ -1,12 +1,12 @@
 // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
 // Uncomment this file when ready to use Meta glasses in production
 
-/*
 //
 //  MetaGlassesSettingsSection.swift
 //  thing-finder
 //
 //  Settings section for Meta Ray-Ban glasses configuration.
+//  Uses consolidated MetaGlassesViewModel (DAT SDK 0.7).
 //
 
 import MWDATCore
@@ -14,7 +14,7 @@ import SwiftUI
 
 struct MetaGlassesSettingsSection: View {
   @ObservedObject var settings: Settings
-  @EnvironmentObject private var wearablesVM: WearablesViewModel
+  @EnvironmentObject private var glassesVM: MetaGlassesViewModel
   @State private var showingSetupSheet = false
   @State private var showingSuccessSheet = false
 
@@ -28,24 +28,30 @@ struct MetaGlassesSettingsSection: View {
       if settings.useMetaGlasses {
         connectionStatusView
 
-        if wearablesVM.registrationState == .registered {
+        if glassesVM.isRegistered {
           disconnectButton
         } else {
           connectButton
         }
 
         // Device count
-        if !wearablesVM.devices.isEmpty {
-          Text("\(wearablesVM.devices.count) device(s) available")
+        if !glassesVM.availableDevices.isEmpty {
+          Text("\(glassesVM.availableDevices.count) device(s) available")
             .font(.caption)
             .foregroundColor(.secondary)
         }
+
+        // Stream quality toggle
+        Toggle("High Quality Stream", isOn: $settings.useHighQualityGlassesStream)
+        Text("Uses more Bluetooth bandwidth for higher resolution (720p / 30fps).")
+          .font(.caption)
+          .foregroundColor(.secondary)
       }
     }
-    .onChange(of: wearablesVM.showGettingStartedSheet) { _, shouldShow in
+    .onChange(of: glassesVM.shouldShowRegistrationSuccess) { _, shouldShow in
       if shouldShow {
         showingSuccessSheet = true
-        wearablesVM.showGettingStartedSheet = false
+        glassesVM.shouldShowRegistrationSuccess = false
       }
     }
     .sheet(isPresented: $showingSuccessSheet) {
@@ -66,8 +72,8 @@ struct MetaGlassesSettingsSection: View {
           .foregroundColor(.secondary)
       }
 
-      if wearablesVM.showError {
-        Text(wearablesVM.errorMessage)
+      if let errorMsg = glassesVM.errorMessage {
+        Text(errorMsg)
           .font(.caption)
           .foregroundColor(.red)
       }
@@ -76,30 +82,42 @@ struct MetaGlassesSettingsSection: View {
   }
 
   private var statusColor: Color {
-    switch wearablesVM.registrationState {
-    case .registered:
+    switch glassesVM.state {
+    case .streaming:
       return .green
+    case .ready, .paused:
+      return .green.opacity(0.7)
+    case .registered, .requestingPermission:
+      return .orange
     case .registering:
       return .orange
-    case .available, .unavailable:
+    case .idle, .unconfigured:
       return .gray
-    @unknown default:
-      return .gray
+    case .failed:
+      return .red
     }
   }
 
   private var statusText: String {
-    switch wearablesVM.registrationState {
+    switch glassesVM.state {
+    case .streaming:
+      return "Streaming"
+    case .ready:
+      return "Connected — ready to stream"
+    case .paused:
+      return "Stream paused"
     case .registered:
-      return "Connected"
+      return "Registered — camera permission needed"
+    case .requestingPermission:
+      return "Requesting camera permission..."
     case .registering:
       return "Connecting to Meta AI..."
-    case .available:
-      return "Available - not connected"
-    case .unavailable:
+    case .idle:
+      return "Available — not connected"
+    case .unconfigured:
       return "Not available"
-    @unknown default:
-      return "Unknown status"
+    case .failed:
+      return "Error"
     }
   }
 
@@ -122,7 +140,7 @@ struct MetaGlassesSettingsSection: View {
 
   private var disconnectButton: some View {
     Button(role: .destructive) {
-      wearablesVM.disconnectGlasses()
+      glassesVM.disconnectGlasses()
     } label: {
       HStack {
         Image(systemName: "xmark.circle")
@@ -139,4 +157,3 @@ struct MetaGlassesSettingsSection: View {
     }
   }
 }
-*/
