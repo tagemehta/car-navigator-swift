@@ -63,6 +63,12 @@ public struct Candidate: Identifiable {
   /// Convenience – true when verifier has fully approved this candidate.
   public var isMatched: Bool { matchStatus == .full }
 
+  /// True when `lastBoundingBox` was confirmed by a detection this frame
+  /// (`missCount == 0`). When false the box is stale (either from missed
+  /// detections or zeroed by drift repair) and must not be used for
+  /// directional navigation or depth sampling.
+  public var isBoundingBoxFresh: Bool { missCount == 0 }
+
   // MARK: View angle tracking
   public enum VehicleView: String, Codable {
     case front, rear, left, right, side, unknown

@@ -52,7 +52,7 @@ final class DriftRepairServiceTests: XCTestCase {
       )
     }
 
-    // Candidate should be unchanged (no repair ran)
+    // Candidate unchanged when repair doesn't run (not at stride multiple)
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, originalBox)
   }
 
@@ -65,8 +65,9 @@ final class DriftRepairServiceTests: XCTestCase {
     )
     store.upsert(candidate)
 
-    // Tick once with no detections - candidate should be marked for destruction
-    // (lastBoundingBox set to .zero when no match found)
+    // Tick once with no detections - bbox is zeroed to accelerate eviction
+    // (Lifecycle service sees IoU(.zero, detections)=0 and increments missCount rapidly)
+    let originalBox = candidate.lastBoundingBox
     service.tick(
       pixelBuffer: createTestPixelBuffer(),
       orientation: .up,
@@ -76,7 +77,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // With no matching detections and no embedding, candidate bbox should be zeroed
+    // With no matching detections, candidate bbox is zeroed to accelerate eviction
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
@@ -117,7 +118,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Both candidates should be processed (marked for destruction with no matches)
+    // Both candidates zeroed when no match found (to accelerate eviction)
     XCTAssertEqual(store[candidate1.id]?.lastBoundingBox, .zero)
     XCTAssertEqual(store[candidate2.id]?.lastBoundingBox, .zero)
   }
@@ -143,7 +144,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Candidate should be unchanged
+    // Candidate unchanged when repair doesn't run (not at stride multiple)
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, originalBox)
   }
 
@@ -165,7 +166,7 @@ final class DriftRepairServiceTests: XCTestCase {
     )
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, originalBox)
 
-    // Frame 2 - should trigger repair
+    // Frame 2 - should trigger repair (bbox zeroed when no match found)
     service.tick(
       pixelBuffer: createTestPixelBuffer(),
       orientation: .up,
@@ -179,7 +180,7 @@ final class DriftRepairServiceTests: XCTestCase {
 
   // MARK: - Candidate Without Embedding
 
-  func test_tick_candidateWithoutEmbedding_markedForDestruction() {
+  func test_tick_candidateWithoutEmbedding_noMatch_boxUnchanged() {
     // Candidate without embedding cannot match any detection
     let service = DriftRepairService(repairStride: 1)
 
@@ -204,11 +205,11 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Without embedding, candidate cannot match and should be marked for destruction
+    // Without embedding, candidate cannot match — box is zeroed to accelerate eviction
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
-  func test_tick_candidateWithEmbedding_noDetections_markedForDestruction() {
+  func test_tick_candidateWithEmbedding_noDetections_boxUnchanged() {
     let service = DriftRepairService(repairStride: 1)
 
     let embedding = MockEmbedding()  // Test embedding
@@ -228,7 +229,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // No detections means no match, candidate marked for destruction
+    // No detections means no match — box is zeroed to accelerate eviction
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
@@ -252,7 +253,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Lost candidate processed (marked for destruction since no match)
+    // Lost candidate processed — box is zeroed when no match found to accelerate eviction
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
@@ -275,7 +276,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // No crash, candidate processed
+    // No crash, candidate processed — box is zeroed when no match found to accelerate eviction
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
@@ -309,7 +310,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Both candidates should be marked for destruction (no embeddings to match)
+    // Both candidates zeroed when no match found (even without embeddings)
     XCTAssertEqual(store[candidate1.id]?.lastBoundingBox, .zero)
     XCTAssertEqual(store[candidate2.id]?.lastBoundingBox, .zero)
   }
@@ -399,7 +400,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Candidate should be marked for destruction (similarity 0.50 < threshold 0.90)
+    // Candidate box zeroed when similarity too low (0.50 < threshold 0.90)
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
@@ -439,7 +440,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Similarity == threshold should NOT match (must be strictly greater)
+    // Similarity == threshold should NOT match — box is zeroed
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
 
@@ -569,7 +570,7 @@ final class DriftRepairServiceTests: XCTestCase {
       store: store
     )
 
-    // Embedding provider was called but returned nil, so no match
+    // Embedding provider was called but returned nil — no match, box is zeroed
     XCTAssertEqual(mockEmbeddingProvider.computeCallCount, 1)
     XCTAssertEqual(store[candidate.id]?.lastBoundingBox, .zero)
   }
