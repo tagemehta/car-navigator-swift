@@ -294,10 +294,6 @@ public final class TrafficEyeVerifier: ImageVerifier {
       .tryMap { obj in
         DebugPublisher.shared.info(
           "[TrafficEye][\(candidateId.uuidString.suffix(8))] Processing API response...")
-        // Add this in callTrafficEyeAPI(), after line 297
-        if let jsonString = String(data: obj.data, encoding: .utf8) {
-          DebugPublisher.shared.info("[TrafficEye] Raw response: \(jsonString.prefix(500))")
-        }
         return obj.data
       }
       .decode(type: TrafficEyeResponse.self, decoder: jsonDecoder)

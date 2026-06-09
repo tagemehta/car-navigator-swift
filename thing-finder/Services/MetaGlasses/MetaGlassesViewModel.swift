@@ -743,56 +743,8 @@ public final class MetaGlassesViewModel: ObservableObject {
         }
       }
 
-      // Observe stream state
-      streamStateToken = newStream.statePublisher.listen { [weak self] (streamState: StreamState) in
-        Task { @MainActor [weak self] in
-          guard let self else { return }
-          switch streamState {
-          case .streaming:
-            self.state = .streaming
-          case .waitingForDevice:
-            if self.state == .streaming { self.state = .ready }
-          case .stopped:
-            if self.state == .streaming || self.state == .paused {
-              self.state = .ready
-            }
-          case .paused:
-            self.state = .paused
-          default:
-            break
-          }
-        }
-      }
-
-      // Observe video frames (push-based)
-      videoFrameToken = newStream.videoFramePublisher.listen { [weak self] (frame: VideoFrame) in
-        Task { @MainActor [weak self] in
-          guard let self else { return }
-          self.currentPixelBuffer = CMSampleBufferGetImageBuffer(frame.sampleBuffer)
-          if let image = frame.makeUIImage() {
-            self.currentVideoFrame = image
-          }
-        }
-      }
-
-      // Observe errors
-      errorToken = newStream.errorPublisher.listen { [weak self] (error: StreamError) in
-        Task { @MainActor [weak self] in
-          guard let self else { return }
-          self.state = .failed(Self.formatStreamError(error))
-        }
-      }
-
-      // Observe photo captures
-      photoDataToken = newStream.photoDataPublisher.listen { [weak self] (photoData: PhotoData) in
-        Task { @MainActor [weak self] in
-          guard let self else { return }
-          if let image = UIImage(data: photoData.data) {
-            self.capturedPhoto = image
-            self.showPhotoPreview = true
-          }
-        }
-      }
+      // Observe stream state, frames, errors, and photo captures
+      subscribeStreamListeners(to: newStream)
 
       // Start the stream capability
       await newStream.start()
@@ -835,7 +787,48 @@ public final class MetaGlassesViewModel: ObservableObject {
   public func resumeFrameDelivery() -> Bool {
     guard let activeStream = stream else { return false }
 
-    videoFrameToken = activeStream.videoFramePublisher.listen { [weak self] (frame: VideoFrame) in
+    // The SDK stream may have hit a terminal state while delivery was paused
+    // (e.g. the device disconnected). Don't claim it's active in that case.
+    switch activeStream.state {
+    case .stopping, .stopped:
+      return false
+    default:
+      break
+    }
+
+    subscribeStreamListeners(to: activeStream)
+
+    if state != .streaming {
+      state = .streaming
+    }
+    return true
+  }
+
+  /// Subscribe to all stream lifecycle publishers (state, frames, errors,
+  /// photos), replacing any existing tokens. Used by both initial startup and
+  /// resume so a pause/resume cycle keeps observing every event.
+  private func subscribeStreamListeners(to stream: MWDATCamera.Stream) {
+    streamStateToken = stream.statePublisher.listen { [weak self] (streamState: StreamState) in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        switch streamState {
+        case .streaming:
+          self.state = .streaming
+        case .waitingForDevice:
+          if self.state == .streaming { self.state = .ready }
+        case .stopped:
+          if self.state == .streaming || self.state == .paused {
+            self.state = .ready
+          }
+        case .paused:
+          self.state = .paused
+        default:
+          break
+        }
+      }
+    }
+
+    videoFrameToken = stream.videoFramePublisher.listen { [weak self] (frame: VideoFrame) in
       Task { @MainActor [weak self] in
         guard let self else { return }
         self.currentPixelBuffer = CMSampleBufferGetImageBuffer(frame.sampleBuffer)
@@ -845,10 +838,22 @@ public final class MetaGlassesViewModel: ObservableObject {
       }
     }
 
-    if state != .streaming {
-      state = .streaming
+    errorToken = stream.errorPublisher.listen { [weak self] (error: StreamError) in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        self.state = .failed(Self.formatStreamError(error))
+      }
     }
-    return true
+
+    photoDataToken = stream.photoDataPublisher.listen { [weak self] (photoData: PhotoData) in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        if let image = UIImage(data: photoData.data) {
+          self.capturedPhoto = image
+          self.showPhotoPreview = true
+        }
+      }
+    }
   }
 
   /// Fully stop and tear down the streaming session.
