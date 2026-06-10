@@ -14,17 +14,6 @@
         }
       }
     },
-    "%@, %@" : {
-      "comment" : "Speech: new direction with distance",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@"
-          }
-        }
-      }
-    },
     "%lf" : {
 
     },
@@ -247,6 +236,9 @@
           }
         }
       }
+    },
+    "almost there" : {
+      "comment" : "Speech: very close to vehicle"
     },
     "Ambiguous result" : {
       "comment" : "Reject reason: ambiguous detection",
@@ -1139,6 +1131,7 @@
     },
     "Found %@" : {
       "comment" : "Speech: vehicle description matched",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1160,8 +1153,15 @@
         }
       }
     },
+    "Found it" : {
+      "comment" : "Speech: vehicle found, no plate available"
+    },
+    "Found it — plate %@" : {
+      "comment" : "Speech: vehicle found, license plate confirmed"
+    },
     "Found match" : {
       "comment" : "Speech: generic match found",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1173,6 +1173,7 @@
     },
     "Found matching plate %@" : {
       "comment" : "Speech: license plate matched",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1202,6 +1203,9 @@
           }
         }
       }
+    },
+    "Got it" : {
+      "comment" : "Speech: partial match upgraded to full, no plate"
     },
     "Haptic Feedback" : {
       "localizations" : {
@@ -1753,6 +1757,9 @@
         }
       }
     },
+    "Plate confirmed — %@" : {
+      "comment" : "Speech: partial match upgraded to full, plate now confirmed"
+    },
     "Plate not visible yet" : {
       "comment" : "Speech: partial match, no plate",
       "extractionState" : "stale",
@@ -1785,11 +1792,8 @@
         }
       }
     },
-    "Possible match" : {
-      "comment" : "Speech: partial match, no description available"
-    },
-    "Possible match: %@" : {
-      "comment" : "Speech: partial match with vehicle description"
+    "Possible match — plate not visible" : {
+      "comment" : "Speech: partial match found, plate not yet confirmed"
     },
     "Rear view of car" : {
       "comment" : "Speech: vehicle viewed from rear",
@@ -2197,6 +2201,7 @@
     },
     "Still %@" : {
       "comment" : "Speech: direction unchanged, no distance",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2208,6 +2213,7 @@
     },
     "Still %@, %@" : {
       "comment" : "Speech: direction unchanged, with distance",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
