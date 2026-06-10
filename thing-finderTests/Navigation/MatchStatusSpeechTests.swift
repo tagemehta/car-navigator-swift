@@ -10,11 +10,12 @@ import XCTest
 final class MatchStatusSpeechTests: XCTestCase {
 
   // MARK: - Waiting Status
+  // Waiting is now silent — feedback is handled by the earcon.
 
-  func test_phrase_waiting_returnsWaitingMessage() {
+  func test_phrase_waiting_returnsNil() {
     let phrase = MatchStatusSpeech.phrase(for: .waiting)
 
-    XCTAssertEqual(phrase, "Waiting for verification")
+    XCTAssertNil(phrase)
   }
 
   // MARK: - Full Match Status
@@ -55,39 +56,40 @@ final class MatchStatusSpeechTests: XCTestCase {
   }
 
   // MARK: - Partial Match Status
+  // Partial now uses "Possible match" phrasing — no "Warning:" prefix.
 
-  func test_phrase_partialWithDescription_includesWarning() {
+  func test_phrase_partialWithDescription_returnsPossibleMatch() {
     let phrase = MatchStatusSpeech.phrase(
       for: .partial,
       detectedDescription: "blue Honda"
     )
 
-    XCTAssertEqual(phrase, "Found blue Honda. Warning: Plate not visible yet")
+    XCTAssertEqual(phrase, "Possible match: blue Honda")
   }
 
-  func test_phrase_partialWithoutDescription_returnsPlateNotVisible() {
+  func test_phrase_partialWithoutDescription_returnsPossibleMatch() {
     let phrase = MatchStatusSpeech.phrase(for: .partial)
 
-    XCTAssertEqual(phrase, "Plate not visible yet")
+    XCTAssertEqual(phrase, "Possible match")
   }
 
   // MARK: - Rejected Status
+  // Rejected is now silent here — PreMatchFeedbackController owns rejection announcements.
 
-  func test_phrase_rejectedWithDescriptionAndReason_includesBoth() {
+  func test_phrase_rejectedWithDescription_returnsNil() {
     let phrase = MatchStatusSpeech.phrase(
       for: .rejected,
       detectedDescription: "red Toyota",
       rejectReason: .wrongModelOrColor
     )
 
-    XCTAssertNotNil(phrase)
-    XCTAssertTrue(phrase!.contains("red Toyota"))
+    XCTAssertNil(phrase)
   }
 
-  func test_phrase_rejectedWithoutInfo_returnsGenericFailure() {
+  func test_phrase_rejectedWithoutInfo_returnsNil() {
     let phrase = MatchStatusSpeech.phrase(for: .rejected)
 
-    XCTAssertEqual(phrase, "Verification failed")
+    XCTAssertNil(phrase)
   }
 
   // MARK: - Unknown Status
@@ -135,53 +137,18 @@ final class MatchStatusSpeechTests: XCTestCase {
   }
 
   // MARK: - Retry Phrases
+  // All retry phrases now return nil — no retry speech announced.
 
-  func test_retryPhrase_unclearImage_returnsBlurryMessage() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .unclearImage)
-
-    XCTAssertEqual(phrase, "Picture too blurry, trying again")
-  }
-
-  func test_retryPhrase_insufficientInfo_returnsBetterViewMessage() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .insufficientInfo)
-
-    XCTAssertEqual(phrase, "Need a better view, retrying")
-  }
-
-  func test_retryPhrase_lowConfidence_returnsNotSureMessage() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .lowConfidence)
-
-    XCTAssertEqual(phrase, "Not sure yet, taking another shot")
-  }
-
-  func test_retryPhrase_apiError_returnsErrorMessage() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .apiError)
-
-    XCTAssertEqual(phrase, "Detection error, retrying")
-  }
-
-  func test_retryPhrase_licensePlateNotVisible_returnsPlateMessage() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .licensePlateNotVisible)
-
-    XCTAssertEqual(phrase, "Can't see the plate, retrying")
-  }
-
-  func test_retryPhrase_ambiguous_returnsUnclearMessage() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .ambiguous)
-
-    XCTAssertEqual(phrase, "Results unclear, retrying")
-  }
-
-  func test_retryPhrase_hardReject_returnsNil() {
-    // Hard rejects should not have retry phrases
-    let phrase = MatchStatusSpeech.retryPhrase(for: .wrongModelOrColor)
-
-    XCTAssertNil(phrase)
-  }
-
-  func test_retryPhrase_success_returnsNil() {
-    let phrase = MatchStatusSpeech.retryPhrase(for: .success)
-
-    XCTAssertNil(phrase)
+  func test_retryPhrase_allReasonsReturnNil() {
+    let reasons: [RejectReason] = [
+      .unclearImage, .insufficientInfo, .lowConfidence,
+      .apiError, .licensePlateNotVisible, .ambiguous,
+      .wrongModelOrColor, .success,
+    ]
+    for reason in reasons {
+      XCTAssertNil(
+        MatchStatusSpeech.retryPhrase(for: reason),
+        "Expected nil for \(reason)")
+    }
   }
 }

@@ -3,7 +3,14 @@
 //
 //  Maps MatchStatus values to short, class-agnostic speech messages.
 //
-//  Created by Cascade AI on 2025-07-17.
+//  Ownership boundary
+//  ──────────────────
+//  • .waiting  — silent (PreMatchFeedbackController owns waiting feedback via earcon)
+//  • .rejected — silent (PreMatchFeedbackController owns rejection announcements)
+//  • .unknown  — silent (no retry messages; retryPhrase always returns nil)
+//  • .partial  — "Possible match: [desc]" / "Possible match"
+//  • .full     — "Found matching plate [plate]" / "Found [desc]" / "Found match"
+//  • .lost     — direction hint if heading changed by more than 60°
 
 import Foundation
 
@@ -23,17 +30,18 @@ enum MatchStatusSpeech {
   ) -> String? {
     switch status {
     case .waiting:
-      return String(
-        localized: "Waiting for verification", comment: "Speech: verification in progress")
+      // Silent — the evaluation earcon already signals activity.
+      return nil
     case .partial:
       if let desc = detectedDescription {
         return String(
           format: NSLocalizedString(
-            "Found %@. Warning: Plate not visible yet",
-            comment: "Speech: vehicle found but plate not confirmed"),
+            "Possible match: %@",
+            comment: "Speech: partial match with vehicle description"),
           desc)
       }
-      return String(localized: "Plate not visible yet", comment: "Speech: partial match, no plate")
+      return String(
+        localized: "Possible match", comment: "Speech: partial match, no description available")
     case .full:
       if let plate = recognisedText {
         return String(
@@ -51,26 +59,8 @@ enum MatchStatusSpeech {
       }
       return String(localized: "Found match", comment: "Speech: generic match found")
     case .rejected:
-      if let desc = detectedDescription, let reason = rejectReason {
-        // Add directional information for wrong make/model
-        if reason == .wrongModelOrColor, let normalizedX = normalizedXPosition,
-          let settings = settings
-        {
-          let direction = settings.getDirection(normalizedX: normalizedX)
-          return String(
-            format: NSLocalizedString(
-              "%@ – %@ %@",
-              comment: "Speech: rejected with direction"),
-            desc, reason.userFriendlyDescription, direction.localizedName)
-        }
-        return String(
-          format: NSLocalizedString(
-            "%@ – %@",
-            comment: "Speech: rejected with reason"),
-          desc, reason.userFriendlyDescription)
-      }
-      return String(
-        localized: "Verification failed", comment: "Speech: generic verification failure")
+      // Silent — PreMatchFeedbackController announces "Not yours — [desc]".
+      return nil
     case .unknown:
       return nil
     case .lost:
@@ -101,31 +91,9 @@ enum MatchStatusSpeech {
     }
   }
 
-  /// Get a phrase to announce when retrying due to a specific reason
+  /// Returns nil for all reasons — retry messages are no longer announced.
+  /// Kept to avoid breaking call sites; can be removed in a future cleanup.
   static func retryPhrase(for reason: RejectReason) -> String? {
-    switch reason {
-    case .unclearImage:
-      return String(
-        localized: "Picture too blurry, trying again", comment: "Speech: retry due to blurry image")
-    case .insufficientInfo:
-      return String(
-        localized: "Need a better view, retrying", comment: "Speech: retry due to insufficient info"
-      )
-    case .lowConfidence:
-      return String(
-        localized: "Not sure yet, taking another shot",
-        comment: "Speech: retry due to low confidence")
-    case .apiError:
-      return String(
-        localized: "Detection error, retrying", comment: "Speech: retry due to API error")
-    case .licensePlateNotVisible:
-      return String(
-        localized: "Can't see the plate, retrying",
-        comment: "Speech: retry due to plate not visible")
-    case .ambiguous:
-      return String(
-        localized: "Results unclear, retrying", comment: "Speech: retry due to ambiguous result")
-    default: return nil  // no speech for hard rejects
-    }
+    return nil
   }
 }

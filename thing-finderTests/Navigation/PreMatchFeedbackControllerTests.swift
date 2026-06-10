@@ -1,0 +1,414 @@
+//  PreMatchFeedbackControllerTests.swift
+//  thing-finderTests
+//
+//  Unit tests for PreMatchFeedbackController.
+//  Covers: session-start, heartbeat, earcon stability gate, rejection announcements,
+//  high-density grouped fallback, and dormancy when a match exists.
+
+import XCTest
+
+@testable import thing_finder
+
+final class PreMatchFeedbackControllerTests: XCTestCase {
+
+  private var mockSpeaker: MockSpeechOutput!
+  private var mockEarcon: MockEarconOutput!
+  private var mockHaptics: MockHapticManager!
+  private var cache: AnnouncementCache!
+  private var settings: Settings!
+  private var config: NavigationFeedbackConfig!
+
+  override func setUp() {
+    super.setUp()
+    mockSpeaker = MockSpeechOutput()
+    mockEarcon = MockEarconOutput()
+    mockHaptics = MockHapticManager()
+    cache = AnnouncementCache()
+    settings = TestSettings.makeDefault()
+    // Short intervals so tests don't need to advance time by 20s.
+    config = NavigationFeedbackConfig(
+      speechRepeatInterval: 6.0,
+      directionChangeInterval: 4.0,
+      waitingPhraseCooldown: 10.0,
+      retryPhraseCooldown: 8.0
+    )
+    config.earconStabilityGate = 0.3
+    config.scanningHeartbeatInterval = 5.0
+    config.rejectionCooldown = 1.0
+    config.rejectionDensityWindow = 10.0
+    config.rejectionDensityLimit = 3
+  }
+
+  override func tearDown() {
+    mockSpeaker = nil
+    mockEarcon = nil
+    mockHaptics = nil
+    cache = nil
+    settings = nil
+    config = nil
+    super.tearDown()
+  }
+
+  private func makeController(description: String = "blue Honda Prius")
+    -> PreMatchFeedbackController
+  {
+    return PreMatchFeedbackController(
+      speaker: mockSpeaker,
+      earcon: mockEarcon,
+      hapticManager: mockHaptics,
+      cache: cache,
+      config: config,
+      settings: settings,
+      targetDescription: description
+    )
+  }
+
+  // MARK: - Session Start
+
+  func test_sessionStart_speaksSearchingPhrase() {
+    let controller = makeController(description: "red Toyota")
+
+    controller.tick(candidates: [], timestamp: Date())
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("red Toyota"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Searching for"))
+  }
+
+  func test_sessionStart_firesOnlyOnce() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
+
+    let searchCount = mockSpeaker.spokenPhrases.filter { $0.contains("Searching for") }.count
+    XCTAssertEqual(searchCount, 1)
+  }
+
+  func test_sessionStart_refires_afterReset() {
+    let controller = makeController(description: "blue Honda")
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    controller.reset()
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
+
+    let searchCount = mockSpeaker.spokenPhrases.filter { $0.contains("Searching for") }.count
+    XCTAssertEqual(searchCount, 2)
+  }
+
+  func test_sessionStart_silentWhenSpeechDisabled() {
+    settings.enableSpeech = false
+    let controller = makeController()
+
+    controller.tick(candidates: [], timestamp: Date())
+
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
+  }
+
+  // MARK: - Heartbeat
+
+  func test_heartbeat_firesAfterInterval_whenNoCandidates() {
+    let controller = makeController()
+    let now = Date()
+
+    // First tick fires session-start; clear cache to not block heartbeat.
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Advance past heartbeat interval (5s in tests)
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(6.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Still looking"))
+  }
+
+  func test_heartbeat_doesNotFire_whenCandidatesExist() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Tick with a candidate — heartbeat should be suppressed
+    let candidate = TestCandidates.make()
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(6.0))
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Still looking"))
+  }
+
+  func test_heartbeat_doesNotFire_beforeInterval() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Only 2 seconds later — below the 5s threshold
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(2.0))
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Still looking"))
+  }
+
+  // MARK: - Earcon
+
+  func test_earcon_firesAfterStabilityGate() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)  // session start
+    let candidate = TestCandidates.make(id: UUID())
+
+    // Register candidate — within stability gate (0.1s < 0.3s), no earcon yet
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    XCTAssertEqual(mockEarcon.playCallCount, 0)
+
+    // Second tick — clearly past stability gate (gap = 0.4s > 0.3s), earcon fires
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+    XCTAssertEqual(mockEarcon.playCallCount, 1)
+  }
+
+  func test_earcon_doesNotRefire_forSameCandidate() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    let candidate = TestCandidates.make(id: UUID())
+
+    // Register candidate, then fire earcon past stability gate
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+    XCTAssertEqual(mockEarcon.playCallCount, 1)
+
+    // Further ticks — earcon must not re-fire
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+    XCTAssertEqual(mockEarcon.playCallCount, 1)
+  }
+
+  func test_earcon_survivesReset_forSameCandidateID() {
+    // After reset, the lifetime deduplication set is cleared,
+    // so the same candidate ID can trigger the earcon again in a new session.
+    let controller = makeController()
+    let now = Date()
+    let candidateID = UUID()
+
+    controller.tick(candidates: [], timestamp: now)
+    let candidate = TestCandidates.make(id: candidateID)
+    // Register + fire
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+    XCTAssertEqual(mockEarcon.playCallCount, 1)
+
+    controller.reset()
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))  // session-start
+    // Register + fire again in new session
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.1))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.5))
+    XCTAssertEqual(mockEarcon.playCallCount, 2)
+  }
+
+  func test_earcon_suppressed_whenBeepsDisabled() {
+    settings.enableBeeps = false
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    let candidate = TestCandidates.make(id: UUID())
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+
+    XCTAssertEqual(mockEarcon.playCallCount, 0)
+  }
+
+  func test_earcon_suppressed_whenMatchExists() {
+    // Once a partial/full match exists, the earcon must not fire for new candidates.
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+
+    var matchedCandidate = TestCandidates.make(id: UUID())
+    matchedCandidate.matchStatus = .partial
+
+    let newCandidate = TestCandidates.make(id: UUID())
+
+    // Register new candidate
+    controller.tick(
+      candidates: [matchedCandidate, newCandidate],
+      timestamp: now.addingTimeInterval(0.1))
+    // Attempt to fire past stability gate — match exists, earcon must stay silent
+    controller.tick(
+      candidates: [matchedCandidate, newCandidate],
+      timestamp: now.addingTimeInterval(0.5))
+
+    XCTAssertEqual(mockEarcon.playCallCount, 0)
+  }
+
+  func test_earcon_playsHaptic_whenHapticsEnabled() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    let candidate = TestCandidates.make(id: UUID())
+    // Register, then fire past stability gate
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+  }
+
+  func test_earcon_noHaptic_whenHapticsDisabled() {
+    settings.enableHaptics = false
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    let candidate = TestCandidates.make(id: UUID())
+    // Register, then fire past stability gate
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
+  }
+
+  // MARK: - Rejection Announcements
+
+  func test_rejection_announcesWithDescription() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    var candidate = TestCandidates.makeRejected()
+    candidate.detectedDescription = "red Toyota"
+
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(2.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Not yours"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("red Toyota"))
+  }
+
+  func test_rejection_announcedOnlyOnce_perCandidate() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    var candidate = TestCandidates.makeRejected()
+    candidate.detectedDescription = "red Toyota"
+
+    // First tick — announces
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(2.0))
+    let countAfterFirst = mockSpeaker.speakCallCount
+
+    // Second tick with same candidate — must not re-announce
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(5.0))
+    XCTAssertEqual(mockSpeaker.speakCallCount, countAfterFirst)
+  }
+
+  func test_rejection_respectsCooldown() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+
+    // Seed cache.lastGlobal to simulate a recent speech event
+    cache.lastGlobal = (phrase: "prior speech", time: now.addingTimeInterval(2.0))
+
+    var candidate = TestCandidates.makeRejected()
+    candidate.detectedDescription = "blue Ford"
+
+    // Tick immediately after recent speech — within rejectionCooldown (1.0s)
+    controller.tick(
+      candidates: [candidate],
+      timestamp: now.addingTimeInterval(2.5))
+
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0, "Rejection should be suppressed within cooldown")
+  }
+
+  // MARK: - High-Density Grouped Fallback
+
+  func test_rejection_groupsWhenDensityExceeded() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Populate density buffer with 3 recent rejections (equal to the limit).
+    // We do this by advancing time and using distinct candidates.
+    let density = config.rejectionDensityLimit
+    var rejectedCandidates: [Candidate] = (0..<density).map { i in
+      var c = TestCandidates.makeRejected(id: UUID())
+      c.detectedDescription = "car \(i)"
+      return c
+    }
+
+    // Each candidate is announced one at a time, respecting cooldown.
+    for (i, candidate) in rejectedCandidates.enumerated() {
+      cache.lastGlobal = nil
+      controller.tick(
+        candidates: [candidate],
+        timestamp: now.addingTimeInterval(Double(i + 1) * 2.0))
+    }
+
+    // Now add a 4th candidate — density limit exceeded, should get grouped phrase.
+    var groupCandidate = TestCandidates.makeRejected(id: UUID())
+    groupCandidate.detectedDescription = "car overflow"
+    cache.lastGlobal = nil
+
+    controller.tick(
+      candidates: rejectedCandidates + [groupCandidate],
+      timestamp: now.addingTimeInterval(Double(density + 1) * 2.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Several cars nearby"))
+  }
+
+  // MARK: - Dormancy When Match Exists
+
+  func test_dormant_noHeartbeat_whenMatchExists() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    var matchedCandidate = TestCandidates.make()
+    matchedCandidate.matchStatus = .full
+
+    controller.tick(candidates: [matchedCandidate], timestamp: now.addingTimeInterval(6.0))
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Still looking"))
+  }
+
+  func test_dormant_noRejection_whenMatchExists() {
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    var matchedCandidate = TestCandidates.make()
+    matchedCandidate.matchStatus = .partial
+
+    var rejectedCandidate = TestCandidates.makeRejected()
+    rejectedCandidate.detectedDescription = "red Toyota"
+
+    controller.tick(
+      candidates: [matchedCandidate, rejectedCandidate],
+      timestamp: now.addingTimeInterval(2.0))
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Not yours"))
+  }
+}

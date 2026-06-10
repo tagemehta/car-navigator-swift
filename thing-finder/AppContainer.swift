@@ -62,6 +62,7 @@ public final class AppContainer {
     // 5. Navigation manager (frame-driven)
     let nav = FrameNavigationManager(
       settings: settings,
+      targetDescription: description,
       speaker: Speaker(settings: settings))
 
     // 6. Lifecycle manager

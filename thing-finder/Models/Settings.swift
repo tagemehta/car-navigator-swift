@@ -147,14 +147,15 @@ public class Settings: ObservableObject {
   /// Allow navigation cues before plate confirm (partial match)
   @AppStorage("allow_partial_nav") var allowPartialNavigation: Bool = true
 
-  /// Announce all detected cars (rejected candidates as well)
-  @AppStorage("announce_rejected") var announceRejected: Bool = true
+  /// Announce rejected candidates — now handled by PreMatchFeedbackController.
+  /// Retained for backwards-compatibility; default changed to false.
+  @AppStorage("announce_rejected") var announceRejected: Bool = false
 
-  /// Announce retry messages (e.g., "Picture too blurry, trying again")
-  @AppStorage("announce_retry_messages") var announceRetryMessages: Bool = true
+  /// Announce retry messages — removed from speech; default changed to false.
+  @AppStorage("announce_retry_messages") var announceRetryMessages: Bool = false
 
-  /// Announce waiting messages (e.g., "Waiting for verification")
-  @AppStorage("announce_waiting_messages") var announceWaitingMessages: Bool = true
+  /// Announce waiting messages — removed from speech; default changed to false.
+  @AppStorage("announce_waiting_messages") var announceWaitingMessages: Bool = false
 
   /// Smoothing factor for exponential moving average (0.0-1.0)
   @AppStorage("smoothing_alpha") var smoothingAlpha: Double = 0.2

@@ -4,10 +4,25 @@ import Foundation
 // MARK: - Feedback Configuration
 /// All timing and threshold constants for navigation feedback live here.
 public struct NavigationFeedbackConfig {
+  // MARK: Post-match (NavAnnouncer / DirectionSpeechController)
   public var speechRepeatInterval: TimeInterval = 6
   public var directionChangeInterval: TimeInterval = 4
+  /// Retained for backwards-compatibility; no longer read by NavAnnouncer.
   public var waitingPhraseCooldown: TimeInterval = 10
+  /// Retained for backwards-compatibility; no longer read by NavAnnouncer.
   public var retryPhraseCooldown: TimeInterval = 8
+
+  // MARK: Pre-match (PreMatchFeedbackController)
+  /// Seconds a candidate must be stable before the earcon fires.
+  public var earconStabilityGate: TimeInterval = 0.3
+  /// Seconds between "Still looking…" heartbeat announcements.
+  public var scanningHeartbeatInterval: TimeInterval = 20
+  /// Minimum seconds between consecutive individual rejection announcements.
+  public var rejectionCooldown: TimeInterval = 3.5
+  /// Rolling window (seconds) used to measure rejection density.
+  public var rejectionDensityWindow: TimeInterval = 30
+  /// Number of rejections within `rejectionDensityWindow` that triggers grouped mode.
+  public var rejectionDensityLimit: Int = 3
 
   init(
     speechRepeatInterval: TimeInterval,
@@ -57,4 +72,7 @@ public protocol NavigationSpeaker {
     candidates: [Candidate],
     targetBox: CGRect?,
     distance: Double?)
+  /// Reset session state (session-start announcement, earcon deduplication, etc.).
+  /// Call whenever the user starts a new search.
+  func reset()
 }

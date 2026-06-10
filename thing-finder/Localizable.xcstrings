@@ -4,28 +4,6 @@
     "" : {
 
     },
-    "%@ – %@" : {
-      "comment" : "Speech: rejected with reason",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ – %2$@"
-          }
-        }
-      }
-    },
-    "%@ – %@ %@" : {
-      "comment" : "Speech: rejected with direction",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ – %2$@ %3$@"
-          }
-        }
-      }
-    },
     "%@ has been copied to your clipboard." : {
       "localizations" : {
         "es" : {
@@ -455,6 +433,7 @@
     },
     "Can't see the plate, retrying" : {
       "comment" : "Speech: retry due to plate not visible",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -824,6 +803,7 @@
     },
     "Detection error, retrying" : {
       "comment" : "Speech: retry due to API error",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1170,6 +1150,7 @@
     },
     "Found %@. Warning: Plate not visible yet" : {
       "comment" : "Speech: vehicle found but plate not confirmed",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1557,6 +1538,7 @@
     },
     "Need a better view, retrying" : {
       "comment" : "Speech: retry due to insufficient info",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1610,6 +1592,7 @@
     },
     "Not sure yet, taking another shot" : {
       "comment" : "Speech: retry due to low confidence",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1618,6 +1601,12 @@
           }
         }
       }
+    },
+    "Not yours" : {
+      "comment" : "Speech: rejected car, no description available"
+    },
+    "Not yours — %@" : {
+      "comment" : "Speech: rejected car with description"
     },
     "Object Class" : {
       "localizations" : {
@@ -1754,6 +1743,7 @@
     },
     "Picture too blurry, trying again" : {
       "comment" : "Speech: retry due to blurry image",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1765,6 +1755,7 @@
     },
     "Plate not visible yet" : {
       "comment" : "Speech: partial match, no plate",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1793,6 +1784,12 @@
           }
         }
       }
+    },
+    "Possible match" : {
+      "comment" : "Speech: partial match, no description available"
+    },
+    "Possible match: %@" : {
+      "comment" : "Speech: partial match with vehicle description"
     },
     "Rear view of car" : {
       "comment" : "Speech: vehicle viewed from rear",
@@ -1926,6 +1923,7 @@
     },
     "Results unclear, retrying" : {
       "comment" : "Speech: retry due to ambiguous result",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1978,6 +1976,9 @@
         }
       }
     },
+    "Searching for %@" : {
+      "comment" : "Speech: session start — announces what the user is searching for"
+    },
     "Send feedback email" : {
       "localizations" : {
         "es" : {
@@ -1997,6 +1998,9 @@
           }
         }
       }
+    },
+    "Several cars nearby, still looking" : {
+      "comment" : "Speech: many rejections in a short window"
     },
     "Shortest time between beeps/pulses when target is centered." : {
       "localizations" : {
@@ -2219,6 +2223,9 @@
         }
       }
     },
+    "Still looking…" : {
+      "comment" : "Speech: scanning heartbeat when no candidates are detected"
+    },
     "straight ahead" : {
       "comment" : "Direction guidance: target is straight ahead",
       "localizations" : {
@@ -2402,6 +2409,7 @@
     },
     "Verification failed" : {
       "comment" : "Speech: generic verification failure",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2434,6 +2442,7 @@
     },
     "Waiting for verification" : {
       "comment" : "Speech: verification in progress",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
