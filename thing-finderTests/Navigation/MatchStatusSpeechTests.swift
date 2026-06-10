@@ -1,7 +1,7 @@
 //  MatchStatusSpeechTests.swift
 //  thing-finderTests
 //
-//  Unit tests for MatchStatusSpeech phrase generation.
+//  Unit tests for MatchStatusSpeech phrase and transition phrase generation.
 
 import XCTest
 
@@ -13,131 +13,69 @@ final class MatchStatusSpeechTests: XCTestCase {
   // Waiting is now silent — feedback is handled by the earcon.
 
   func test_phrase_waiting_returnsNil() {
-    let phrase = MatchStatusSpeech.phrase(for: .waiting)
-
-    XCTAssertNil(phrase)
+    XCTAssertNil(MatchStatusSpeech.phrase(for: .waiting))
   }
 
   // MARK: - Full Match Status
 
-  func test_phrase_fullWithPlate_returnsFoundPlateMessage() {
-    let phrase = MatchStatusSpeech.phrase(
-      for: .full,
-      recognisedText: "ABC1234"
-    )
+  func test_phrase_fullWithPlate_returnsFoundItWithPlate() {
+    let phrase = MatchStatusSpeech.phrase(for: .full, recognisedText: "ABC1234")
 
-    XCTAssertEqual(phrase, "Found matching plate ABC1234")
+    XCTAssertEqual(phrase, "Found it \u{2014} plate ABC1234")
   }
 
-  func test_phrase_fullWithDescription_returnsFoundDescriptionMessage() {
-    let phrase = MatchStatusSpeech.phrase(
-      for: .full,
-      recognisedText: nil,
-      detectedDescription: "blue Honda Civic"
-    )
+  func test_phrase_fullWithoutPlate_returnsFoundIt() {
+    // detectedDescription is no longer part of the full-match phrase.
+    let phrase = MatchStatusSpeech.phrase(for: .full, recognisedText: nil)
 
-    XCTAssertEqual(phrase, "Found blue Honda Civic")
-  }
-
-  func test_phrase_fullWithBoth_prefersPlate() {
-    let phrase = MatchStatusSpeech.phrase(
-      for: .full,
-      recognisedText: "XYZ789",
-      detectedDescription: "red Toyota"
-    )
-
-    XCTAssertEqual(phrase, "Found matching plate XYZ789")
-  }
-
-  func test_phrase_fullWithNeither_returnsGenericMatch() {
-    let phrase = MatchStatusSpeech.phrase(for: .full)
-
-    XCTAssertEqual(phrase, "Found match")
+    XCTAssertEqual(phrase, "Found it")
   }
 
   // MARK: - Partial Match Status
-  // Partial now uses "Possible match" phrasing — no "Warning:" prefix.
 
-  func test_phrase_partialWithDescription_returnsPossibleMatch() {
-    let phrase = MatchStatusSpeech.phrase(
-      for: .partial,
-      detectedDescription: "blue Honda"
-    )
-
-    XCTAssertEqual(phrase, "Possible match: blue Honda")
-  }
-
-  func test_phrase_partialWithoutDescription_returnsPossibleMatch() {
+  func test_phrase_partial_returnsPossibleMatchPlateNotVisible() {
+    // Partial always returns the same phrase regardless of description.
     let phrase = MatchStatusSpeech.phrase(for: .partial)
 
-    XCTAssertEqual(phrase, "Possible match")
+    XCTAssertEqual(phrase, "Possible match \u{2014} plate not visible")
   }
 
   // MARK: - Rejected Status
-  // Rejected is now silent here — PreMatchFeedbackController owns rejection announcements.
+  // Rejected is now silent — PreMatchFeedbackController owns rejection announcements.
 
-  func test_phrase_rejectedWithDescription_returnsNil() {
-    let phrase = MatchStatusSpeech.phrase(
-      for: .rejected,
-      detectedDescription: "red Toyota",
-      rejectReason: .wrongModelOrColor
-    )
-
-    XCTAssertNil(phrase)
-  }
-
-  func test_phrase_rejectedWithoutInfo_returnsNil() {
-    let phrase = MatchStatusSpeech.phrase(for: .rejected)
-
-    XCTAssertNil(phrase)
+  func test_phrase_rejected_returnsNil() {
+    XCTAssertNil(MatchStatusSpeech.phrase(for: .rejected))
   }
 
   // MARK: - Unknown Status
 
   func test_phrase_unknown_returnsNil() {
-    let phrase = MatchStatusSpeech.phrase(for: .unknown)
-
-    XCTAssertNil(phrase)
+    XCTAssertNil(MatchStatusSpeech.phrase(for: .unknown))
   }
 
   // MARK: - Lost Status
 
   func test_phrase_lost_withSmallAngleChange_returnsNil() {
-    // Small angle change (< 60°) should not announce
-    let phrase = MatchStatusSpeech.phrase(
-      for: .lost,
-      lastDirection: 0.0,
-      currentHeading: 30.0  // Only 30° change — below 60° threshold
-    )
+    let phrase = MatchStatusSpeech.phrase(for: .lost, lastDirection: 0.0, currentHeading: 30.0)
 
     XCTAssertNil(phrase)
   }
 
-  func test_phrase_lost_withLargeAngleChange_returnsDirection() {
-    // Large angle change (> 60°) should announce direction
-    let phrase = MatchStatusSpeech.phrase(
-      for: .lost,
-      lastDirection: 0.0,
-      currentHeading: 90.0  // 90° change to the right
-    )
+  func test_phrase_lost_withLargeRightAngle_returnsRightDirection() {
+    let phrase = MatchStatusSpeech.phrase(for: .lost, lastDirection: 0.0, currentHeading: 90.0)
 
     XCTAssertNotNil(phrase)
     XCTAssertTrue(phrase!.contains("degrees to the right"))
   }
 
-  func test_phrase_lost_withLargeLeftAngle_returnsLeft() {
-    let phrase = MatchStatusSpeech.phrase(
-      for: .lost,
-      lastDirection: 90.0,
-      currentHeading: 0.0  // 90° change to the left
-    )
+  func test_phrase_lost_withLargeLeftAngle_returnsLeftDirection() {
+    let phrase = MatchStatusSpeech.phrase(for: .lost, lastDirection: 90.0, currentHeading: 0.0)
 
     XCTAssertNotNil(phrase)
     XCTAssertTrue(phrase!.contains("degrees to the left"))
   }
 
-  // MARK: - Retry Phrases
-  // All retry phrases now return nil — no retry speech announced.
+  // MARK: - Retry Phrases (legacy — always nil)
 
   func test_retryPhrase_allReasonsReturnNil() {
     let reasons: [RejectReason] = [
@@ -149,6 +87,37 @@ final class MatchStatusSpeechTests: XCTestCase {
       XCTAssertNil(
         MatchStatusSpeech.retryPhrase(for: reason),
         "Expected nil for \(reason)")
+    }
+  }
+
+  // MARK: - Transition Phrases (partial → full)
+
+  func test_transitionPhrase_partialToFullWithPlate_returnsPlateConfirmed() {
+    let phrase = MatchStatusSpeech.transitionPhrase(
+      from: .partial, to: .full, recognisedText: "XYZ789")
+
+    XCTAssertEqual(phrase, "Plate confirmed \u{2014} XYZ789")
+  }
+
+  func test_transitionPhrase_partialToFullWithoutPlate_returnsGotIt() {
+    let phrase = MatchStatusSpeech.transitionPhrase(
+      from: .partial, to: .full, recognisedText: nil)
+
+    XCTAssertEqual(phrase, "Got it")
+  }
+
+  func test_transitionPhrase_otherTransitions_returnNil() {
+    // Only partial→full produces a transition phrase; everything else is nil.
+    let cases: [(MatchStatus, MatchStatus)] = [
+      (.unknown, .partial),
+      (.unknown, .full),
+      (.full, .partial),
+      (.partial, .lost),
+    ]
+    for (from, to) in cases {
+      XCTAssertNil(
+        MatchStatusSpeech.transitionPhrase(from: from, to: to),
+        "Expected nil for \(from) → \(to)")
     }
   }
 }

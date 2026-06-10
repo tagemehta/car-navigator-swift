@@ -24,6 +24,10 @@ public struct NavigationFeedbackConfig {
   /// Number of rejections within `rejectionDensityWindow` that triggers grouped mode.
   public var rejectionDensityLimit: Int = 3
 
+  // MARK: Post-match milestones (DistanceMilestoneController)
+  /// Minimum gap (seconds) between a milestone announcement and any other speech.
+  public var milestoneCooldown: TimeInterval = 1.0
+
   init(
     speechRepeatInterval: TimeInterval,
     directionChangeInterval: TimeInterval,

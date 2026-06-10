@@ -79,19 +79,27 @@ final class NavAnnouncer {
 
   /// Handles status announcements for full/partial/lost candidates.
   private func handleCandidate(_ candidate: Candidate, now: Date) {
-    // Build regular status phrase (excludes waiting/unknown which are handled separately)
-    guard
-      let phrase = MatchStatusSpeech.phrase(
-        for: candidate.matchStatus, recognisedText: candidate.ocrText,
-        detectedDescription: candidate.detectedDescription, rejectReason: candidate.rejectReason,
-        normalizedXPosition: candidate.isBoundingBoxFresh ? candidate.lastBoundingBox.midX : nil,
-        settings: settings,
+    let previousStatus = lastStatus[candidate.id]
+
+    // Build phrase — use the transition phrase when upgrading from partial to full
+    // so the user hears "Plate confirmed" instead of a repeated "Found it".
+    let phrase: String?
+    if let prev = previousStatus,
+      let transition = MatchStatusSpeech.transitionPhrase(
+        from: prev, to: candidate.matchStatus, recognisedText: candidate.ocrText)
+    {
+      phrase = transition
+    } else {
+      phrase = MatchStatusSpeech.phrase(
+        for: candidate.matchStatus,
+        recognisedText: candidate.ocrText,
         lastDirection: candidate.degrees,
         currentHeading: compass.degrees)
-    else { return }
+    }
 
-    // Skip if status unchanged for candidate (except lost which can repeat with direction)
-    let previousStatus = lastStatus[candidate.id]
+    guard let phrase else { return }
+
+    // Skip if status unchanged for this candidate (except lost which can repeat with direction)
     if previousStatus == candidate.matchStatus && candidate.matchStatus != .lost {
       return
     }
