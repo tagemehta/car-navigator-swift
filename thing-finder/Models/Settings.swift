@@ -148,14 +148,10 @@ public class Settings: ObservableObject {
   @AppStorage("allow_partial_nav") var allowPartialNavigation: Bool = true
 
   /// Announce rejected candidates — now handled by PreMatchFeedbackController.
-  /// Retained for backwards-compatibility; default changed to false.
-  @AppStorage("announce_rejected") var announceRejected: Bool = false
+  @AppStorage("announce_rejected") var announceRejected: Bool = true
 
-  /// Announce retry messages — removed from speech; default changed to false.
-  @AppStorage("announce_retry_messages") var announceRetryMessages: Bool = false
-
-  /// Announce waiting messages — removed from speech; default changed to false.
-  @AppStorage("announce_waiting_messages") var announceWaitingMessages: Bool = false
+  /// Announce waiting messages — used by heartbeat and waiting phrases.
+  @AppStorage("announce_waiting_messages") var announceWaitingMessages: Bool = true
 
   /// Smoothing factor for exponential moving average (0.0-1.0)
   @AppStorage("smoothing_alpha") var smoothingAlpha: Double = 0.2
@@ -318,7 +314,6 @@ extension Settings {
     speechChangeInterval = 4.0
     allowPartialNavigation = true
     announceRejected = true
-    announceRetryMessages = true
     announceWaitingMessages = true
     waitingPhraseCooldown = 10.0
 

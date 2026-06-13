@@ -284,8 +284,7 @@ The navigation system reads these settings:
 | `enableBeeps`             | `true`  | Master switch for audio beeps                                |
 | `enableHaptics`           | `false` | Master switch for haptic pulses and success/failure haptics  |
 | `announceRejected`        | `true`  | Announce rejected cars (wrong model/color)                   |
-| `announceRetryMessages`   | `true`  | Announce retry messages ("Picture too blurry, trying again") |
-| `announceWaitingMessages` | `true`  | Announce "Waiting for verification"                          |
+| `announceWaitingMessages` | `true`  | Announce "Still looking..." heartbeat when no candidates     |
 | `speechRepeatInterval`    | 4s      | Override for phrase repeat cooldown                          |
 | `speechChangeInterval`    | 2s      | Override for direction change cooldown                       |
 | `waitingPhraseCooldown`   | 10s     | Override for waiting phrase cooldown                         |
@@ -294,9 +293,8 @@ The navigation system reads these settings:
 
 The settings are intentionally separated to give users fine-grained control:
 
-- **`announceRejected`**: Controls whether _other cars_ (wrong make/model/color) are announced. Users who only want to hear about their car can disable this.
-- **`announceRetryMessages`**: Controls status messages like "Picture too blurry" or "Need a better view". Users who find these distracting can disable them.
-- **`announceWaitingMessages`**: Controls "Waiting for verification" announcements. Users who find this redundant can disable it.
+- **`announceRejected`**: Controls whether _other cars_ (wrong make/model/color) are announced. Users who only want to hear about their car can disable this. Handled by `PreMatchFeedbackController`.
+- **`announceWaitingMessages`**: Controls "Still looking..." heartbeat announcements when no candidates are detected. Users who find this redundant can disable it. Handled by `PreMatchFeedbackController`.
 
 ---
 

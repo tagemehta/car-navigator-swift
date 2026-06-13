@@ -311,26 +311,6 @@
         }
       }
     },
-    "Announce Retry Messages" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anunciar mensajes de reintento"
-          }
-        }
-      }
-    },
-    "Announce status messages like 'Picture too blurry, trying again'." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anunciar mensajes de estado como 'La imagen está borrosa, intentando de nuevo'."
-          }
-        }
-      }
-    },
     "Announce Waiting Messages" : {
       "localizations" : {
         "es" : {
@@ -499,6 +479,7 @@
       }
     },
     "Choose what information you want announced (all cars, retry messages, waiting status)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -507,6 +488,9 @@
           }
         }
       }
+    },
+    "Choose what information you want announced (all cars, waiting status)" : {
+
     },
     "Clear" : {
       "localizations" : {

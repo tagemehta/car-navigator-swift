@@ -150,6 +150,8 @@ final class PreMatchFeedbackController {
   // MARK: - Heartbeat
 
   private func tickHeartbeat(candidates: [Candidate], timestamp: Date) {
+    guard settings.announceWaitingMessages else { return }
+
     // Heartbeat only fires when there are no candidates at all.
     guard candidates.isEmpty else { return }
 
@@ -173,6 +175,8 @@ final class PreMatchFeedbackController {
   // MARK: - Rejections
 
   private func tickRejections(candidates: [Candidate], timestamp: Date) {
+    guard settings.announceRejected else { return }
+
     // Prune stale timestamps outside the density window.
     recentRejectionTimes = recentRejectionTimes.filter {
       timestamp.timeIntervalSince($0) < config.rejectionDensityWindow

@@ -53,11 +53,6 @@ struct SettingsView: View {
             .font(.caption)
             .foregroundColor(.secondary)
 
-          Toggle("Announce Retry Messages", isOn: $settings.announceRetryMessages)
-          Text("Announce status messages like 'Picture too blurry, trying again'.")
-            .font(.caption)
-            .foregroundColor(.secondary)
-
           Toggle("Announce Waiting Messages", isOn: $settings.announceWaitingMessages)
           Text("Announce 'Waiting for verification' messages.")
             .font(.caption)

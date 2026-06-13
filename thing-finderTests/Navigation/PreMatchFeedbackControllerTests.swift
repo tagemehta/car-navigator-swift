@@ -152,6 +152,38 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     XCTAssertFalse(mockSpeaker.didSpeakContaining("Still looking"))
   }
 
+  func test_heartbeat_respectsAnnounceWaitingMessagesSetting() {
+    // When announceWaitingMessages is false, heartbeat should be suppressed.
+    settings.announceWaitingMessages = false
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Advance past heartbeat interval
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(6.0))
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Still looking"))
+  }
+
+  func test_heartbeat_firesWhenAnnounceWaitingMessagesEnabled() {
+    // When announceWaitingMessages is true, heartbeat should fire.
+    settings.announceWaitingMessages = true
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Advance past heartbeat interval
+    controller.tick(candidates: [], timestamp: now.addingTimeInterval(6.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Still looking"))
+  }
+
   // MARK: - Earcon
 
   func test_earcon_firesAfterStabilityGate() {
@@ -276,7 +308,27 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
 
   // MARK: - Rejection Announcements
 
-  func test_rejection_announcesWithDescription() {
+  func test_rejection_respectsAnnounceRejectedSetting() {
+    // When announceRejected is false, rejections should be suppressed.
+    settings.announceRejected = false
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    var candidate = TestCandidates.makeRejected()
+    candidate.detectedDescription = "red Toyota"
+
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(2.0))
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Not yours"))
+  }
+
+  func test_rejection_announcesWhenAnnounceRejectedEnabled() {
+    // When announceRejected is true, rejections should fire.
+    settings.announceRejected = true
     let controller = makeController()
     let now = Date()
 
@@ -294,6 +346,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   }
 
   func test_rejection_announcedOnlyOnce_perCandidate() {
+    settings.announceRejected = true
     let controller = makeController()
     let now = Date()
 
@@ -314,6 +367,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   }
 
   func test_rejection_respectsCooldown() {
+    settings.announceRejected = true
     let controller = makeController()
     let now = Date()
 
@@ -337,6 +391,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   func test_rejection_retriesAfterCooldownExpires() {
     // Regression: a candidate suppressed by the global cooldown must remain
     // eligible and speak once the cooldown window passes.
+    settings.announceRejected = true
     let controller = makeController()
     let now = Date()
 
@@ -373,6 +428,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     //   t=1   overflow1 fires grouped phrase; lastGroupedRejectionTime = t=1
     //   t=6   overflow2 suppressed (5s < 10s grouped cooldown)
     //   t=12  overflow2 fires — grouped cooldown expired, buffer still full (timestamps 11s old < 30s)
+    settings.announceRejected = true
     config.rejectionDensityWindow = 30.0
 
     let controller = makeController()
@@ -421,6 +477,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   // MARK: - High-Density Grouped Fallback
 
   func test_rejection_groupsWhenDensityExceeded() {
+    settings.announceRejected = true
     let controller = makeController()
     let now = Date()
 
