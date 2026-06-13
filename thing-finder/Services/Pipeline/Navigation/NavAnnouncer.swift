@@ -99,8 +99,12 @@ final class NavAnnouncer {
 
     guard let phrase else { return }
 
-    // Skip if status unchanged for this candidate (except lost which can repeat with direction)
-    if previousStatus == candidate.matchStatus && candidate.matchStatus != .lost {
+    // Skip if status unchanged for this candidate.
+    // .lost is treated the same as any other status — the direction hint fires once
+    // at the moment of transition and is then suppressed. Allowing it to repeat on
+    // every frame causes the announcement to bounce between adjacent degree buckets
+    // as the compass drifts (e.g. 89° → 90°), which is noisy and unhelpful.
+    if previousStatus == candidate.matchStatus {
       return
     }
     lastStatus[candidate.id] = candidate.matchStatus
