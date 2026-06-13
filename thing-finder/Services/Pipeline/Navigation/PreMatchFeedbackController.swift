@@ -156,7 +156,9 @@ final class PreMatchFeedbackController {
     // Don't interrupt other recent speech.
     if let lastGlobal = cache.lastGlobal,
       timestamp.timeIntervalSince(lastGlobal.time) < 10
-    { return }
+    {
+      return
+    }
 
     guard timestamp.timeIntervalSince(lastHeartbeatTime) >= config.scanningHeartbeatInterval
     else { return }
@@ -180,16 +182,21 @@ final class PreMatchFeedbackController {
     for candidate in rejected {
       let id = candidate.id
       guard !announcedRejections.contains(id) else { continue }
-      announcedRejections.insert(id)
 
       // Global cooldown between any two rejection announcements.
+      // Don't mark the candidate yet — if suppressed it must remain eligible.
       if let lastGlobal = cache.lastGlobal,
         timestamp.timeIntervalSince(lastGlobal.time) < config.rejectionCooldown
-      { continue }
+      {
+        continue
+      }
 
       if recentRejectionTimes.count >= config.rejectionDensityLimit {
         // High-density mode: collapse into a single grouped phrase.
+        // Don't mark the candidate yet — if the grouped cooldown suppresses it,
+        // it must remain eligible on the next tick.
         guard timestamp.timeIntervalSince(lastGroupedRejectionTime) > 10 else { continue }
+        announcedRejections.insert(id)
         let phrase = String(
           localized: "Several cars nearby, still looking",
           comment: "Speech: many rejections in a short window")
@@ -209,6 +216,7 @@ final class PreMatchFeedbackController {
             localized: "Not yours",
             comment: "Speech: rejected car, no description available")
         }
+        announcedRejections.insert(id)
         speak(phrase, at: timestamp)
         recentRejectionTimes.append(timestamp)
       }

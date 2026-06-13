@@ -334,6 +334,90 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     XCTAssertEqual(mockSpeaker.speakCallCount, 0, "Rejection should be suppressed within cooldown")
   }
 
+  func test_rejection_retriesAfterCooldownExpires() {
+    // Regression: a candidate suppressed by the global cooldown must remain
+    // eligible and speak once the cooldown window passes.
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+
+    // Seed a recent speech event so the cooldown is active.
+    cache.lastGlobal = (phrase: "prior speech", time: now.addingTimeInterval(2.0))
+
+    var candidate = TestCandidates.makeRejected()
+    candidate.detectedDescription = "blue Ford"
+
+    // Tick within cooldown — should be suppressed, not permanently marked.
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(2.5))
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0, "Should be suppressed within cooldown")
+
+    // Tick after cooldown expires (rejectionCooldown = 1.0s, so 2.0s gap is safe).
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(4.5))
+    XCTAssertTrue(
+      mockSpeaker.didSpeakContaining("blue Ford"),
+      "Candidate should announce once cooldown expires")
+  }
+
+  func test_rejection_groupedRetries_afterGroupedCooldownExpires() {
+    // Regression: a candidate that triggers high-density mode but is suppressed
+    // by the grouped-phrase cooldown must remain eligible and speak once
+    // lastGroupedRejectionTime is sufficiently old.
+    //
+    // We use rejectionDensityWindow = 30s (wider than the 10s grouped cooldown)
+    // so the density buffer remains full throughout the test.
+    //
+    // Timeline:
+    //   t=0   fill buffer (3 fillers) — timestamps recorded at t=1s
+    //   t=1   overflow1 fires grouped phrase; lastGroupedRejectionTime = t=1
+    //   t=6   overflow2 suppressed (5s < 10s grouped cooldown)
+    //   t=12  overflow2 fires — grouped cooldown expired, buffer still full (timestamps 11s old < 30s)
+    config.rejectionDensityWindow = 30.0
+
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(candidates: [], timestamp: now)
+    mockSpeaker.reset()
+    cache.lastGlobal = nil
+
+    // Fill the density buffer to the limit.
+    let density = config.rejectionDensityLimit
+    for i in 0..<density {
+      var filler = TestCandidates.makeRejected(id: UUID())
+      filler.detectedDescription = "filler \(i)"
+      cache.lastGlobal = nil
+      controller.tick(candidates: [filler], timestamp: now.addingTimeInterval(1.0))
+    }
+
+    // overflow1 — density limit met; first grouped phrase fires.
+    var overflow1 = TestCandidates.makeRejected(id: UUID())
+    overflow1.detectedDescription = "overflow 1"
+    cache.lastGlobal = nil
+    let t1 = now.addingTimeInterval(1.0)
+    controller.tick(candidates: [overflow1], timestamp: t1)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Several cars nearby"))
+
+    // overflow2 — grouped cooldown (10s) still active at t1+5s; must be suppressed.
+    var overflow2 = TestCandidates.makeRejected(id: UUID())
+    overflow2.detectedDescription = "overflow 2"
+    cache.lastGlobal = nil
+    mockSpeaker.reset()
+    controller.tick(candidates: [overflow2], timestamp: t1.addingTimeInterval(5.0))
+    XCTAssertFalse(
+      mockSpeaker.didSpeakContaining("Several cars nearby"),
+      "Grouped phrase should be suppressed within grouped cooldown")
+
+    // overflow2 again at t1+11s — grouped cooldown (10s) expired.
+    // Filler timestamps are at now+1 = t1; t1+11 - t1 = 11s < 30s window → buffer still full.
+    cache.lastGlobal = nil
+    controller.tick(candidates: [overflow2], timestamp: t1.addingTimeInterval(11.0))
+    XCTAssertTrue(
+      mockSpeaker.didSpeakContaining("Several cars nearby"),
+      "Grouped phrase should fire once grouped cooldown expires")
+  }
+
   // MARK: - High-Density Grouped Fallback
 
   func test_rejection_groupsWhenDensityExceeded() {
