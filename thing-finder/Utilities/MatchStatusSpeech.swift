@@ -5,13 +5,15 @@
 //
 //  Ownership boundary
 //  ──────────────────
-//  • .waiting  — silent (PreMatchFeedbackController owns waiting feedback via earcon)
-//  • .rejected — silent (PreMatchFeedbackController announces "Not yours — [desc]")
-//  • .unknown  — silent
-//  • .partial  — "Possible match — plate not visible"
-//  • .full     — "Found it" / "Found it — plate [ABC 123]"
+//  • .waiting      — silent (PreMatchFeedbackController owns waiting feedback via earcon)
+//  • .rejected     — silent (PreMatchFeedbackController announces "Not yours — [desc]")
+//  • .unknown      — silent
+//  • .lostUnknown  — silent (unconfirmed; API still in-flight)
+//  • .partial      — "Possible match — plate not visible"
+//  • .full         — "Found it" / "Found it — plate [ABC 123]"
 //  • .partial→.full — transitionPhrase: "Plate confirmed — [ABC 123]" / "Got it"
-//  • .lost     — direction hint if heading changed by more than 60°
+//  • .lostVerified — direction hint if heading changed by more than 60°
+//  • .lostPartial  — direction hint (same as lostVerified; partial is a first-class nav signal)
 
 import Foundation
 
@@ -54,8 +56,12 @@ enum MatchStatusSpeech {
       return nil
     case .unknown:
       return nil
-    case .lost:
-      // Only announce compass direction if angle change is significant (>60°).
+    case .lostUnknown:
+      // Silent — candidate is unconfirmed; the API response hasn't landed yet.
+      return nil
+    case .lostVerified, .lostPartial:
+      // Both are confirmed navigation signals. Announce compass direction once on transition.
+      // Only fires if angle change is significant (>60°) to avoid noise on minor drifts.
       let angle = round(compareAngles(lastDirection, currentHeading))
       if angle > 60.0 {
         let degrees = Int((angle / 30).rounded() * 30)

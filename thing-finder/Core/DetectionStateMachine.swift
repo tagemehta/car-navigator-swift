@@ -32,7 +32,19 @@ public struct DetectionStateMachine {
       return
     }
 
-    // Otherwise we are verifying – collect ids for convenience
-    phase = .verifying(candidateIDs: snapshot.map { $0.id })
+    // Strip lost variants before computing the verifying set.
+    // lostVerified/lostPartial are confirmed matches that simply lost tracking — showing
+    // "checking…" for them is misleading. lostUnknown has no bbox and its API call is still
+    // in-flight, so it also shouldn't surface as a visible verifying candidate.
+    let verifying = snapshot.filter {
+      $0.matchStatus != .lostVerified
+        && $0.matchStatus != .lostPartial
+        && $0.matchStatus != .lostUnknown
+    }
+    guard !verifying.isEmpty else {
+      phase = .searching
+      return
+    }
+    phase = .verifying(candidateIDs: verifying.map { $0.id })
   }
 }

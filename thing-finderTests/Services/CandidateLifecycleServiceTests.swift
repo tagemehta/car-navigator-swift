@@ -131,9 +131,9 @@ final class CandidateLifecycleServiceTests: XCTestCase {
       store: store
     )
 
-    // Should return true (lost) and mark candidate as .lost instead of removing
+    // Should return true (lost) and mark candidate as .lostVerified instead of removing
     XCTAssertTrue(isLost)
-    XCTAssertEqual(store[candidate.id]?.matchStatus, .lost)
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .lostVerified)
   }
 
   // MARK: - Overlapping Detection Resets MissCount
@@ -334,7 +334,51 @@ final class CandidateLifecycleServiceTests: XCTestCase {
 
     // Lost candidates should stay in store (for potential recovery by DriftRepair)
     XCTAssertNotNil(store[candidate.id])
-    XCTAssertEqual(store[candidate.id]?.matchStatus, .lost)
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .lostVerified)
+  }
+
+  func test_tick_partialCandidateMissesThreshold_becomesLostPartial() {
+    let candidate = TestCandidates.make(
+      boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2),
+      matchStatus: .partial
+    )
+    var mutableCandidate = candidate
+    mutableCandidate.missCount = 2  // One more miss will reach threshold
+    store.upsert(mutableCandidate)
+
+    _ = service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      detections: [],
+      store: store
+    )
+
+    // Partial candidates should transition to .lostPartial, not be removed
+    XCTAssertNotNil(store[candidate.id])
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .lostPartial)
+  }
+
+  func test_tick_waitingCandidateMissesThreshold_becomesLostUnknown() {
+    let candidate = TestCandidates.make(
+      boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2),
+      matchStatus: .waiting
+    )
+    var mutableCandidate = candidate
+    mutableCandidate.missCount = 2  // One more miss will reach threshold
+    store.upsert(mutableCandidate)
+
+    _ = service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      detections: [],
+      store: store
+    )
+
+    // Waiting candidates should transition to .lostUnknown, not be removed
+    XCTAssertNotNil(store[candidate.id])
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .lostUnknown)
   }
 
   // MARK: - Helpers

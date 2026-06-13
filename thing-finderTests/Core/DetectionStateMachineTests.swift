@@ -141,18 +141,17 @@ final class DetectionStateMachineTests: XCTestCase {
     }
   }
 
-  func test_lostCandidates_returnsVerifying() {
+  func test_lostCandidates_returnsSearching() {
     let candidates = [
-      TestCandidates.make(matchStatus: .lost)
+      TestCandidates.make(matchStatus: .lostVerified),
+      TestCandidates.make(matchStatus: .lostPartial),
+      TestCandidates.make(matchStatus: .lostUnknown),
     ]
 
     stateMachine.update(snapshot: candidates)
 
-    if case .verifying(let ids) = stateMachine.phase {
-      XCTAssertEqual(ids.count, 1)
-    } else {
-      XCTFail("Expected .verifying phase")
-    }
+    // All lost variants should be stripped from the verifying set
+    XCTAssertEqual(stateMachine.phase, .searching)
   }
 
   // MARK: - State Transitions

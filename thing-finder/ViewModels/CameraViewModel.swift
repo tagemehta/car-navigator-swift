@@ -102,7 +102,9 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
           case .full: color = .green
           case .partial: color = .orange
           case .rejected: color = .red
-          case .lost: color = .black
+          case .lostVerified: color = .black
+          case .lostPartial: color = .gray
+          case .lostUnknown: color = .white
           }
           return BoundingBox(
             imageRect: imageRect, viewRect: viewRect, label: cand.id.uuidString, color: color!)

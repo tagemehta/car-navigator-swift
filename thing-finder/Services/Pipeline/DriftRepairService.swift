@@ -110,9 +110,12 @@ final class DriftRepairService: DriftRepairServiceProtocol {
         store.update(id: candidate.id) { cand in
           cand.lastBoundingBox = best.boundingBox
           cand.embedding = cached.1
-          if cand.matchStatus == .lost {
+          if cand.matchStatus == .lostVerified {
             cand.matchStatus = .full
+          } else if cand.matchStatus == .lostPartial {
+            cand.matchStatus = .partial
           }
+          // .lostUnknown: leave status unchanged — API response will promote
         }
         continue
       }
@@ -127,9 +130,12 @@ final class DriftRepairService: DriftRepairServiceProtocol {
         cand.trackingRequest = newTrackingRequest
         cand.lastBoundingBox = best.boundingBox
         cand.embedding = cached.1
-        if cand.matchStatus == .lost {
+        if cand.matchStatus == .lostVerified {
           cand.matchStatus = .full
+        } else if cand.matchStatus == .lostPartial {
+          cand.matchStatus = .partial
         }
+        // .lostUnknown: leave status unchanged — API response will promote
       }
     }
   }

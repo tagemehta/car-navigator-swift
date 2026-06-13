@@ -55,24 +55,42 @@ final class MatchStatusSpeechTests: XCTestCase {
 
   // MARK: - Lost Status
 
-  func test_phrase_lost_withSmallAngleChange_returnsNil() {
-    let phrase = MatchStatusSpeech.phrase(for: .lost, lastDirection: 0.0, currentHeading: 30.0)
+  func test_phrase_lostVerified_withSmallAngleChange_returnsNil() {
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lostVerified, lastDirection: 0.0, currentHeading: 30.0)
 
     XCTAssertNil(phrase)
   }
 
-  func test_phrase_lost_withLargeRightAngle_returnsRightDirection() {
-    let phrase = MatchStatusSpeech.phrase(for: .lost, lastDirection: 0.0, currentHeading: 90.0)
+  func test_phrase_lostVerified_withLargeRightAngle_returnsRightDirection() {
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lostVerified, lastDirection: 0.0, currentHeading: 90.0)
 
     XCTAssertNotNil(phrase)
     XCTAssertTrue(phrase!.contains("degrees to the right"))
   }
 
-  func test_phrase_lost_withLargeLeftAngle_returnsLeftDirection() {
-    let phrase = MatchStatusSpeech.phrase(for: .lost, lastDirection: 90.0, currentHeading: 0.0)
+  func test_phrase_lostVerified_withLargeLeftAngle_returnsLeftDirection() {
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lostVerified, lastDirection: 90.0, currentHeading: 0.0)
 
     XCTAssertNotNil(phrase)
     XCTAssertTrue(phrase!.contains("degrees to the left"))
+  }
+
+  func test_phrase_lostPartial_withLargeRightAngle_returnsRightDirection() {
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lostPartial, lastDirection: 0.0, currentHeading: 90.0)
+
+    XCTAssertNotNil(phrase)
+    XCTAssertTrue(phrase!.contains("degrees to the right"))
+  }
+
+  func test_phrase_lostUnknown_returnsNil() {
+    let phrase = MatchStatusSpeech.phrase(
+      for: .lostUnknown, lastDirection: 0.0, currentHeading: 90.0)
+
+    XCTAssertNil(phrase)
   }
 
   // MARK: - Retry Phrases (legacy — always nil)
@@ -112,7 +130,9 @@ final class MatchStatusSpeechTests: XCTestCase {
       (.unknown, .partial),
       (.unknown, .full),
       (.full, .partial),
-      (.partial, .lost),
+      (.partial, .lostVerified),
+      (.lostVerified, .full),
+      (.lostPartial, .partial),
     ]
     for (from, to) in cases {
       XCTAssertNil(

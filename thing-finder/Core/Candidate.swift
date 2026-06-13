@@ -124,7 +124,13 @@ extension Candidate: Equatable {
 /// Verification state for a candidate.
 ///
 /// Flow: `unknown` → `waiting` → `partial`/`full`/`rejected`
-///       `full` → `lost` (when tracking fails)
+///       `full`    → `lostVerified` (tracking lost after confirmed match)
+///       `partial` → `lostPartial`  (tracking lost while OCR still pending)
+///       `waiting` → `lostUnknown`  (tracking lost while API call in-flight)
+///
+/// DriftRepair re-attaches: lostVerified → full, lostPartial → partial.
+/// lostUnknown stays until the in-flight API response lands, then transitions
+/// normally (full/partial/rejected/unknown) via the verifier callback.
 public enum MatchStatus: String, Codable {
   /// Detector output, API not called yet
   case unknown
@@ -136,9 +142,14 @@ public enum MatchStatus: String, Codable {
   case full
   /// Hard rejection: wrong vehicle, wrong plate, or retry exhausted
   case rejected
-  /// Was `.full` but tracking lost the bounding box. Candidate stays `.full` while
-  /// actively tracked; only becomes `.lost` when missCount exceeds threshold.
-  case lost
+  /// Was `.full` but tracking lost the bounding box.
+  case lostVerified
+  /// Was `.partial` (visual match confirmed, OCR pending) but tracking lost.
+  /// DriftRepair re-attaches to `.partial` so OCR retries can resume.
+  case lostPartial
+  /// Was `.waiting` (API call in-flight) but tracking lost.
+  /// Not re-attached by DriftRepair — waits for the API response to land.
+  case lostUnknown
 }
 
 /// Specific reason for rejection or retry of a candidate.

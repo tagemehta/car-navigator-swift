@@ -62,7 +62,12 @@ public final class CandidateStore: ObservableObject {
     let matched = candidates.values.filter { $0.isMatched }
     guard let winner = matched.max(by: { $0.lastUpdated < $1.lastUpdated }) else { return }
     syncOnMain {
-      for (id, cand) in candidates where id != winner.id || cand.matchStatus == .lost {
+      for (id, cand) in candidates
+      where id != winner.id
+        || cand.matchStatus == .lostVerified
+        || cand.matchStatus == .lostPartial
+        || cand.matchStatus == .lostUnknown
+      {
         candidates.removeValue(forKey: id)
       }
     }
@@ -79,7 +84,13 @@ public final class CandidateStore: ObservableObject {
   ) -> Bool {
     for cand in candidates.values {
       // Check IoU overlap first (fast)
-      if cand.matchStatus == .lost { continue }
+      // Skip lost variants — their bboxes are stale (.zero) and shouldn't block new detections
+      if cand.matchStatus == .lostVerified
+        || cand.matchStatus == .lostPartial
+        || cand.matchStatus == .lostUnknown
+      {
+        continue
+      }
       if cand.lastBoundingBox.iou(with: bbox) > iouThreshold {
         return true
       }

@@ -160,13 +160,22 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
           // Drop if missed too many frames
           if updated.missCount >= missThreshold {
             if updated.isMatched { isLost = true }
-            if updated.matchStatus == .full {  // if the lost candidate was a full match change its info to lost
-              store.update(id: id) { $0.matchStatus = .lost }
-              continue
-            } else if updated.matchStatus != .lost {
+            if updated.matchStatus == .full {
+              // Confirmed match lost from frame — preserve for DriftRepair re-attach.
+              store.update(id: id) { $0.matchStatus = .lostVerified }
+            } else if updated.matchStatus == .partial {
+              // Visual match confirmed, OCR still pending — preserve so retries resume on re-attach.
+              store.update(id: id) { $0.matchStatus = .lostPartial }
+            } else if updated.matchStatus == .waiting {
+              // API call in-flight — preserve so the response can still land.
+              store.update(id: id) { $0.matchStatus = .lostUnknown }
+            } else if updated.matchStatus != .lostVerified
+              && updated.matchStatus != .lostPartial
+              && updated.matchStatus != .lostUnknown
+            {
               store.remove(id: id)
-              continue
             }
+            continue
           }
         }
       }

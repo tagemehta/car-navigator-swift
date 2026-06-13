@@ -101,7 +101,7 @@ final class CandidateTests: XCTestCase {
     let rejectedCandidate = TestCandidates.make(matchStatus: .rejected)
     XCTAssertFalse(rejectedCandidate.isMatched)
 
-    let lostCandidate = TestCandidates.make(matchStatus: .lost)
+    let lostCandidate = TestCandidates.make(matchStatus: .lostVerified)
     XCTAssertFalse(lostCandidate.isMatched)
   }
 

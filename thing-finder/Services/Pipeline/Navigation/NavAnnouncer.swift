@@ -45,7 +45,11 @@ final class NavAnnouncer {
     // Rejected candidates are handled by PreMatchFeedbackController.
     let full = candidates.filter { $0.matchStatus == .full }
     let partial = candidates.filter { $0.matchStatus == .partial }
-    let lost = candidates.filter { $0.matchStatus == .lost }
+    // lostVerified (was .full) and lostPartial (was .partial, first-class navigation signal)
+    // both get direction hints. lostUnknown (API in-flight) is unconfirmed so stays silent.
+    let lost = candidates.filter {
+      $0.matchStatus == .lostVerified || $0.matchStatus == .lostPartial
+    }
 
     var active: [Candidate]
     if !full.isEmpty {
@@ -55,7 +59,7 @@ final class NavAnnouncer {
     } else {
       active = []
     }
-    // Lost candidates are always eligible (they were previously .full)
+    // Lost candidates are always eligible (they were previously confirmed matches)
     active += lost
 
     // Announce status transitions (full / partial / lost)

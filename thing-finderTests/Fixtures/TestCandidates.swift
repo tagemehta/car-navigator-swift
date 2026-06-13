@@ -65,11 +65,27 @@ enum TestCandidates {
     return candidate
   }
 
-  /// Creates a lost candidate (was matched but tracking failed).
+  /// Creates a lostVerified candidate (was .full but tracking failed).
   static func makeLost(
     id: CandidateID = UUID(),
     boundingBox: CGRect = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
   ) -> Candidate {
-    make(id: id, boundingBox: boundingBox, matchStatus: .lost)
+    make(id: id, boundingBox: boundingBox, matchStatus: .lostVerified)
+  }
+
+  /// Creates a lostPartial candidate (was .partial but tracking failed).
+  static func makeLostPartial(
+    id: CandidateID = UUID(),
+    boundingBox: CGRect = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
+  ) -> Candidate {
+    make(id: id, boundingBox: boundingBox, matchStatus: .lostPartial)
+  }
+
+  /// Creates a lostUnknown candidate (was .waiting but tracking failed).
+  static func makeLostUnknown(
+    id: CandidateID = UUID(),
+    boundingBox: CGRect = CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
+  ) -> Candidate {
+    make(id: id, boundingBox: boundingBox, matchStatus: .lostUnknown)
   }
 }
