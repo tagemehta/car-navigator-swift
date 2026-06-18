@@ -1453,6 +1453,7 @@
       }
     },
     "Minimum time before repeating 'waiting' phrases." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2443,6 +2444,7 @@
       }
     },
     "Waiting Phrase Cooldown" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2453,6 +2455,7 @@
       }
     },
     "Waiting Phrase Cooldown: %llds" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
