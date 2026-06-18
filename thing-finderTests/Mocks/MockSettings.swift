@@ -18,10 +18,10 @@ enum TestSettings {
     let settings = Settings()
     settings.enableSpeech = true
     settings.enableBeeps = true
-    settings.announceRejected = false
+    settings.announceRejected = false  // Tests default to false to avoid noisy speech
+    settings.announceWaitingMessages = true
     settings.speechRepeatInterval = 6.0
     settings.speechChangeInterval = 4.0
-    settings.waitingPhraseCooldown = 10.0
     settings.directionLeftThreshold = 0.33
     settings.directionRightThreshold = 0.66
     return settings
@@ -53,7 +53,6 @@ enum TestSettings {
     let settings = makeDefault()
     settings.speechRepeatInterval = 0.1
     settings.speechChangeInterval = 0.1
-    settings.waitingPhraseCooldown = 0.1
     return settings
   }
 }

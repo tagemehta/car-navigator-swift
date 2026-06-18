@@ -82,9 +82,6 @@ public class Settings: ObservableObject {
   /// Minimum time between announcing direction changes (seconds)
   @AppStorage("speech_change_interval") var speechChangeInterval: Double = 4.0
 
-  /// Cooldown time for waiting phrases (seconds)
-  @AppStorage("waiting_phrase_cooldown") var waitingPhraseCooldown: Double = 10.0
-
   // MARK: - Distance Feedback Settings
 
   /// Minimum distance for volume mapping (meters)
@@ -147,13 +144,10 @@ public class Settings: ObservableObject {
   /// Allow navigation cues before plate confirm (partial match)
   @AppStorage("allow_partial_nav") var allowPartialNavigation: Bool = true
 
-  /// Announce all detected cars (rejected candidates as well)
+  /// Announce rejected candidates — now handled by PreMatchFeedbackController.
   @AppStorage("announce_rejected") var announceRejected: Bool = true
 
-  /// Announce retry messages (e.g., "Picture too blurry, trying again")
-  @AppStorage("announce_retry_messages") var announceRetryMessages: Bool = true
-
-  /// Announce waiting messages (e.g., "Waiting for verification")
+  /// Announce waiting messages — used by heartbeat and waiting phrases.
   @AppStorage("announce_waiting_messages") var announceWaitingMessages: Bool = true
 
   /// Smoothing factor for exponential moving average (0.0-1.0)
@@ -317,10 +311,7 @@ extension Settings {
     speechChangeInterval = 4.0
     allowPartialNavigation = true
     announceRejected = true
-    announceRetryMessages = true
     announceWaitingMessages = true
-    waitingPhraseCooldown = 10.0
-
     // Distance Feedback Settings
     distanceMin = 0.2
     distanceMax = 3.0
