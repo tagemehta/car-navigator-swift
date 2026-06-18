@@ -77,10 +77,9 @@ final class PreMatchFeedbackController {
 
   /// Called once per frame from `FrameNavigationManager`.
   func tick(candidates: [Candidate], timestamp: Date) {
-    guard settings.enableSpeech else { return }
-
     // Session-start fires exactly once per search, regardless of match state.
-    if !sessionStarted {
+    // Gated by enableSpeech — it's a spoken phrase.
+    if settings.enableSpeech && !sessionStarted {
       let phrase = String(
         format: NSLocalizedString(
           "Searching for %@",
@@ -93,15 +92,18 @@ final class PreMatchFeedbackController {
 
     let hasMatch = candidates.contains { $0.matchStatus == .partial || $0.matchStatus == .full }
 
-    // Earcon fires for any new-enough candidate before a match is confirmed.
-    // Once beeps are running (match found) earcons are suppressed to avoid confusion.
     if !hasMatch {
+      // tickEarcons runs unconditionally — it has its own enableBeeps/enableHaptics guards.
       tickEarcons(candidates: candidates, timestamp: timestamp)
-      tickHeartbeat(candidates: candidates, timestamp: timestamp)
-      tickRejections(candidates: candidates, timestamp: timestamp)
+      // Speech-only: heartbeat and rejection announcements remain gated by enableSpeech.
+      if settings.enableSpeech {
+        tickHeartbeat(candidates: candidates, timestamp: timestamp)
+        tickRejections(candidates: candidates, timestamp: timestamp)
+      }
     }
 
     // Prune first-seen times for candidates that left the snapshot.
+    // Runs unconditionally so entries don't leak when speech is off.
     // (seenCandidates is intentionally never pruned — lifetime deduplication.)
     let liveIDs = Set(candidates.map { $0.id })
     for id in candidateFirstSeen.keys where !liveIDs.contains(id) {
