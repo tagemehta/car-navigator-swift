@@ -73,7 +73,7 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
 
   public init(
     imgUtils: ImageUtilities = .shared,
-    missThreshold: Int = 15,
+    missThreshold: Int = 90,
     rejectCooldown: TimeInterval = 10,
     compass: CompassProvider = CompassHeading.shared
   ) {
@@ -164,6 +164,9 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
               store.update(id: id) { $0.matchStatus = .lost }
               continue
             } else if updated.matchStatus != .lost {
+              DebugPublisher.shared.info(
+                "[CandidateLifecycleService] Removing candidate \(id) with matchStatus: \(updated.matchStatus)"
+              )
               store.remove(id: id)
               continue
             }
