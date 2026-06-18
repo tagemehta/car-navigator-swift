@@ -44,7 +44,6 @@ final class DistanceMilestoneControllerTests: XCTestCase {
     config = NavigationFeedbackConfig(
       speechRepeatInterval: 6.0,
       directionChangeInterval: 4.0,
-      waitingPhraseCooldown: 10.0,
       retryPhraseCooldown: 8.0
     )
     config.milestoneCooldown = 0.0  // Suppress inter-announcement cooldown for simpler tests

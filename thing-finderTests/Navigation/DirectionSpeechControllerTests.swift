@@ -25,7 +25,6 @@ final class DirectionSpeechControllerTests: XCTestCase {
     config = NavigationFeedbackConfig(
       speechRepeatInterval: 6.0,
       directionChangeInterval: 0.5,
-      waitingPhraseCooldown: 10.0,
       retryPhraseCooldown: 8.0
     )
   }
@@ -163,7 +162,8 @@ final class DirectionSpeechControllerTests: XCTestCase {
         timestamp: now.addingTimeInterval(Double(i) * 5.0))
     }
 
-    XCTAssertEqual(mockSpeaker.speakCallCount, 1, "Repeat announcements for same direction must be suppressed")
+    XCTAssertEqual(
+      mockSpeaker.speakCallCount, 1, "Repeat announcements for same direction must be suppressed")
     XCTAssertFalse(mockSpeaker.didSpeakContaining("Still"))
   }
 

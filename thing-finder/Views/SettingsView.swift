@@ -116,14 +116,6 @@ struct SettingsView: View {
             //     .accessibilityLabel("Change Interval")
             // }
 
-            VStack(alignment: .leading) {
-              Text("Waiting Phrase Cooldown: \(Int(settings.waitingPhraseCooldown))s")
-              Text("Minimum time before repeating 'waiting' phrases.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-              Slider(value: $settings.waitingPhraseCooldown, in: 2...20, step: 1)
-                .accessibilityLabel("Waiting Phrase Cooldown")
-            }
           }
 
           // MARK: - Beep Settings

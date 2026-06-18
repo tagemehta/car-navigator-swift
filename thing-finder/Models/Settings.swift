@@ -82,9 +82,6 @@ public class Settings: ObservableObject {
   /// Minimum time between announcing direction changes (seconds)
   @AppStorage("speech_change_interval") var speechChangeInterval: Double = 4.0
 
-  /// Cooldown time for waiting phrases (seconds)
-  @AppStorage("waiting_phrase_cooldown") var waitingPhraseCooldown: Double = 10.0
-
   // MARK: - Distance Feedback Settings
 
   /// Minimum distance for volume mapping (meters)
@@ -315,8 +312,6 @@ extension Settings {
     allowPartialNavigation = true
     announceRejected = true
     announceWaitingMessages = true
-    waitingPhraseCooldown = 10.0
-
     // Distance Feedback Settings
     distanceMin = 0.2
     distanceMax = 3.0

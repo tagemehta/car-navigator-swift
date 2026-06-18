@@ -33,7 +33,6 @@ final class FrameNavigationManager: NavigationSpeaker {
     let config = NavigationFeedbackConfig(
       speechRepeatInterval: settings.speechRepeatInterval,
       directionChangeInterval: settings.speechChangeInterval,
-      waitingPhraseCooldown: settings.waitingPhraseCooldown,
       retryPhraseCooldown: 6)
 
     let sharedHaptics = hapticManager ?? HapticManager(settings: settings)
