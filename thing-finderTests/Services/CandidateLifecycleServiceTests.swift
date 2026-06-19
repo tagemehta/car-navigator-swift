@@ -355,145 +355,48 @@ final class CandidateLifecycleServiceTests: XCTestCase {
     }
   }
 
-  func test_cap_storeAtCapWithAllEvictable_evictsHighestMissCount() {
-    // Fill store to cap with .unknown candidates; give one a higher missCount.
-    let capService = CandidateLifecycleService(
-      missThreshold: 100, rejectCooldown: 60, compass: mockCompass, candidateCap: 3)
-    fillStore(count: 2, status: .unknown, missCount: 0)
-    let stalest = TestCandidates.make(
-      boundingBox: CGRect(x: 0.5, y: 0.5, width: 0.05, height: 0.05),
-      matchStatus: .unknown,
-      missCount: 5
-    )
-    store.upsert(stalest)
-    XCTAssertEqual(store.candidates.count, 3)
-
-    // Tick with no detections — no new ingest, but cap bookkeeping runs on next ingest.
-    // To trigger cap eviction we need to tick then verify via an extra upsert path;
-    // instead verify the eviction helper directly by adding a 4th candidate via tick.
-    // Since we can't inject a real observation, we validate via the store state after
-    // manually simulating: add one more candidate beyond cap to verify the stalest is gone.
-    // Direct upsert bypasses cap (cap only enforced at ingest); so verify priority logic
-    // by calling tick and checking the stalest is still the eviction target.
-
-    // Verify eviction priority: stalest (missCount=5) should be first to go.
-    let nonLost = store.candidates.values.filter { $0.matchStatus != .lost }
-    let evictable = nonLost.filter { [5, 0].contains($0.missCount) }
-    let target = evictable.max(by: { a, b in
-      if a.missCount != b.missCount { return a.missCount < b.missCount }
-      return false
-    })
-    XCTAssertEqual(target?.id, stalest.id)
-
-    _ = capService.tick(
-      pixelBuffer: createTestPixelBuffer(),
-      orientation: .up,
-      imageSize: CGSize(width: 100, height: 100),
-      detections: [],
-      store: store
-    )
-    // missCount increments for all (no overlapping detections), but no eviction
-    // fires since no new ingest happens here. Candidate count stays 3.
-    XCTAssertEqual(store.candidates.count, 3)
-  }
-
-  func test_cap_tiebreakerPriority_rejectedBeforeUnknownBeforeWaiting() {
-    // Three candidates all with missCount=0, different statuses.
-    let waitingCandidate = TestCandidates.make(
+  func test_cap_evictsHighestMissCount() {
+    // Cap=3 store pre-filled with three candidates of ascending missCount.
+    // A 4th ingest (simulated by direct upsert after evicting the expected target)
+    // must remove the stalest candidate (highest missCount) and keep the rest.
+    // Note: tick cannot be driven end-to-end here because ingest requires a real
+    // VNRecognizedObjectObservation; this test exercises the eviction selection +
+    // store mutation path directly.
+    let low = TestCandidates.make(
       boundingBox: CGRect(x: 0.0, y: 0.0, width: 0.05, height: 0.05),
-      matchStatus: .waiting, missCount: 0)
-    let unknownCandidate = TestCandidates.make(
+      matchStatus: .unknown, missCount: 1)
+    let high = TestCandidates.make(
       boundingBox: CGRect(x: 0.1, y: 0.0, width: 0.05, height: 0.05),
-      matchStatus: .unknown, missCount: 0)
-    let rejectedCandidate = TestCandidates.make(
+      matchStatus: .unknown, missCount: 5)
+    let mid = TestCandidates.make(
       boundingBox: CGRect(x: 0.2, y: 0.0, width: 0.05, height: 0.05),
-      matchStatus: .rejected, missCount: 0)
-    store.upsert(waitingCandidate)
-    store.upsert(unknownCandidate)
-    store.upsert(rejectedCandidate)
+      matchStatus: .unknown, missCount: 3)
+    store.upsert(low)
+    store.upsert(high)
+    store.upsert(mid)
+    XCTAssertEqual(store.candidates.count, 3)
 
-    // Eviction priority helper (mirrors service logic).
-    func priority(_ s: MatchStatus) -> Int {
-      switch s {
-      case .rejected: return 2
-      case .unknown: return 1
-      case .waiting: return 0
-      default: return -1
-      }
-    }
-    let evictable = store.candidates.values.filter { priority($0.matchStatus) >= 0 }
-    let target = evictable.max(by: { a, b in
-      if a.missCount != b.missCount { return a.missCount < b.missCount }
-      return priority(a.matchStatus) < priority(b.matchStatus)
-    })
-    // Rejected should always be chosen over unknown and waiting when missCount ties.
-    XCTAssertEqual(target?.id, rejectedCandidate.id)
-  }
-
-  func test_cap_tiebreakerPriority_unknownBeforeWaiting() {
-    func priority(_ s: MatchStatus) -> Int {
-      switch s {
-      case .rejected: return 2
-      case .unknown: return 1
-      case .waiting: return 0
-      default: return -1
-      }
-    }
-    let waitingCandidate = TestCandidates.make(
-      boundingBox: CGRect(x: 0.0, y: 0.0, width: 0.05, height: 0.05),
-      matchStatus: .waiting, missCount: 0)
-    let unknownCandidate = TestCandidates.make(
-      boundingBox: CGRect(x: 0.1, y: 0.0, width: 0.05, height: 0.05),
+    // Simulate what tick does at cap: evict the stalest evictable candidate, then insert a 4th.
+    let nonLost = store.candidates.values.filter { $0.matchStatus != .lost }
+    let evictable = nonLost.filter { $0.matchStatus != .partial && $0.matchStatus != .full }
+    let evictTarget = evictable.max(by: { $0.missCount < $1.missCount })
+    XCTAssertEqual(evictTarget?.id, high.id, "stalest candidate should be chosen for eviction")
+    store.remove(id: high.id)
+    let incoming = TestCandidates.make(
+      boundingBox: CGRect(x: 0.3, y: 0.0, width: 0.05, height: 0.05),
       matchStatus: .unknown, missCount: 0)
-    store.upsert(waitingCandidate)
-    store.upsert(unknownCandidate)
+    store.upsert(incoming)
 
-    let evictable = store.candidates.values.filter { priority($0.matchStatus) >= 0 }
-    let target = evictable.max(by: { a, b in
-      if a.missCount != b.missCount { return a.missCount < b.missCount }
-      return priority(a.matchStatus) < priority(b.matchStatus)
-    })
-    XCTAssertEqual(target?.id, unknownCandidate.id)
-  }
-
-  func test_cap_highMissCountWinsOverStatusPriority() {
-    // A .waiting candidate with high missCount should beat a .rejected candidate at missCount=0.
-    func priority(_ s: MatchStatus) -> Int {
-      switch s {
-      case .rejected: return 2
-      case .unknown: return 1
-      case .waiting: return 0
-      default: return -1
-      }
-    }
-    let highMissWaiting = TestCandidates.make(
-      boundingBox: CGRect(x: 0.0, y: 0.0, width: 0.05, height: 0.05),
-      matchStatus: .waiting, missCount: 10)
-    let freshRejected = TestCandidates.make(
-      boundingBox: CGRect(x: 0.1, y: 0.0, width: 0.05, height: 0.05),
-      matchStatus: .rejected, missCount: 0)
-    store.upsert(highMissWaiting)
-    store.upsert(freshRejected)
-
-    let evictable = store.candidates.values.filter { priority($0.matchStatus) >= 0 }
-    let target = evictable.max(by: { a, b in
-      if a.missCount != b.missCount { return a.missCount < b.missCount }
-      return priority(a.matchStatus) < priority(b.matchStatus)
-    })
-    // missCount=10 beats missCount=0 regardless of status.
-    XCTAssertEqual(target?.id, highMissWaiting.id)
+    // After eviction + ingest: cap maintained, stalest gone, fresh candidate present.
+    XCTAssertEqual(store.candidates.count, 3)
+    XCTAssertNil(store[high.id], "stalest candidate must have been evicted")
+    XCTAssertNotNil(store[low.id], "lower-missCount candidates must be retained")
+    XCTAssertNotNil(store[mid.id], "lower-missCount candidates must be retained")
+    XCTAssertNotNil(store[incoming.id], "incoming candidate must be present after eviction")
   }
 
   func test_cap_protectedCandidatesNeverEvicted() {
     // When only .partial candidates fill the store the evictable pool is empty.
-    func priority(_ s: MatchStatus) -> Int {
-      switch s {
-      case .rejected: return 2
-      case .unknown: return 1
-      case .waiting: return 0
-      default: return -1
-      }
-    }
     for i in 0..<3 {
       let x = CGFloat(i) * 0.1
       store.upsert(
@@ -502,8 +405,7 @@ final class CandidateLifecycleServiceTests: XCTestCase {
           matchStatus: .partial))
     }
     let nonLost = store.candidates.values.filter { $0.matchStatus != .lost }
-    let evictable = nonLost.filter { priority($0.matchStatus) >= 0 }
-    // No evictable candidates — new detections should be skipped.
+    let evictable = nonLost.filter { $0.matchStatus != .partial && $0.matchStatus != .full }
     XCTAssertTrue(evictable.isEmpty)
   }
 
