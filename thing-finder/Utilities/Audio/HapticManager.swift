@@ -18,6 +18,9 @@ public protocol HapticManagerProtocol {
 
   /// Play a failure haptic (car rejected).
   func playFailure()
+
+  /// Play a light tap when a new car enters the verification pipeline.
+  func playDetection()
 }
 
 /// Concrete haptic manager using UIKit feedback generators.
@@ -116,6 +119,10 @@ final class HapticManager: HapticManagerProtocol {
 
   func playFailure() {
     notificationGenerator.notificationOccurred(.error)
+  }
+
+  func playDetection() {
+    impactGenerator.impactOccurred(intensity: 0.4)
   }
 
   // MARK: - Private

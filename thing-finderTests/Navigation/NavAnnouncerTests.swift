@@ -2,6 +2,11 @@
 //  thing-finderTests
 //
 //  Unit tests for NavAnnouncer speech announcement logic.
+//
+//  Ownership boundary
+//  ──────────────────
+//  NavAnnouncer handles: full / partial / lost status transitions + vehicle view.
+//  PreMatchFeedbackController handles: session-start, heartbeat, earcon, rejections.
 
 import XCTest
 
@@ -26,7 +31,6 @@ final class NavAnnouncerTests: XCTestCase {
     config = NavigationFeedbackConfig(
       speechRepeatInterval: 6.0,
       directionChangeInterval: 4.0,
-      waitingPhraseCooldown: 10.0,
       retryPhraseCooldown: 8.0
     )
   }
@@ -89,19 +93,21 @@ final class NavAnnouncerTests: XCTestCase {
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
+    // New phrase: "Found it — plate ABC1234"
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Found it"))
     XCTAssertTrue(mockSpeaker.didSpeakContaining("ABC1234"))
   }
 
-  func test_tick_announcesFullMatchWithDescription() {
+  func test_tick_announcesFullMatchWithoutPlate() {
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.make()
     candidate.matchStatus = .full
-    candidate.detectedDescription = "blue Honda Civic"
+    candidate.ocrText = nil
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("blue Honda Civic"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Found it"))
   }
 
   func test_tick_announcesPartialMatch() {
@@ -109,16 +115,57 @@ final class NavAnnouncerTests: XCTestCase {
 
     var candidate = TestCandidates.make()
     candidate.matchStatus = .partial
-    candidate.detectedDescription = "blue Honda"
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("Plate not visible"))
+    // New phrase: "Possible match — plate not visible" (no description)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Possible match"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("plate not visible"))
   }
 
-  func test_tick_announcesWaitingStatus() {
-    // Waiting is now controlled by announceWaitingMessages setting
-    settings.announceWaitingMessages = true
+  func test_tick_announcesPartialToFullTransition() {
+    // On partial→full upgrade, NavAnnouncer should speak the transition phrase
+    // ("Plate confirmed") rather than the generic "Found it".
+    let announcer = makeAnnouncer()
+    let id = UUID()
+
+    var candidate = TestCandidates.make(id: id)
+    candidate.matchStatus = .partial
+
+    let now = Date()
+    announcer.tick(candidates: [candidate], timestamp: now)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Possible match"))
+
+    // Upgrade to full
+    candidate.matchStatus = .full
+    candidate.ocrText = "XYZ789"
+    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Plate confirmed"))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("XYZ789"))
+    // Should NOT announce the generic "Found it" since the transition phrase was used
+    XCTAssertFalse(mockSpeaker.didSpeak("Found it"))
+  }
+
+  func test_tick_announcesPartialToFullTransition_noPlate() {
+    let announcer = makeAnnouncer()
+    let id = UUID()
+
+    var candidate = TestCandidates.make(id: id)
+    candidate.matchStatus = .partial
+
+    let now = Date()
+    announcer.tick(candidates: [candidate], timestamp: now)
+
+    candidate.matchStatus = .full
+    candidate.ocrText = nil
+    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeak("Got it"))
+  }
+
+  func test_tick_noSpeechForWaitingStatus() {
+    // Waiting is now silent — earcon handles evaluation feedback.
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.make()
@@ -126,19 +173,20 @@ final class NavAnnouncerTests: XCTestCase {
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
-    XCTAssertTrue(mockSpeaker.didSpeak("Waiting for verification"))
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
   }
 
-  func test_tick_noWaitingWhenDisabled() {
-    settings.announceWaitingMessages = false
+  func test_tick_noSpeechForRejectedStatus() {
+    // Rejected is handled by PreMatchFeedbackController, not NavAnnouncer.
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.make()
-    candidate.matchStatus = .waiting
+    candidate.matchStatus = .rejected
+    candidate.rejectReason = .wrongModelOrColor
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
-    XCTAssertFalse(mockSpeaker.didSpeak("Waiting for verification"))
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
   }
 
   func test_tick_noAnnouncementForUnknownStatus() {
@@ -163,94 +211,11 @@ final class NavAnnouncerTests: XCTestCase {
 
     var partialCandidate = TestCandidates.make(id: UUID())
     partialCandidate.matchStatus = .partial
-    partialCandidate.detectedDescription = "partial car"
 
     announcer.tick(candidates: [partialCandidate, fullCandidate], timestamp: Date())
 
     XCTAssertTrue(mockSpeaker.didSpeakContaining("FULL123"))
-    XCTAssertFalse(mockSpeaker.didSpeakContaining("partial car"))
-  }
-
-  func test_tick_announcesRejectedOnlyWhenEnabled() {
-    settings.announceRejected = false
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .rejected
-    candidate.rejectReason = .wrongModelOrColor
-
-    announcer.tick(candidates: [candidate], timestamp: Date())
-
-    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
-  }
-
-  func test_tick_announcesRejectedWhenEnabled() {
-    settings.announceRejected = true
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .rejected
-    candidate.rejectReason = .wrongModelOrColor
-    candidate.detectedDescription = "red Toyota"
-
-    announcer.tick(candidates: [candidate], timestamp: Date())
-
-    XCTAssertGreaterThan(mockSpeaker.speakCallCount, 0)
-  }
-
-  // MARK: - Retry Announcements
-  // Retry announcements are now controlled by announceRetryMessages setting
-
-  func test_tick_announcesRetryForBlurryImage() {
-    settings.announceRetryMessages = true
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .unknown
-    candidate.rejectReason = .unclearImage
-
-    announcer.tick(candidates: [candidate], timestamp: Date())
-
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("blurry"))
-  }
-
-  func test_tick_announcesRetryForInsufficientInfo() {
-    settings.announceRetryMessages = true
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .unknown
-    candidate.rejectReason = .insufficientInfo
-
-    announcer.tick(candidates: [candidate], timestamp: Date())
-
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("better view"))
-  }
-
-  func test_tick_announcesRetryForLowConfidence() {
-    settings.announceRetryMessages = true
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .unknown
-    candidate.rejectReason = .lowConfidence
-
-    announcer.tick(candidates: [candidate], timestamp: Date())
-
-    XCTAssertTrue(mockSpeaker.didSpeakContaining("Not sure"))
-  }
-
-  func test_tick_noRetryWhenDisabled() {
-    settings.announceRetryMessages = false
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .unknown
-    candidate.rejectReason = .unclearImage
-
-    announcer.tick(candidates: [candidate], timestamp: Date())
-
-    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Possible match"))
   }
 
   // MARK: - Cooldown Behavior
@@ -266,44 +231,25 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: now)
     let firstCount = mockSpeaker.speakCallCount
 
-    // Tick again immediately - should be suppressed
+    // Tick again immediately — should be suppressed (status unchanged)
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
 
     XCTAssertEqual(mockSpeaker.speakCallCount, firstCount)
   }
 
-  func test_tick_respectsWaitingCooldown() {
-    settings.announceWaitingMessages = true
-    let announcer = makeAnnouncer()
-
-    var candidate = TestCandidates.make()
-    candidate.matchStatus = .waiting
-
-    let now = Date()
-    announcer.tick(candidates: [candidate], timestamp: now)
-    XCTAssertEqual(mockSpeaker.speakCallCount, 1)
-
-    // Tick again within cooldown - should be suppressed
-    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
-    XCTAssertEqual(mockSpeaker.speakCallCount, 1)
-  }
-
-  func test_tick_speaksAfterCooldownExpires() {
-    // Use full match status which doesn't require announceRejected
-    // and test that status changes trigger new announcements
+  func test_tick_speaksAfterStatusChange() {
     let announcer = makeAnnouncer()
     let candidateId = UUID()
 
     var candidate = TestCandidates.make(id: candidateId)
-    candidate.matchStatus = .full
-    candidate.ocrText = "ABC123"
+    candidate.matchStatus = .partial
 
     let now = Date()
     announcer.tick(candidates: [candidate], timestamp: now)
     XCTAssertEqual(mockSpeaker.speakCallCount, 1)
 
-    // Change to different status - should announce
-    candidate.matchStatus = .partial
+    // Change to full — should announce (transition phrase)
+    candidate.matchStatus = .full
     candidate.ocrText = nil
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
     XCTAssertEqual(mockSpeaker.speakCallCount, 2)
@@ -316,18 +262,18 @@ final class NavAnnouncerTests: XCTestCase {
     let candidateId = UUID()
 
     var candidate = TestCandidates.make(id: candidateId)
-    candidate.matchStatus = .waiting
+    candidate.matchStatus = .partial
 
     let now = Date()
     announcer.tick(candidates: [candidate], timestamp: now)
-    let countAfterWaiting = mockSpeaker.speakCallCount
+    let countAfterPartial = mockSpeaker.speakCallCount
 
     // Change status to full
     candidate.matchStatus = .full
     candidate.ocrText = "XYZ789"
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
 
-    XCTAssertGreaterThan(mockSpeaker.speakCallCount, countAfterWaiting)
+    XCTAssertGreaterThan(mockSpeaker.speakCallCount, countAfterPartial)
   }
 
   // MARK: - Empty Candidates
@@ -343,12 +289,11 @@ final class NavAnnouncerTests: XCTestCase {
   // MARK: - Lost Candidate Routing
 
   func test_tick_announcesLostCandidateWithSignificantAngle() {
-    // Candidate was last seen at heading 0°, user has turned 90° right
     mockCompass.degrees = 90.0
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.makeLost()
-    candidate.degrees = 0.0  // heading when car was last seen
+    candidate.degrees = 0.0
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
@@ -356,7 +301,6 @@ final class NavAnnouncerTests: XCTestCase {
   }
 
   func test_tick_doesNotAnnounceLostWithSmallAngle() {
-    // Candidate was last seen at heading 0°, user only turned 30°
     mockCompass.degrees = 30.0
     let announcer = makeAnnouncer()
 
@@ -369,7 +313,6 @@ final class NavAnnouncerTests: XCTestCase {
   }
 
   func test_tick_lostCandidatesAlwaysEligibleRegardlessOfPriority() {
-    // Even when full matches exist, lost candidates should still be processed
     mockCompass.degrees = 120.0
     let announcer = makeAnnouncer()
 
@@ -402,19 +345,17 @@ final class NavAnnouncerTests: XCTestCase {
     XCTAssertEqual(mockHaptics.successCallCount, 1)
   }
 
-  func test_tick_playsFailureHapticOnRejection() {
+  func test_tick_noFailureHapticForRejected() {
     settings.enableHaptics = true
-    settings.announceRejected = true
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.make()
     candidate.matchStatus = .rejected
     candidate.rejectReason = .wrongModelOrColor
-    candidate.detectedDescription = "red Toyota"
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
-    XCTAssertEqual(mockHaptics.failureCallCount, 1)
+    XCTAssertEqual(mockHaptics.failureCallCount, 0)
   }
 
   func test_tick_noHapticsWhenDisabled() {
@@ -443,7 +384,6 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: now)
     XCTAssertNotNil(cache.lastByCandidate[candidateId])
 
-    // Tick with empty candidates — stale entry should be pruned
     announcer.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
     XCTAssertNil(cache.lastByCandidate[candidateId])
   }
@@ -459,13 +399,10 @@ final class NavAnnouncerTests: XCTestCase {
     let now = Date()
     announcer.tick(candidates: [candidate], timestamp: now)
 
-    // Should speak the status phrase AND the view phrase
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Front view of car"))
 
-    // Second tick with same view — should NOT re-announce view
     let beforeCount = mockSpeaker.speakCallCount
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(7.0))
-    // The status phrase may or may not repeat (cooldown), but view should not
     XCTAssertFalse(
       mockSpeaker.spokenPhrases.suffix(from: beforeCount).contains(where: {
         $0.contains("Front view of car")
@@ -484,7 +421,6 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: now)
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Front view of car"))
 
-    // Change view to rear
     candidate.view = .rear
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(7.0))
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Rear view of car"))
@@ -498,9 +434,7 @@ final class NavAnnouncerTests: XCTestCase {
 
     announcer.tick(candidates: [candidate], timestamp: Date())
 
-    XCTAssertFalse(
-      mockSpeaker.didSpeakContaining("of car"),
-      "Unknown view should not be announced")
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("of car"))
   }
 
   func test_tick_evictionClearsViewTracking() {
@@ -514,10 +448,8 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: now)
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Left side of car"))
 
-    // Evict by removing candidate from snapshot
     announcer.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))
 
-    // Re-introduce same candidate — view should be announced again
     mockSpeaker.reset()
     announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(8.0))
     XCTAssertTrue(
@@ -528,9 +460,6 @@ final class NavAnnouncerTests: XCTestCase {
   // MARK: - Timestamp-based Cooldown
 
   func test_tick_cooldownUsesPassedTimestamp() {
-    // Verify that suppression uses the passed-in timestamp, not Date().
-    // We use a base time far in the past — if Date() were used instead,
-    // the elapsed check would see a huge gap and never suppress.
     let announcer = makeAnnouncer()
 
     var c1 = TestCandidates.make(id: UUID())
@@ -543,12 +472,9 @@ final class NavAnnouncerTests: XCTestCase {
 
     let base = Date(timeIntervalSince1970: 1_000_000)
 
-    // First tick: c1 speaks "Found matching plate SAME"
     announcer.tick(candidates: [c1, c2], timestamp: base)
-    // c1 speaks, c2 is suppressed by global cooldown (same phrase within 6s)
     XCTAssertEqual(mockSpeaker.speakCallCount, 1)
 
-    // Second tick 1s later: both still present, statuses unchanged → no speech
     announcer.tick(candidates: [c1, c2], timestamp: base.addingTimeInterval(1.0))
     XCTAssertEqual(mockSpeaker.speakCallCount, 1, "Status unchanged should suppress")
   }

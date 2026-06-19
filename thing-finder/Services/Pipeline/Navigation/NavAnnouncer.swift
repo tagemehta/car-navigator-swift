@@ -20,9 +20,6 @@ final class NavAnnouncer {
   // Track last seen status per candidate so we only announce transitions.
   private var lastStatus: [UUID: MatchStatus] = [:]
 
-  // Track last announced retry reason per candidate to avoid repetition
-  private var lastRetryReasonSpoken: [UUID: RejectReason] = [:]
-
   // Track last announced vehicle view per candidate (announce once, re-announce on change)
   private var lastViewAnnounced: [UUID: Candidate.VehicleView] = [:]
 
@@ -44,7 +41,8 @@ final class NavAnnouncer {
 
   /// Called once per frame with the latest candidate snapshot.
   func tick(candidates: [Candidate], timestamp: Date) {
-    // Clutter suppression: prefer full matches, else partial, else rejected/lost.
+    // Clutter suppression: prefer full matches, else partial.
+    // Rejected candidates are handled by PreMatchFeedbackController.
     let full = candidates.filter { $0.matchStatus == .full }
     let partial = candidates.filter { $0.matchStatus == .partial }
     let lost = candidates.filter { $0.matchStatus == .lost }
@@ -54,15 +52,13 @@ final class NavAnnouncer {
       active = full
     } else if !partial.isEmpty {
       active = partial
-    } else if settings.announceRejected {
-      active = candidates.filter { $0.matchStatus == .rejected }
     } else {
       active = []
     }
     // Lost candidates are always eligible (they were previously .full)
     active += lost
 
-    // Process high-priority candidates (full/partial/rejected/lost)
+    // Announce status transitions (full / partial / lost)
     for candidate in active {
       handleCandidate(candidate, now: timestamp)
     }
@@ -74,13 +70,6 @@ final class NavAnnouncer {
       }
     }
 
-    // Handle waiting and retry messages independently of car announcements (speech only)
-    if settings.enableSpeech {
-      for candidate in candidates {
-        handleWaitingAndRetry(candidate, now: timestamp)
-      }
-    }
-
     // Evict tracking state for candidates no longer in the snapshot
     let liveIDs = Set(candidates.map { $0.id })
     pruneStaleEntries(liveIDs: liveIDs)
@@ -88,73 +77,34 @@ final class NavAnnouncer {
 
   // MARK: – Internal helpers
 
-  /// Handles waiting and retry messages, controlled by their own settings.
-  private func handleWaitingAndRetry(_ candidate: Candidate, now: Date) {
-    // Reset retry tracking when candidate is matched or hard rejected.
-    // This must run unconditionally — before any early returns.
-    if candidate.isMatched || candidate.matchStatus == .rejected {
-      lastRetryReasonSpoken[candidate.id] = nil
-    }
-
-    // Handle retry announcements for unknown status with retryable reason
-    if settings.announceRetryMessages,
-      candidate.matchStatus == .unknown,
-      let reason = candidate.rejectReason,
-      reason.isRetryable,
-      lastRetryReasonSpoken[candidate.id] != reason
-    {
-      // Global retry cooldown
-      let elapsedRetry = now.timeIntervalSince(cache.lastRetryTime)
-      if elapsedRetry < config.retryPhraseCooldown {
-        return
-      }
-      // Create retry phrase
-      guard let retryPhrase = MatchStatusSpeech.retryPhrase(for: reason) else { return }
-
-      // Speak and record
-      speaker.speak(retryPhrase)
-      cache.lastRetryTime = now
-      lastRetryReasonSpoken[candidate.id] = reason
-      return
-    }
-
-    // Handle waiting announcements
-    if settings.announceWaitingMessages,
-      candidate.matchStatus == .waiting
-    {
-      // Global waiting cooldown
-      let elapsed = now.timeIntervalSince(cache.lastWaitingTime)
-      if elapsed < config.waitingPhraseCooldown {
-        return
-      }
-
-      // Skip if already announced waiting for this candidate
-      if lastStatus[candidate.id] == .waiting {
-        return
-      }
-      lastStatus[candidate.id] = .waiting
-
-      speaker.speak(
-        String(localized: "Waiting for verification", comment: "Speech: verification in progress"))
-      cache.lastWaitingTime = now
-    }
-  }
-
-  /// Handles status announcements for full/partial/rejected/lost candidates.
+  /// Handles status announcements for full/partial/lost candidates.
   private func handleCandidate(_ candidate: Candidate, now: Date) {
-    // Build regular status phrase (excludes waiting/unknown which are handled separately)
-    guard
-      let phrase = MatchStatusSpeech.phrase(
-        for: candidate.matchStatus, recognisedText: candidate.ocrText,
-        detectedDescription: candidate.detectedDescription, rejectReason: candidate.rejectReason,
-        normalizedXPosition: candidate.lastBoundingBox.midX, settings: settings,
+    let previousStatus = lastStatus[candidate.id]
+
+    // Build phrase — use the transition phrase when upgrading from partial to full
+    // so the user hears "Plate confirmed" instead of a repeated "Found it".
+    let phrase: String?
+    if let prev = previousStatus,
+      let transition = MatchStatusSpeech.transitionPhrase(
+        from: prev, to: candidate.matchStatus, recognisedText: candidate.ocrText)
+    {
+      phrase = transition
+    } else {
+      phrase = MatchStatusSpeech.phrase(
+        for: candidate.matchStatus,
+        recognisedText: candidate.ocrText,
         lastDirection: candidate.degrees,
         currentHeading: compass.degrees)
-    else { return }
+    }
 
-    // Skip if status unchanged for candidate (except lost which can repeat with direction)
-    let previousStatus = lastStatus[candidate.id]
-    if previousStatus == candidate.matchStatus && candidate.matchStatus != .lost {
+    guard let phrase else { return }
+
+    // Skip if status unchanged for this candidate.
+    // .lost is treated the same as any other status — the direction hint fires once
+    // at the moment of transition and is then suppressed. Allowing it to repeat on
+    // every frame causes the announcement to bounce between adjacent degree buckets
+    // as the compass drifts (e.g. 89° → 90°), which is noisy and unhelpful.
+    if previousStatus == candidate.matchStatus {
       return
     }
     lastStatus[candidate.id] = candidate.matchStatus
@@ -164,8 +114,6 @@ final class NavAnnouncer {
       switch candidate.matchStatus {
       case .full, .partial:
         hapticManager.playSuccess()
-      case .rejected:
-        hapticManager.playFailure()
       default:
         break
       }
@@ -231,7 +179,6 @@ final class NavAnnouncer {
   private func pruneStaleEntries(liveIDs: Set<UUID>) {
     for id in lastStatus.keys where !liveIDs.contains(id) {
       lastStatus.removeValue(forKey: id)
-      lastRetryReasonSpoken.removeValue(forKey: id)
       lastViewAnnounced.removeValue(forKey: id)
       cache.lastByCandidate.removeValue(forKey: id)
     }

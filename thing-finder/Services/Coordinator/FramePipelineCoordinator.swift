@@ -125,11 +125,13 @@ public final class FramePipelineCoordinator: ObservableObject {
     var targetBBox: CGRect?
     switch phase {
     case .found(let id):
-      targetBBox = store[id]?.lastBoundingBox
+      if let candidate = store[id], candidate.isBoundingBoxFresh {
+        targetBBox = candidate.lastBoundingBox
+      }
     case .verifying(let ids):
       // Prefer a partial match if any of the verifying IDs are currently partial
       if let partial = snapshot.values.first(where: {
-        ids.contains($0.id) && $0.matchStatus == .partial
+        ids.contains($0.id) && $0.matchStatus == .partial && $0.isBoundingBoxFresh
       }), settings.allowPartialNavigation {
         targetBBox = partial.lastBoundingBox
       }

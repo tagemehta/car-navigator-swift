@@ -124,7 +124,7 @@ struct HelpModalView: View {
             HelpItem(
               title: "Announce Options",
               description:
-                "Choose what information you want announced (all cars, retry messages, waiting status)"
+                "Choose what information you want announced (all cars, waiting status)"
             )
           }
 
