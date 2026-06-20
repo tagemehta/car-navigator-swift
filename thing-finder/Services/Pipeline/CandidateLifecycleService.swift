@@ -91,17 +91,6 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
     self.candidateCap = candidateCap
   }
 
-  /// Eviction priority order for candidates when the store is at cap.
-  /// Higher value = evicted first.
-  private func evictionPriority(for status: MatchStatus) -> Int {
-    switch status {
-    case .rejected: return 2
-    case .unknown: return 1
-    case .waiting: return 0
-    case .partial, .full, .lost: return -1  // never evicted
-    }
-  }
-
   public func tick(
     pixelBuffer: CVPixelBuffer,
     orientation: CGImagePropertyOrientation,
@@ -126,17 +115,10 @@ public final class CandidateLifecycleService: CandidateLifecycleServiceProtocol 
         // hold recovered match state and must not be displaced by new detections.
         let nonLost = store.candidates.values.filter { $0.matchStatus != .lost }
         if nonLost.count >= candidateCap {
-          // Find the best eviction candidate: highest missCount wins; ties broken by
-          // status priority (.rejected > .unknown > .waiting). .partial/.full/.lost
-          // are never evicted.
-          let evictable = nonLost.filter { evictionPriority(for: $0.matchStatus) >= 0 }
-          guard
-            let evictTarget = evictable.max(by: { a, b in
-              if a.missCount != b.missCount { return a.missCount < b.missCount }
-              return evictionPriority(for: a.matchStatus) < evictionPriority(for: b.matchStatus)
-            })
-          else {
-            // Store is full of protected candidates (.partial/.full) — skip detection.
+          // Evict the stalemost candidate (highest missCount). .partial and .full are
+          // never evicted — if only they remain, skip this detection entirely.
+          let evictable = nonLost.filter { $0.matchStatus != .partial && $0.matchStatus != .full }
+          guard let evictTarget = evictable.max(by: { $0.missCount < $1.missCount }) else {
             continue
           }
           DebugPublisher.shared.info(
