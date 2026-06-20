@@ -18,6 +18,7 @@
 
     },
     "%lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -28,6 +29,7 @@
       }
     },
     "%lld device(s) available" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -229,9 +231,6 @@
         }
       }
     },
-    "All Set!" : {
-
-    },
     "almost there" : {
       "comment" : "Speech: very close to vehicle"
     },
@@ -347,6 +346,7 @@
       }
     },
     "Back" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -387,9 +387,6 @@
         }
       }
     },
-    "Before You Start" : {
-
-    },
     "By continuing, you acknowledge and accept the above." : {
       "localizations" : {
         "es" : {
@@ -399,6 +396,9 @@
           }
         }
       }
+    },
+    "Camera Source" : {
+
     },
     "Can't see the plate, retrying" : {
       "comment" : "Speech: retry due to plate not visible",
@@ -529,7 +529,10 @@
         }
       }
     },
-    "Complete the registration in the Meta AI app, then return here." : {
+    "Closes this sheet and returns to settings" : {
+
+    },
+    "Complete each step to start streaming from your Ray-Ban Meta glasses." : {
 
     },
     "Complete the setup in Meta AI app, then return here." : {
@@ -544,6 +547,7 @@
       }
     },
     "Connect Glasses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -586,6 +590,9 @@
           }
         }
       }
+    },
+    "Connection Checklist" : {
+
     },
     "Connection Error" : {
       "extractionState" : "stale",
@@ -788,9 +795,6 @@
         }
       }
     },
-    "Developer Mode turns off after firmware updates — re-enable if needed." : {
-
-    },
     "Developer Options" : {
       "localizations" : {
         "es" : {
@@ -974,9 +978,6 @@
           }
         }
       }
-    },
-    "Ensure your glasses are open and connected via Bluetooth" : {
-
     },
     "Ensure your glasses are open and on your head" : {
       "extractionState" : "stale",
@@ -1195,15 +1196,6 @@
     "Got it" : {
       "comment" : "Speech: partial match upgraded to full, no plate"
     },
-    "Grant access in the Meta AI app when prompted." : {
-
-    },
-    "Grant Camera Access" : {
-
-    },
-    "Grant Camera Permission" : {
-
-    },
     "Haptic Feedback" : {
       "localizations" : {
         "es" : {
@@ -1287,9 +1279,6 @@
           }
         }
       }
-    },
-    "I've Done This" : {
-
     },
     "If you frequently get in the same car or paratransit vehicle" : {
       "localizations" : {
@@ -1388,9 +1377,6 @@
           }
         }
       }
-    },
-    "Make sure you've completed these steps in the Meta AI app:" : {
-
     },
     "Make sure your glasses are open and powered on" : {
       "extractionState" : "stale",
@@ -1619,9 +1605,6 @@
     "Not yours — %@" : {
       "comment" : "Speech: rejected car with description"
     },
-    "Now grant camera streaming permission so the app can receive video from your glasses." : {
-
-    },
     "Object Class" : {
       "localizations" : {
         "es" : {
@@ -1678,6 +1661,9 @@
       }
     },
     "Opens Meta glasses settings to connect or fix the connection." : {
+
+    },
+    "Opens the step-by-step glasses connection guide" : {
 
     },
     "Paratransit Description" : {
@@ -1749,9 +1735,6 @@
           }
         }
       }
-    },
-    "Permission Error" : {
-
     },
     "Picture too blurry" : {
       "comment" : "Reject reason: image quality too low",
@@ -1851,15 +1834,6 @@
         }
       }
     },
-    "Register this app with the Meta AI companion app. You'll be briefly redirected to Meta AI to approve." : {
-
-    },
-    "Register with Meta AI" : {
-
-    },
-    "Registration Error" : {
-
-    },
     "Remove from favorites" : {
       "localizations" : {
         "es" : {
@@ -1921,12 +1895,6 @@
           }
         }
       }
-    },
-    "Requesting camera permission. Grant access in the Meta AI app when prompted." : {
-
-    },
-    "Requesting camera permission..." : {
-
     },
     "Rescan" : {
       "extractionState" : "stale",
@@ -2214,19 +2182,6 @@
         }
       }
     },
-    "Step %lld of %lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Step %1$lld of %2$lld"
-          }
-        }
-      }
-    },
-    "Step %lld: " : {
-
-    },
     "Step 1: Enable Developer Mode" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2294,6 +2249,7 @@
       }
     },
     "Stream video from Meta Ray-Ban glasses instead of phone camera." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2388,6 +2344,7 @@
       }
     },
     "Try Again" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2482,12 +2439,6 @@
           }
         }
       }
-    },
-    "Waiting for Meta AI. Complete the registration in the Meta AI app, then return here." : {
-
-    },
-    "Waiting for Meta AI..." : {
-
     },
     "Waiting for permission..." : {
       "extractionState" : "stale",
@@ -2585,12 +2536,6 @@
           }
         }
       }
-    },
-    "You can choose \"Allow once\" or \"Allow always\" in Meta AI." : {
-
-    },
-    "Your Meta Ray-Ban glasses are connected and camera access is granted. The app will now stream from your glasses." : {
-
     },
     "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
       "localizations" : {

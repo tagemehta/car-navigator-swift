@@ -9,7 +9,7 @@ public struct FeatureFlags {
     #if DEBUG
       return true  // Always enabled in debug builds for testing
     #else
-      return false  // Disabled in release builds (beta feature)
+      return true  // Disabled in release builds (beta feature)
     #endif
   }()
 }

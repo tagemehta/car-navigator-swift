@@ -1,4 +1,5 @@
 import AVFoundation
+import MWDATCore
 import SwiftUI
 
 // Add this extension to dismiss the keyboard
@@ -11,6 +12,7 @@ extension InputView {
 
 struct InputView: View {
   @EnvironmentObject var settings: Settings
+  @EnvironmentObject private var glassesVM: MetaGlassesViewModel
 
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
   @AppStorage("InputView.isParatransitMode") private var isParatransitMode = false
@@ -91,6 +93,7 @@ struct InputView: View {
   @State private var showPlaceholder = true
   @State private var showPasteAlert = false
   @State private var pasteAlertMessage = ""
+  @State private var showingGlassesChecklist = false
   @FocusState private var isInputFocused: Bool
   // Vehicle classes for Uber Finder
   private let vehicleClasses = ["car", "truck", "bus"]
@@ -122,6 +125,19 @@ struct InputView: View {
         localized:
           "Describe it in detail (e.g., silver laptop with a white and green laptop sticker)",
         comment: "Placeholder: object description input")
+  }
+
+  /// One-line status that mirrors the first incomplete checklist step.
+  private var glassesSubtext: String {
+    guard settings.useMetaGlasses else {
+      return "Stream video from your Ray-Ban Meta glasses."
+    }
+    if !glassesVM.isBluetoothOn { return "Turn on Bluetooth to use Meta glasses." }
+    if !glassesVM.isRegistered { return "Connect to Meta AI to continue setup." }
+    if glassesVM.availableDevices.isEmpty { return "Open and power on your glasses." }
+    if !glassesVM.isDeviceConnected { return "Glasses found — open them to connect." }
+    if !glassesVM.isCameraPermissionGranted { return "Grant camera access to start streaming." }
+    return "Streaming from Meta Ray-Ban glasses."
   }
 
   private func checkForShortcutNavigation() {
@@ -254,6 +270,29 @@ struct InputView: View {
             searchMode == .uberFinder
               ? description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
               : false)
+        }
+
+        if FeatureFlags.metaGlassesEnabled {
+          Section(header: Text("Camera Source")) {
+            Toggle("Use Meta Glasses Camera", isOn: $settings.useMetaGlasses)
+            Text(glassesSubtext)
+              .font(.caption)
+              .foregroundColor(.secondary)
+
+            Button {
+              showingGlassesChecklist = true
+            } label: {
+              HStack {
+                Image(systemName: "checklist")
+                Text("Connection Checklist")
+              }
+            }
+            .buttonStyle(.bordered)
+            .accessibilityHint("Opens the step-by-step glasses connection guide")
+          }
+          .sheet(isPresented: $showingGlassesChecklist) {
+            MetaGlassesSetupView()
+          }
         }
 
         if !favoriteItems.isEmpty && settings.showFavoritesAndRecents {

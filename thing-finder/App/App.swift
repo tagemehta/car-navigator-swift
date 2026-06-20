@@ -31,6 +31,8 @@ struct ThingFinderApp: App {
     }
   }
 
+  @Environment(\.scenePhase) private var scenePhase
+
   var body: some Scene {
     WindowGroup {
       MainTabView()
@@ -42,6 +44,18 @@ struct ThingFinderApp: App {
         }
         // COMMENTED OUT FOR APP STORE SUBMISSION
         .environmentObject(glassesVM)
+        // Stop the glasses stream when the app moves to background.
+        // The SDK delivers STOPPED itself when Bluetooth drops (glasses fold
+        // or are removed), but explicitly stopping here releases the session
+        // immediately and avoids draining the glasses battery while idle.
+        // We do NOT restart on foreground — the DetectorContainer drives
+        // restart via isOnScreen when the user returns to the detector view,
+        // matching the SDK guidance to never restart during a device-driven PAUSED.
+        .onChange(of: scenePhase) { _, newPhase in
+          if newPhase == .background {
+            glassesVM.stopStreaming()
+          }
+        }
         .onOpenURL { url in
           // Handle callback from Meta AI app after registration/permission flows
           guard FeatureFlags.metaGlassesEnabled else { return }

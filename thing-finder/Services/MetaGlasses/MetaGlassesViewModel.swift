@@ -19,6 +19,7 @@
 //
 
 import Combine
+import CoreBluetooth
 import CoreMedia
 import Foundation
 import MWDATCamera
@@ -166,7 +167,16 @@ public final class MetaGlassesViewModel: ObservableObject {
   /// Registration state forwarded from the SDK for views that need it directly.
   @Published public private(set) var registrationState: RegistrationState = .unavailable
 
+  /// Whether the system Bluetooth radio is powered on.
+  /// Derived from a CBCentralManager probe; updates reactively.
+  @Published public private(set) var isBluetoothOn: Bool = false
+
   // MARK: - Private
+
+  /// Lightweight CBCentralManager used solely to observe system Bluetooth power state.
+  /// Retained for the lifetime of the view model.
+  private var btMonitor: CBCentralManager?
+  private var btDelegate: BluetoothStateDelegate?
 
   private var didInitiateRegistration = false
   private var permissionGrantedThisSession: Bool = false
@@ -228,6 +238,26 @@ public final class MetaGlassesViewModel: ObservableObject {
 
   private init() {
     configureSDK()
+    startBluetoothMonitor()
+  }
+
+  // MARK: - Bluetooth Monitoring
+
+  private func startBluetoothMonitor() {
+    let delegate = BluetoothStateDelegate { [weak self] powered in
+      Task { @MainActor [weak self] in
+        self?.isBluetoothOn = powered
+      }
+    }
+    // queue: nil uses the main queue, which is fine for a lightweight state probe.
+    btDelegate = delegate
+    btMonitor = CBCentralManager(
+      delegate: delegate, queue: nil,
+      options: [
+        CBCentralManagerOptionShowPowerAlertKey: false
+      ])
+    // Read initial state synchronously (available immediately when queue is main).
+    isBluetoothOn = btMonitor?.state == .poweredOn
   }
 
   // MARK: - SDK Configuration
@@ -282,6 +312,16 @@ public final class MetaGlassesViewModel: ObservableObject {
   }
 
   // MARK: - Device Discovery
+
+  /// Re-reads the current device list from the SDK synchronously.
+  /// Called from the checklist when the user taps "Refresh" on the
+  /// "Glasses available" step — the SDK's async stream will keep updating,
+  /// but this gives immediate feedback without waiting for the next push.
+  public func refreshDevices() {
+    let devices = Wearables.shared.devices
+    availableDevices = devices
+    updateLinkStateMonitoring(for: devices)
+  }
 
   private func startDeviceStream() {
     availableDevices = Wearables.shared.devices
@@ -881,6 +921,14 @@ public final class MetaGlassesViewModel: ObservableObject {
     capturedPhoto = nil
   }
 
+  // MARK: - Setup Checklist
+
+  /// Whether the user's device is connected (linkState == .connected) for at least one registered device.
+  public var isDeviceConnected: Bool { connectedDeviceId != nil }
+
+  /// Whether camera permission has been granted this session (or SDK confirms `.granted`).
+  public var isCameraPermissionGranted: Bool { permissionGrantedThisSession }
+
   // MARK: - State Recovery
 
   /// Reset from a failed state back to the best available state.
@@ -984,4 +1032,21 @@ public final class MetaGlassesViewModel: ObservableObject {
       hasMockDevice = false
     }
   #endif
+}
+
+// MARK: - BluetoothStateDelegate
+
+/// Lightweight CBCentralManagerDelegate that forwards power-state changes via a closure.
+/// Kept outside MetaGlassesViewModel to avoid AnyObject / @MainActor conflicts.
+private final class BluetoothStateDelegate: NSObject, CBCentralManagerDelegate {
+  private let onChange: (Bool) -> Void
+
+  init(onChange: @escaping (Bool) -> Void) {
+    self.onChange = onChange
+    super.init()
+  }
+
+  func centralManagerDidUpdateState(_ central: CBCentralManager) {
+    onChange(central.state == .poweredOn)
+  }
 }
