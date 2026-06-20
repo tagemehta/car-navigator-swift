@@ -157,17 +157,6 @@ struct InputView: View {
               }
             }
             .font(.headline)
-
-            Spacer()
-
-            if !description.isEmpty {
-              Button("Clear") {
-                description = ""
-                showPlaceholder = true
-              }
-              .font(.subheadline)
-              .foregroundColor(.blue)
-            }
           }
         ) {
           if searchMode == .objectFinder {
@@ -180,26 +169,39 @@ struct InputView: View {
           }
 
           ZStack(alignment: .topLeading) {
-            TextField("", text: $description, axis: .vertical)
-              .textFieldStyle(RoundedBorderTextFieldStyle())
-              .lineLimit(2, reservesSpace: true)
-              .focused($isInputFocused)
-              .onChange(of: isInputFocused) { oldValue, newValue in
-                if newValue {
-                  showPlaceholder = false
-                } else {
-                  showPlaceholder = description.isEmpty
+            HStack {
+              ZStack {
+                TextField("", text: $description, axis: .vertical)
+                  .textFieldStyle(RoundedBorderTextFieldStyle())
+                  .lineLimit(2, reservesSpace: true)
+                  .focused($isInputFocused)
+                  .accessibilityAction(named: "Clear description") {
+                    description = ""
+                    showPlaceholder = true
+                  }
+                if showPlaceholder {
+                  Text(placeholderText)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 8)
+                    .onTapGesture {
+                      isInputFocused = true
+                    }
                 }
               }
-
-            if showPlaceholder {
-              Text(placeholderText)
-                .foregroundColor(.gray)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 8)
-                .onTapGesture {
-                  isInputFocused = true
-                }
+              Button("Clear") {
+                description = ""
+                showPlaceholder = true
+              }
+              .font(.subheadline)
+              .foregroundColor(.blue)
+            }
+            .onChange(of: isInputFocused) { oldValue, newValue in
+              if newValue {
+                showPlaceholder = false
+              } else {
+                showPlaceholder = description.isEmpty
+              }
             }
           }
           .frame(minHeight: 80)
