@@ -170,7 +170,7 @@ struct InputView: View {
 
           ZStack(alignment: .topLeading) {
             HStack {
-              ZStack {
+              ZStack(alignment: .topLeading) {
                 TextField("", text: $description, axis: .vertical)
                   .textFieldStyle(RoundedBorderTextFieldStyle())
                   .lineLimit(2, reservesSpace: true)
