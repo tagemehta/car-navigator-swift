@@ -183,7 +183,7 @@ struct InputView: View {
                   Text(placeholderText)
                     .foregroundColor(.gray)
                     .padding(.horizontal, 4)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .onTapGesture {
                       isInputFocused = true
                     }
@@ -195,6 +195,9 @@ struct InputView: View {
               }
               .font(.subheadline)
               .foregroundColor(.blue)
+              .accessibilityLabel("Clear description")
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
             }
             .onChange(of: isInputFocused) { oldValue, newValue in
               if newValue {
@@ -339,6 +342,8 @@ struct InputView: View {
               .foregroundColor(.blue)
               .accessibilityLabel("Clear all recent searches")
               .accessibilityHint("Removes all non-favorite searches from history")
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
             }
           ) {
             ForEach(recentItems, id: \.id) { item in

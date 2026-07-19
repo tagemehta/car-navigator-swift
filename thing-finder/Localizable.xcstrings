@@ -238,7 +238,15 @@
       }
     },
     "almost there" : {
-      "comment" : "Speech: very close to vehicle"
+      "comment" : "Speech: very close to vehicle",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "está cerca"
+          }
+        }
+      }
     },
     "Ambiguous result" : {
       "comment" : "Reject reason: ambiguous detection",
@@ -490,7 +498,14 @@
       }
     },
     "Choose what information you want announced (all cars, waiting status)" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige qué información quieres que anuncie (todos los coches, estado en espera)"
+          }
+        }
+      }
     },
     "Clear" : {
       "localizations" : {
@@ -518,6 +533,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Borrar todas las búsquedas recientes"
+          }
+        }
+      }
+    },
+    "Clear description" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar la descripción"
           }
         }
       }
@@ -1138,10 +1163,26 @@
       }
     },
     "Found it" : {
-      "comment" : "Speech: vehicle found, no plate available"
+      "comment" : "Speech: vehicle found, no plate available",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lo encontré"
+          }
+        }
+      }
     },
     "Found it — plate %@" : {
-      "comment" : "Speech: vehicle found, license plate confirmed"
+      "comment" : "Speech: vehicle found, license plate confirmed",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontré — placa %@"
+          }
+        }
+      }
     },
     "Found match" : {
       "comment" : "Speech: generic match found",
@@ -1189,7 +1230,15 @@
       }
     },
     "Got it" : {
-      "comment" : "Speech: partial match upgraded to full, no plate"
+      "comment" : "Speech: partial match upgraded to full, no plate",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lo encontré"
+          }
+        }
+      }
     },
     "Haptic Feedback" : {
       "localizations" : {
@@ -1592,10 +1641,26 @@
       }
     },
     "Not yours" : {
-      "comment" : "Speech: rejected car, no description available"
+      "comment" : "Speech: rejected car, no description available",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no el tuyo"
+          }
+        }
+      }
     },
     "Not yours — %@" : {
-      "comment" : "Speech: rejected car with description"
+      "comment" : "Speech: rejected car with description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no el tuyo %@"
+          }
+        }
+      }
     },
     "Object Class" : {
       "localizations" : {
@@ -1743,7 +1808,15 @@
       }
     },
     "Plate confirmed — %@" : {
-      "comment" : "Speech: partial match upgraded to full, plate now confirmed"
+      "comment" : "Speech: partial match upgraded to full, plate now confirmed",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "placa confirmado — %@"
+          }
+        }
+      }
     },
     "Plate not visible yet" : {
       "comment" : "Speech: partial match, no plate",
@@ -1778,7 +1851,15 @@
       }
     },
     "Possible match — plate not visible" : {
-      "comment" : "Speech: partial match found, plate not yet confirmed"
+      "comment" : "Speech: partial match found, plate not yet confirmed",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "es posible encontré - placa aún no es visible"
+          }
+        }
+      }
     },
     "Rear view of car" : {
       "comment" : "Speech: vehicle viewed from rear",
@@ -1966,7 +2047,15 @@
       }
     },
     "Searching for %@" : {
-      "comment" : "Speech: session start — announces what the user is searching for"
+      "comment" : "Speech: session start — announces what the user is searching for",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando para %@"
+          }
+        }
+      }
     },
     "Send feedback email" : {
       "localizations" : {
@@ -1989,7 +2078,15 @@
       }
     },
     "Several cars nearby, still looking" : {
-      "comment" : "Speech: many rejections in a short window"
+      "comment" : "Speech: many rejections in a short window",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varios coches cerca, aún buscando"
+          }
+        }
+      }
     },
     "Shortest time between beeps/pulses when target is centered." : {
       "localizations" : {
@@ -2215,7 +2312,15 @@
       }
     },
     "Still looking…" : {
-      "comment" : "Speech: scanning heartbeat when no candidates are detected"
+      "comment" : "Speech: scanning heartbeat when no candidates are detected",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún buscando"
+          }
+        }
+      }
     },
     "straight ahead" : {
       "comment" : "Direction guidance: target is straight ahead",
