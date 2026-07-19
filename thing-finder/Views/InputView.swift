@@ -157,17 +157,6 @@ struct InputView: View {
               }
             }
             .font(.headline)
-
-            Spacer()
-
-            if !description.isEmpty {
-              Button("Clear") {
-                description = ""
-                showPlaceholder = true
-              }
-              .font(.subheadline)
-              .foregroundColor(.blue)
-            }
           }
         ) {
           if searchMode == .objectFinder {
@@ -180,26 +169,42 @@ struct InputView: View {
           }
 
           ZStack(alignment: .topLeading) {
-            TextField("", text: $description, axis: .vertical)
-              .textFieldStyle(RoundedBorderTextFieldStyle())
-              .lineLimit(2, reservesSpace: true)
-              .focused($isInputFocused)
-              .onChange(of: isInputFocused) { oldValue, newValue in
-                if newValue {
-                  showPlaceholder = false
-                } else {
-                  showPlaceholder = description.isEmpty
+            HStack {
+              ZStack(alignment: .topLeading) {
+                TextField("", text: $description, axis: .vertical)
+                  .textFieldStyle(RoundedBorderTextFieldStyle())
+                  .lineLimit(2, reservesSpace: true)
+                  .focused($isInputFocused)
+                  .accessibilityAction(named: "Clear description") {
+                    description = ""
+                    showPlaceholder = true
+                  }
+                if showPlaceholder {
+                  Text(placeholderText)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 10)
+                    .onTapGesture {
+                      isInputFocused = true
+                    }
                 }
               }
-
-            if showPlaceholder {
-              Text(placeholderText)
-                .foregroundColor(.gray)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 8)
-                .onTapGesture {
-                  isInputFocused = true
-                }
+              Button("Clear") {
+                description = ""
+                showPlaceholder = true
+              }
+              .font(.subheadline)
+              .foregroundColor(.blue)
+              .accessibilityLabel("Clear description")
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
+            }
+            .onChange(of: isInputFocused) { oldValue, newValue in
+              if newValue {
+                showPlaceholder = false
+              } else {
+                showPlaceholder = description.isEmpty
+              }
             }
           }
           .frame(minHeight: 80)
@@ -337,6 +342,8 @@ struct InputView: View {
               .foregroundColor(.blue)
               .accessibilityLabel("Clear all recent searches")
               .accessibilityHint("Removes all non-favorite searches from history")
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
             }
           ) {
             ForEach(recentItems, id: \.id) { item in
