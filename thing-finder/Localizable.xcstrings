@@ -18,7 +18,6 @@
 
     },
     "%lld" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -29,7 +28,6 @@
       }
     },
     "%lld device(s) available" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -80,7 +78,6 @@
       }
     },
     "• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -91,7 +88,6 @@
       }
     },
     "• **Hands-Free**: Keep your phone in your pocket while glasses do the work" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -102,7 +98,6 @@
       }
     },
     "• **Permissions**: Grant camera access when prompted" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -113,7 +108,6 @@
       }
     },
     "• Glasses are connected via Bluetooth" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -124,7 +118,6 @@
       }
     },
     "• Glasses are open (unfolded)" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -135,7 +128,6 @@
       }
     },
     "• Meta Glasses mode is enabled in Settings" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -236,6 +228,9 @@
           }
         }
       }
+    },
+    "All Set!" : {
+
     },
     "almost there" : {
       "comment" : "Speech: very close to vehicle",
@@ -360,7 +355,6 @@
       }
     },
     "Back" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -401,6 +395,9 @@
         }
       }
     },
+    "Before You Start" : {
+
+    },
     "By continuing, you acknowledge and accept the above." : {
       "localizations" : {
         "es" : {
@@ -424,7 +421,6 @@
       }
     },
     "Cancel" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -558,6 +554,9 @@
         }
       }
     },
+    "Complete the registration in the Meta AI app, then return here." : {
+
+    },
     "Complete the setup in Meta AI app, then return here." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -570,7 +569,6 @@
       }
     },
     "Connect Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -581,7 +579,6 @@
       }
     },
     "Connect Meta Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -602,8 +599,10 @@
         }
       }
     },
+    "Connect your Meta glasses to stream from them." : {
+
+    },
     "Connected!" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -814,6 +813,9 @@
         }
       }
     },
+    "Developer Mode turns off after firmware updates — re-enable if needed." : {
+
+    },
     "Developer Options" : {
       "localizations" : {
         "es" : {
@@ -845,7 +847,6 @@
       }
     },
     "Disconnect Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -998,6 +999,9 @@
           }
         }
       }
+    },
+    "Ensure your glasses are open and connected via Bluetooth" : {
+
     },
     "Ensure your glasses are open and on your head" : {
       "extractionState" : "stale",
@@ -1240,6 +1244,15 @@
         }
       }
     },
+    "Grant access in the Meta AI app when prompted." : {
+
+    },
+    "Grant Camera Access" : {
+
+    },
+    "Grant Camera Permission" : {
+
+    },
     "Haptic Feedback" : {
       "localizations" : {
         "es" : {
@@ -1301,6 +1314,9 @@
         }
       }
     },
+    "High Quality Stream" : {
+
+    },
     "How often the same direction is repeated." : {
       "localizations" : {
         "es" : {
@@ -1321,6 +1337,9 @@
         }
       }
     },
+    "I've Done This" : {
+
+    },
     "If you frequently get in the same car or paratransit vehicle" : {
       "localizations" : {
         "es" : {
@@ -1332,7 +1351,6 @@
       }
     },
     "Important:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1341,6 +1359,9 @@
           }
         }
       }
+    },
+    "Important: the glasses camera will only be used when the glasses are open and unfolded, connected via Bluetooth, and Meta Glasses mode is enabled in Settings." : {
+
     },
     "Key" : {
       "extractionState" : "manual",
@@ -1417,6 +1438,9 @@
         }
       }
     },
+    "Make sure you've completed these steps in the Meta AI app:" : {
+
+    },
     "Make sure your glasses are open and powered on" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1449,7 +1473,6 @@
       }
     },
     "Meta Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1471,7 +1494,6 @@
       }
     },
     "Meta Ray-Ban Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1662,6 +1684,9 @@
         }
       }
     },
+    "Now grant camera streaming permission so the app can receive video from your glasses." : {
+
+    },
     "Object Class" : {
       "localizations" : {
         "es" : {
@@ -1704,6 +1729,9 @@
         }
       }
     },
+    "Open Meta Glasses Settings" : {
+
+    },
     "Opens email composer to send feedback to the development team" : {
       "localizations" : {
         "es" : {
@@ -1713,6 +1741,9 @@
           }
         }
       }
+    },
+    "Opens Meta glasses settings to connect or fix the connection." : {
+
     },
     "Paratransit Description" : {
       "localizations" : {
@@ -1783,6 +1814,9 @@
           }
         }
       }
+    },
+    "Permission Error" : {
+
     },
     "Picture too blurry" : {
       "comment" : "Reject reason: image quality too low",
@@ -1898,6 +1932,15 @@
         }
       }
     },
+    "Register this app with the Meta AI companion app. You'll be briefly redirected to Meta AI to approve." : {
+
+    },
+    "Register with Meta AI" : {
+
+    },
+    "Registration Error" : {
+
+    },
     "Remove from favorites" : {
       "localizations" : {
         "es" : {
@@ -1960,6 +2003,12 @@
         }
       }
     },
+    "Requesting camera permission. Grant access in the Meta AI app when prompted." : {
+
+    },
+    "Requesting camera permission..." : {
+
+    },
     "Rescan" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2012,6 +2061,9 @@
           }
         }
       }
+    },
+    "Resuming when the device is ready…" : {
+
     },
     "Right side of car" : {
       "comment" : "Speech: vehicle viewed from right",
@@ -2259,6 +2311,19 @@
         }
       }
     },
+    "Step %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Step %lld: " : {
+
+    },
     "Step 1: Enable Developer Mode" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2334,7 +2399,6 @@
       }
     },
     "Stream video from Meta Ray-Ban glasses instead of phone camera." : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2367,7 +2431,6 @@
       }
     },
     "The glasses camera will only be used when:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2430,7 +2493,6 @@
       }
     },
     "Try Again" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2451,7 +2513,6 @@
       }
     },
     "Use Meta Glasses Camera" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2483,7 +2544,6 @@
       }
     },
     "Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2492,6 +2552,9 @@
           }
         }
       }
+    },
+    "Uses more Bluetooth bandwidth for higher resolution (720p / 30fps)." : {
+
     },
     "Vehicle Description" : {
       "localizations" : {
@@ -2524,6 +2587,12 @@
           }
         }
       }
+    },
+    "Waiting for Meta AI. Complete the registration in the Meta AI app, then return here." : {
+
+    },
+    "Waiting for Meta AI..." : {
+
     },
     "Waiting for permission..." : {
       "extractionState" : "stale",
@@ -2622,8 +2691,13 @@
         }
       }
     },
+    "You can choose \"Allow once\" or \"Allow always\" in Meta AI." : {
+
+    },
+    "Your Meta Ray-Ban glasses are connected and camera access is granted. The app will now stream from your glasses." : {
+
+    },
     "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {

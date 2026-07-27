@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		31BAD5DD2FC9ECE2004E3525 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 31BAD5DC2FC9ECE2004E3525 /* MWDATCamera */; };
+		31BAD5DF2FC9ECE2004E3525 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 31BAD5DE2FC9ECE2004E3525 /* MWDATCore */; };
+		31BAD5E12FC9ECE2004E3525 /* MWDATMockDevice in Frameworks */ = {isa = PBXBuildFile; productRef = 31BAD5E02FC9ECE2004E3525 /* MWDATMockDevice */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3106F9122E2C3DBD00A9092B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -59,6 +65,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31BAD5DD2FC9ECE2004E3525 /* MWDATCamera in Frameworks */,
+				31BAD5E12FC9ECE2004E3525 /* MWDATMockDevice in Frameworks */,
+				31BAD5DF2FC9ECE2004E3525 /* MWDATCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,6 +135,9 @@
 			);
 			name = "thing-finder";
 			packageProductDependencies = (
+				31BAD5DC2FC9ECE2004E3525 /* MWDATCamera */,
+				31BAD5DE2FC9ECE2004E3525 /* MWDATCore */,
+				31BAD5E02FC9ECE2004E3525 /* MWDATMockDevice */,
 			);
 			productName = "thing-finder";
 			productReference = 313783A42DF497B200C36BEE /* thing-finder.app */;
@@ -160,6 +172,7 @@
 			mainGroup = 3137839B2DF497B200C36BEE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				31BAD5DB2FC9ECE2004E3525 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 313783A52DF497B200C36BEE /* Products */;
@@ -387,6 +400,7 @@
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CurbToCar;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Needed to connect to Meta Wearables";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The app uses your camera to identify cars";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The app uses your compass to help navigate you to your car";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -428,6 +442,7 @@
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CurbToCar;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Needed to connect to Meta Wearables";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The app uses your camera to identify cars";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The app uses your compass to help navigate you to your car";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -484,6 +499,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		31BAD5DB2FC9ECE2004E3525 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/meta-wearables-dat-ios";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.7.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		31BAD5DC2FC9ECE2004E3525 /* MWDATCamera */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 31BAD5DB2FC9ECE2004E3525 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCamera;
+		};
+		31BAD5DE2FC9ECE2004E3525 /* MWDATCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 31BAD5DB2FC9ECE2004E3525 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCore;
+		};
+		31BAD5E02FC9ECE2004E3525 /* MWDATMockDevice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 31BAD5DB2FC9ECE2004E3525 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATMockDevice;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3137839C2DF497B200C36BEE /* Project object */;
 }

@@ -58,23 +58,16 @@ struct CameraPreviewView: UIViewControllerRepresentable {
     vc.view.addSubview(preview)
     vc.view.sendSubviewToBack(preview)
 
-    // Set delegate and start capture if needed
+    // Set delegate — start is deferred to updateUIViewController so the correct
+    // source is always in place before the first capture begins.
     capture.delegate = delegate
-
-    // Set up the session and start capture if needed
-    if isRunning {
-      DispatchQueue.main.async {
-        context.coordinator.setupIfNeeded()
-        capture.start()
-      }
-    }
 
     return vc
   }
 
   func updateUIViewController(_ uiVC: UIViewController, context: Context) {
     // Check if source changed and swap provider if needed
-    let sourceChanged = context.coordinator.updateSource(
+    _ = context.coordinator.updateSource(
       source, delegate: delegate, parentView: uiVC.view)
 
     let capture = context.coordinator.videoCapture
@@ -99,7 +92,7 @@ struct CameraPreviewView: UIViewControllerRepresentable {
   }
 
   // 4️⃣ Define the Coordinator
-  class Coordinator: ObservableObject {
+  @MainActor class Coordinator: ObservableObject {
     var videoCapture: FrameProvider
     weak var delegate: FrameProviderDelegate?
     private var hasSetUpSession = false
@@ -122,8 +115,8 @@ struct CameraPreviewView: UIViewControllerRepresentable {
       case .videoFile:
         return VideoFileFrameProvider()
       // COMMENTED OUT FOR APP STORE SUBMISSION
-      // case .metaGlasses:
-      //   return MetaGlassesFrameProvider()
+      case .metaGlasses:
+        return MetaGlassesFrameProvider(glassesViewModel: MetaGlassesViewModel.shared)
       default:
         return VideoCapture()
       }

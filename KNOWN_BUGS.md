@@ -1,23 +1,33 @@
 # Known Bugs
 
-## Meta Glasses: Phone camera fallback after unpair/repair in same session
+## Meta Glasses: Phone camera fallback during cold-start / repair race
 
-**Status:** Open
+**Status:** Resolved
 
 **Description:**
-When unpairing and repairing Meta glasses within the same app session, the camera falls back to the phone camera instead of using the glasses stream.
+On a second cold launch (and after unpair/repair within a session), the camera
+fell back to the phone's back camera even when glasses were selected and
+permission was requested.
 
 **Root Cause:**
-`DetectorContainer.captureSource` requires `streamSessionVM.isStreaming || streamSessionVM.hasActiveDevice` to be true before returning `.metaGlasses`. However, when registration completes, these values are not yet populated because:
-1. `hasActiveDevice` depends on `AutoDeviceSelector.activeDeviceStream()`, an async stream that doesn't emit immediately
-2. `isStreaming` is only true after the stream has started
+The capture source in `DetectorContainer` was *derived* from several
+asynchronously-populated, volatile flags (`isRegistered`, `isStreaming`,
+`isReady`, `hasActiveDevice`) and recomputed via scattered `.onChange`
+observers. On cold start these flags populate in a non-deterministic order, so
+the detector picked `.avFoundation` first and could flip back to it mid-handshake
+(e.g. while in `.requestingPermission` before `hasActiveDevice` latched true).
+Each flip rebuilt the `FrameProvider`, tearing down the in-flight glasses
+session, so the view settled on the phone camera.
 
-By the time `captureSource` is evaluated, both values are still `false`, so it returns `.avFoundation` (phone camera).
+**Fix:**
+The capture source is now a pure function of durable user settings
+(`settings.useMetaGlasses` / `useARMode`) — see `DetectorContainer.computeCaptureSource()`.
+When glasses are selected the source is always `.metaGlasses`; connection
+progress and terminal errors are surfaced via `GlassesPhaseOverlay` (driven by
+`MetaGlassesViewModel.displayPhase`) instead of silently falling back to the
+phone camera. `startStreaming` also has a 15s timeout so "connecting" can no
+longer hang forever when no glasses are reachable.
 
-**Workaround:**
-Close and reopen the app after repairing glasses.
-
-**Potential Fixes (not yet implemented):**
-1. Proactively start streaming when registration completes (in `MetaGlassesEnvironment`)
-2. Use `wearablesVM.devices.isEmpty` as the guard instead of `hasActiveDevice`
-3. Add a delay/retry mechanism when registration completes to wait for device availability
+Cross-tab navigation from the error overlay to the Meta Glasses settings section
+is still a placeholder (`GlassesPhaseOverlay.onOpenSettings`) — to be wired up in
+a follow-up.

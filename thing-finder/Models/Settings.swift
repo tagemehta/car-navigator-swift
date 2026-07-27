@@ -176,6 +176,9 @@ public class Settings: ObservableObject {
 
   /// Whether to use Meta glasses camera when available
   @AppStorage("use_meta_glasses") var useMetaGlasses: Bool = false
+
+  /// Whether to use high quality stream (720p/30fps) vs default (504p/24fps)
+  @AppStorage("use_high_quality_glasses_stream") var useHighQualityGlassesStream: Bool = false
 }
 
 /// Volume curve types for distance mapping
@@ -345,6 +348,7 @@ extension Settings {
 
     // Meta Glasses Settings
     useMetaGlasses = false
+    useHighQualityGlassesStream = false
 
     // Language Settings
     appLanguageRaw = SupportedLanguage.system.rawValue

@@ -86,24 +86,6 @@
           }
         }
       }
-    },
-    "NSPhotoLibraryUsageDescription" : {
-      "comment" : "Privacy - Photo Library Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "The app save screenshots for debugging"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La aplicación guarda capturas de pantalla para depuración"
-          }
-        }
-      }
     }
   },
   "version" : "1.0"

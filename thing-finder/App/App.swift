@@ -1,14 +1,15 @@
 // MARK: - App Entry
 // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
-// import MWDATCore
+import MWDATCore
 import SwiftUI
 
 @main
 struct ThingFinderApp: App {
   @AppStorage("app_language") private var appLanguageRaw: String = SupportedLanguage.system.rawValue
   @StateObject private var sharedSettings = Settings()
+  @StateObject private var router = AppRouter()
   // COMMENTED OUT FOR APP STORE SUBMISSION
-  // @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
+  @StateObject private var glassesVM = MetaGlassesViewModel.shared
 
   private var appLanguage: SupportedLanguage {
     SupportedLanguage(rawValue: appLanguageRaw) ?? .system
@@ -23,42 +24,42 @@ struct ThingFinderApp: App {
 
     // COMMENTED OUT FOR APP STORE SUBMISSION
     // Configure Wearables SDK on launch (matches Meta sample pattern)
-    // do {
-    //   try Wearables.configure()
-    // } catch {
-    //   print("[ThingFinderApp] Failed to configure Wearables SDK: \(error)")
-    // }
+    do {
+      try Wearables.configure()
+    } catch {
+      print("[ThingFinderApp] Failed to configure Wearables SDK: \(error)")
+    }
   }
 
   var body: some Scene {
     WindowGroup {
       MainTabView()
         .environmentObject(sharedSettings)
+        .environmentObject(router)
         .environment(\.locale, LanguageManager.locale(for: appLanguage))
         .onChange(of: appLanguageRaw) { _, newValue in
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
         }
-      // COMMENTED OUT FOR APP STORE SUBMISSION
-      // .environmentObject(glassesEnvironment.wearablesViewModel)
-      // .environmentObject(glassesEnvironment.streamSessionViewModel)
-      // .onOpenURL { url in
-      //   // Handle callback from Meta AI app after registration/permission flows
-      //   guard FeatureFlags.metaGlassesEnabled else { return }
-      //   // Filter for DAT SDK URLs using metaWearablesAction param (matches Meta sample)
-      //   guard
-      //     let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-      //     components.queryItems?.contains(where: { $0.name == "metaWearablesAction" }) == true
-      //   else { return }
-      //   Task {
-      //     do {
-      //       _ = try await Wearables.shared.handleUrl(url)
-      //     } catch let error as RegistrationError {
-      //       print("[ThingFinderApp] Registration error: \(error.description)")
-      //     } catch {
-      //       print("[ThingFinderApp] Failed to handle URL: \(error)")
-      //     }
-      //   }
-      // }
+        // COMMENTED OUT FOR APP STORE SUBMISSION
+        .environmentObject(glassesVM)
+        .onOpenURL { url in
+          // Handle callback from Meta AI app after registration/permission flows
+          guard FeatureFlags.metaGlassesEnabled else { return }
+          // Filter for DAT SDK URLs using metaWearablesAction param (matches Meta sample)
+          guard
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            components.queryItems?.contains(where: { $0.name == "metaWearablesAction" }) == true
+          else { return }
+          Task {
+            do {
+              _ = try await Wearables.shared.handleUrl(url)
+            } catch let error as RegistrationError {
+              print("[ThingFinderApp] Registration error: \(error.description)")
+            } catch {
+              print("[ThingFinderApp] Failed to handle URL: \(error)")
+            }
+          }
+        }
     }
   }
 }
@@ -103,15 +104,17 @@ struct MainTabView: View {
   @AppStorage("hasAcceptedExperimentalDisclaimer") private var hasAcceptedExperimentalDisclaimer:
     Bool = false
   @EnvironmentObject var sharedSettings: Settings
+  @EnvironmentObject var router: AppRouter
 
   var body: some View {
-    TabView {
+    TabView(selection: $router.selectedTab) {
       NavigationStack {
         InputView()
       }
       .tabItem {
         Label("Find", systemImage: "magnifyingglass")
       }
+      .tag(AppTab.find)
 
       NavigationStack {
         SettingsView(settings: sharedSettings)
@@ -119,6 +122,7 @@ struct MainTabView: View {
       .tabItem {
         Label("Settings", systemImage: "gear")
       }
+      .tag(AppTab.settings)
 
       // NavigationStack {
       //     CompassView()
