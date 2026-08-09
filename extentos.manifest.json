@@ -4,7 +4,7 @@
   "glasses": "meta",
   "appPackage": "com.mitat.thing-finder",
   "extentos": {
-    "libraryVersion": "2.2.1",
+    "libraryVersion": "2.2.3",
     "installedAt": "2026-08-09T09:47:44.052Z",
     "lastUpdatedAt": "2026-08-09T09:47:44.052Z"
   },
@@ -30,7 +30,7 @@
   "spm": {
     "package": "Extentos",
     "packageURL": "https://github.com/extentos/swift-glasses",
-    "version": "2.2.1",
+    "version": "2.2.3",
     "projectFile": "Package.swift",
     "additionalProducts": [
       {
