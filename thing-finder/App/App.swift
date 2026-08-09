@@ -5,8 +5,14 @@ import SwiftUI
 
 @main
 struct ThingFinderApp: App {
+  @Environment(\.scenePhase) private var scenePhase
   @AppStorage("app_language") private var appLanguageRaw: String = SupportedLanguage.system.rawValue
   @StateObject private var sharedSettings = Settings()
+  // Held here so the SDK is constructed at launch. ExtentosBootstrap opens the
+  // transport from its init, but every other reference to it in the app sits
+  // inside a closure or a lazily-built view, so without this the glasses only
+  // connect once the user happens to open the connection page.
+  @StateObject private var extentos = ExtentosBootstrap.shared
   // COMMENTED OUT FOR APP STORE SUBMISSION
   // @StateObject private var glassesEnvironment = MetaGlassesEnvironment.shared
 
@@ -37,6 +43,14 @@ struct ThingFinderApp: App {
         .environment(\.locale, LanguageManager.locale(for: appLanguage))
         .onChange(of: appLanguageRaw) { _, newValue in
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
+        }
+        .onOpenURL { url in
+          // Route the Meta auth callback through the SDK (NOT the raw
+          // Wearables API — the SDK owns the DAT session).
+          Task { _ = await ExtentosBootstrap.shared.glasses.handleUrl(url) }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+          ExtentosBootstrap.shared.sceneObserver.scenePhaseChanged(to: newPhase)
         }
       // COMMENTED OUT FOR APP STORE SUBMISSION
       // .environmentObject(glassesEnvironment.wearablesViewModel)
