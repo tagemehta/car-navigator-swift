@@ -13,3 +13,5 @@ thing-finder/Secrets.xcconfig
 **.JPG
 **.mp4
 evals/**
+# Extentos
+extentos.session.plist

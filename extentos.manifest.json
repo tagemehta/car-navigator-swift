@@ -1,0 +1,52 @@
+{
+  "manifestVersion": 2,
+  "platform": "ios",
+  "glasses": "meta",
+  "appPackage": "com.mitat.thing-finder",
+  "extentos": {
+    "libraryVersion": "2.2.1",
+    "installedAt": "2026-08-09T09:47:44.052Z",
+    "lastUpdatedAt": "2026-08-09T09:47:44.052Z"
+  },
+  "generatedFiles": [
+    {
+      "path": "thing-finder/Extentos/ExtentosBootstrap.swift",
+      "template": "connection_module",
+      "generatedAt": "2026-08-09T09:47:44.052Z",
+      "generatedByTool": "generateConnectionModule"
+    },
+    {
+      "path": "thing-finder/Info.plist",
+      "template": "info_plist",
+      "generatedAt": "2026-08-09T09:47:44.052Z",
+      "generatedByTool": "generateConnectionModule"
+    }
+  ],
+  "permissions": [],
+  "capabilities": [
+    "video_frames"
+  ],
+  "handlerNames": [],
+  "spm": {
+    "package": "Extentos",
+    "packageURL": "https://github.com/extentos/swift-glasses",
+    "version": "2.2.1",
+    "projectFile": "Package.swift",
+    "additionalProducts": [
+      {
+        "product": "GlassesCore",
+        "target": "thing-finder"
+      },
+      {
+        "product": "GlassesUI",
+        "target": "thing-finder"
+      },
+      {
+        "product": "GlassesDebug",
+        "target": "thing-finder",
+        "debugOnly": true
+      }
+    ],
+    "minimumXcodeVersion": "16.0"
+  }
+}
