@@ -18,9 +18,7 @@ struct DetectorContainer: View {
 
   // MARK: – Dependencies
   @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
-  // COMMENTED OUT FOR APP STORE SUBMISSION
-  // @EnvironmentObject private var wearablesVM: WearablesViewModel
-  // @EnvironmentObject private var streamSessionVM: StreamSessionViewModel
+  @ObservedObject private var glasses = GlassesReadiness.shared
 
   // Track capture source as state so we can update it reactively
   @State private var currentCaptureSource: CaptureSourceType = .avFoundation
@@ -47,6 +45,25 @@ struct DetectorContainer: View {
         targetTextDescription: description,
         settings: settings,
         isParatransitMode: isParatransitMode))
+    // SwiftUI builds CameraPreviewView's coordinator BEFORE onAppear runs, so
+    // this seed - not computeCaptureSource() - decides the first provider.
+    // Seeding it unconditionally to .avFoundation meant the glasses source
+    // could never be the initial one.
+    _currentCaptureSource = State(
+      initialValue: Self.initialCaptureSource(settings: settings))
+  }
+
+  /// Mirrors computeCaptureSource(), but callable from init.
+  private static func initialCaptureSource(settings: Settings) -> CaptureSourceType {
+    if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses
+      && GlassesReadiness.shared.isReady
+    {
+      return .metaGlasses
+    }
+    if settings.useARMode {
+      return .arKit
+    }
+    return .avFoundation
   }
 
   // MARK: - Computed Properties
@@ -54,15 +71,9 @@ struct DetectorContainer: View {
   /// Determines the capture source based on settings and Meta glasses state.
   /// Falls back to phone camera immediately on failure or when glasses aren't usable.
   private func computeCaptureSource() -> CaptureSourceType {
-    // COMMENTED OUT FOR APP STORE SUBMISSION
-    // if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses {
-    //   // Use glasses if registered AND (streaming or has an active device ready)
-    //   if wearablesVM.registrationState == .registered
-    //     && (streamSessionVM.isStreaming || streamSessionVM.hasActiveDevice)
-    //   {
-    //     return .metaGlasses
-    //   }
-    // }
+    if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses && glasses.isReady {
+      return .metaGlasses
+    }
     if settings.useARMode {
       return .arKit
     }
@@ -109,15 +120,10 @@ struct DetectorContainer: View {
       detectionModel.handleOrientationChange()
       currentCaptureSource = computeCaptureSource()
     }
-    // Re-evaluate capture source when relevant states change
-    // .onChange(of: wearablesVM.registrationState) { _, _ in
-    //   currentCaptureSource = computeCaptureSource()
-    // }
-    // .onChange(of: streamSessionVM.isStreaming) { _, _ in
-    //   currentCaptureSource = computeCaptureSource()
-    // }
-    // .onChange(of: streamSessionVM.hasActiveDevice) { _, _ in
-    //   currentCaptureSource = computeCaptureSource()
-    // }
+    // Re-evaluate the capture source when the connection changes, so a
+    // reconnect mid-session picks the glasses back up.
+    .onChange(of: glasses.isReady) { _, _ in
+      currentCaptureSource = computeCaptureSource()
+    }
   }
 }
