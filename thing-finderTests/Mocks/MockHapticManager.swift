@@ -14,7 +14,6 @@ final class MockHapticManager: HapticManagerProtocol {
   private(set) var updateIntervalCallCount = 0
   private(set) var successCallCount = 0
   private(set) var failureCallCount = 0
-  private(set) var detectionCallCount = 0
   private(set) var lastInterval: TimeInterval?
 
   func startPulsing(interval: TimeInterval) {
@@ -41,10 +40,6 @@ final class MockHapticManager: HapticManagerProtocol {
     failureCallCount += 1
   }
 
-  func playDetection() {
-    detectionCallCount += 1
-  }
-
   func reset() {
     isPulsing = false
     startPulsingCallCount = 0
@@ -52,7 +47,6 @@ final class MockHapticManager: HapticManagerProtocol {
     updateIntervalCallCount = 0
     successCallCount = 0
     failureCallCount = 0
-    detectionCallCount = 0
     lastInterval = nil
   }
 }

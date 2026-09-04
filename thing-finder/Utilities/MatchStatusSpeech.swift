@@ -5,7 +5,7 @@
 //
 //  Ownership boundary
 //  ──────────────────
-//  • .waiting  — silent (PreMatchFeedbackController owns waiting feedback via earcon)
+//  • .waiting  — silent (no feedback while a candidate is being evaluated)
 //  • .rejected — silent (PreMatchFeedbackController announces "Not yours — [desc]")
 //  • .unknown  — silent
 //  • .partial  — "Possible match — plate not visible"
@@ -34,7 +34,7 @@ enum MatchStatusSpeech {
   ) -> String? {
     switch status {
     case .waiting:
-      // Silent — the evaluation earcon already signals activity.
+      // Silent — no feedback while a candidate is still being evaluated.
       return nil
     case .partial:
       return String(
