@@ -33,14 +33,27 @@ public final class NetworkMonitor: NetworkMonitorProtocol {
     subject.removeDuplicates().eraseToAnyPublisher()
   }
 
+  /// How long to block for the first `NWPathMonitor` callback before falling
+  /// back to an optimistic default. `NWPathMonitor` typically delivers its
+  /// first update within a few milliseconds, so this only adds latency on a
+  /// genuine cold start — but without it, a Shortcut can launch straight into
+  /// the camera before the real (offline) status ever arrives.
+  private static let initialStatusTimeout: TimeInterval = 0.3
+
   private init() {
-    // Optimistic default so we never announce a false "offline" before the
-    // first path update arrives.
-    subject = CurrentValueSubject(true)
+    let semaphore = DispatchSemaphore(value: 0)
+    var initialConnected = true
+    monitor.pathUpdateHandler = { path in
+      initialConnected = path.status == .satisfied
+      semaphore.signal()
+    }
+    monitor.start(queue: queue)
+    _ = semaphore.wait(timeout: .now() + Self.initialStatusTimeout)
+
+    subject = CurrentValueSubject(initialConnected)
     monitor.pathUpdateHandler = { [weak self] path in
       self?.subject.send(path.status == .satisfied)
     }
-    monitor.start(queue: queue)
   }
 
   deinit {

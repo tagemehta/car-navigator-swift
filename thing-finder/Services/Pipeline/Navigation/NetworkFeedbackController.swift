@@ -9,11 +9,24 @@
 //    1. Pre-flight  — warns immediately if the device is already offline
 //                     when a search session starts.
 //    2. Outage      — "Connection lost" / "Connection restored" on hard
-//                     connectivity transitions (Wi-Fi/cellular unreachable).
+//                     connectivity transitions (Wi-Fi/cellular unreachable),
+//                     each with a distinct haptic (error tap / success tap)
+//                     so the transition is felt as well as heard.
 //    3. Weak signal — "Weak signal" / recovery when requests are timing out
 //                     or failing even though the device reports connectivity.
+//
+//  "Search paused" / "search resumed" are literal: `VerifierService` skips
+//  its network-bound verification calls entirely while offline (see its
+//  `networkMonitor` check), so no requests are wasted or retried into a dead
+//  connection.
 
 import Foundation
+
+/// Distinguishes the haptic pattern used for a connectivity announcement.
+private enum ConnectivityHaptic {
+  case lost
+  case restored
+}
 
 final class NetworkFeedbackController {
 
@@ -78,7 +91,7 @@ final class NetworkFeedbackController {
           String(
             localized: "No internet connection \u{2014} search may not work",
             comment: "Speech: device is offline when a search session starts"),
-          haptic: true, timestamp: timestamp)
+          haptic: .lost, timestamp: timestamp)
       }
       return
     }
@@ -89,15 +102,15 @@ final class NetworkFeedbackController {
     if isConnected {
       announce(
         String(
-          localized: "Connection restored",
+          localized: "Connection restored \u{2014} search resumed",
           comment: "Speech: internet connectivity restored mid-search"),
-        haptic: false, timestamp: timestamp)
+        haptic: .restored, timestamp: timestamp)
     } else {
       announce(
         String(
           localized: "Connection lost \u{2014} search paused",
           comment: "Speech: internet connectivity lost mid-search"),
-        haptic: true, timestamp: timestamp)
+        haptic: .lost, timestamp: timestamp)
     }
   }
 
@@ -116,24 +129,28 @@ final class NetworkFeedbackController {
         String(
           localized: "Weak signal \u{2014} verification may be delayed",
           comment: "Speech: connected, but requests are failing or timing out"),
-        haptic: false, timestamp: timestamp)
+        haptic: nil, timestamp: timestamp)
     } else {
       announce(
         String(
           localized: "Signal improved",
           comment: "Speech: weak-signal condition has cleared"),
-        haptic: false, timestamp: timestamp)
+        haptic: nil, timestamp: timestamp)
     }
   }
 
   // MARK: - Helpers
 
-  private func announce(_ phrase: String, haptic: Bool, timestamp: Date) {
+  private func announce(_ phrase: String, haptic: ConnectivityHaptic?, timestamp: Date) {
     // Connectivity status is safety-relevant for every user, so unlike other
     // categories of feedback it isn't gated by its own toggle — only by the
     // master speech/haptics switches.
-    if haptic && settings.enableHaptics {
-      hapticManager.playFailure()
+    if settings.enableHaptics {
+      switch haptic {
+      case .lost: hapticManager.playFailure()
+      case .restored: hapticManager.playSuccess()
+      case nil: break
+      }
     }
     guard settings.enableSpeech else { return }
     speaker.speak(phrase)

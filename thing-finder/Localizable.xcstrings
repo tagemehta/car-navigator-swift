@@ -602,6 +602,9 @@
         }
       }
     },
+    "Connect to Wi-Fi or cellular data before starting a search." : {
+
+    },
     "Connected!" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -623,6 +626,12 @@
           }
         }
       }
+    },
+    "Connection lost — search paused" : {
+      "comment" : "Speech: internet connectivity lost mid-search"
+    },
+    "Connection restored — search resumed" : {
+      "comment" : "Speech: internet connectivity restored mid-search"
     },
     "Contact Us" : {
       "localizations" : {
@@ -1596,6 +1605,12 @@
         }
       }
     },
+    "No Internet Connection" : {
+
+    },
+    "No internet connection — search may not work" : {
+      "comment" : "Speech: device is offline when a search session starts"
+    },
     "No vehicles detected" : {
       "localizations" : {
         "es" : {
@@ -2139,6 +2154,9 @@
         }
       }
     },
+    "Signal improved" : {
+      "comment" : "Speech: weak-signal condition has cleared"
+    },
     "Siri Shortcuts" : {
       "localizations" : {
         "es" : {
@@ -2569,6 +2587,9 @@
           }
         }
       }
+    },
+    "Weak signal — verification may be delayed" : {
+      "comment" : "Speech: connected, but requests are failing or timing out"
     },
     "What are you looking for?" : {
       "localizations" : {

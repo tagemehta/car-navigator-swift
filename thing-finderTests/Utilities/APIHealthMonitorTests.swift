@@ -64,4 +64,31 @@ final class APIHealthMonitorTests: XCTestCase {
 
     XCTAssertFalse(monitor.isDegraded)
   }
+
+  // MARK: - Concurrency
+
+  func test_concurrentFailuresAndSuccesses_doNotCrashOrCorruptState() {
+    // Regression: recordFailure/recordSuccess must serialize their
+    // read-modify-publish sequence, or a success racing a failure could
+    // reset the counter after the failure already decided to flag, leaving
+    // a stale "degraded" signal despite the connection actually succeeding.
+    let monitor = APIHealthMonitor(failureThreshold: 5)
+    let iterations = 500
+
+    DispatchQueue.concurrentPerform(iterations: iterations) { i in
+      if i % 2 == 0 {
+        monitor.recordFailure(isConnectivityRelated: true)
+      } else {
+        monitor.recordSuccess()
+      }
+    }
+
+    // No crash/deadlock is the primary assertion; the monitor should still
+    // be in a well-defined, readable state afterwards.
+    _ = monitor.isDegraded
+
+    // A final run of successes should always be able to clear the flag.
+    monitor.recordSuccess()
+    XCTAssertFalse(monitor.isDegraded)
+  }
 }

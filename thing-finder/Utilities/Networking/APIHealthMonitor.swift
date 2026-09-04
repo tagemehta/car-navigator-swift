@@ -47,19 +47,22 @@ public final class APIHealthMonitor: APIHealthMonitorProtocol {
   public func recordFailure(isConnectivityRelated: Bool) {
     guard isConnectivityRelated else { return }
     lock.lock()
+    defer { lock.unlock() }
     consecutiveFailures += 1
-    let shouldFlag = consecutiveFailures >= failureThreshold
-    lock.unlock()
-    if shouldFlag && !isDegraded {
+    // Publish while still holding the lock: a concurrent `recordSuccess()`
+    // must not be able to reset the counter between our check and the
+    // publish, which would otherwise flag a stale failure as "degraded"
+    // right after a request had actually succeeded.
+    if consecutiveFailures >= failureThreshold && !subject.value {
       subject.send(true)
     }
   }
 
   public func recordSuccess() {
     lock.lock()
+    defer { lock.unlock() }
     consecutiveFailures = 0
-    lock.unlock()
-    if isDegraded {
+    if subject.value {
       subject.send(false)
     }
   }

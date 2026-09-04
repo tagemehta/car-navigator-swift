@@ -149,8 +149,14 @@ struct InputView: View {
   /// with no network at all (airplane mode, no Wi-Fi/cellular) can't verify
   /// anything, so we stop the user here with an alert instead of letting them
   /// discover it once the camera is already running.
+  ///
+  /// Object Finder searches with no description run entirely on-device
+  /// (`VerifierService` auto-promotes candidates when there's no target
+  /// description to verify against — see `hasTargetDescription`), so those
+  /// are allowed to proceed offline.
   private func attemptStartSearch() {
-    if NetworkMonitor.shared.isConnected {
+    let needsNetwork = !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    if !needsNetwork || NetworkMonitor.shared.isConnected {
       isShowingCamera = true
     } else {
       showNoConnectionAlert = true

@@ -150,6 +150,11 @@ public enum RejectReason: String, Codable {
   case apiError = "api_error"
   case ambiguous = "ambiguous"
   case licensePlateNotVisible = "license_plate_not_visible"
+  /// Verification request failed for a connectivity reason (timeout, DNS
+  /// failure, dropped connection) as opposed to a generic API/parsing issue.
+  /// Kept distinct from `.apiError` so `APIHealthMonitor` can tell a real
+  /// network outage apart from an unrelated verifier failure.
+  case networkError = "network_error"
 
   // Hard reject reasons (will set candidate to .rejected)
   case wrongModelOrColor = "wrong_model_or_color"
@@ -163,7 +168,7 @@ public enum RejectReason: String, Codable {
   public var isRetryable: Bool {
     switch self {
     case .unclearImage, .lowConfidence, .insufficientInfo, .apiError, .ambiguous,
-      .licensePlateNotVisible:
+      .licensePlateNotVisible, .networkError:
       return true
     default:
       return false
@@ -183,6 +188,9 @@ public enum RejectReason: String, Codable {
       return String(
         localized: "Need a better view", comment: "Reject reason: insufficient information")
     case .apiError: return String(localized: "Detection error", comment: "Reject reason: API error")
+    case .networkError:
+      return String(
+        localized: "Connection issue", comment: "Reject reason: connectivity-related failure")
     case .ambiguous:
       return String(localized: "Ambiguous result", comment: "Reject reason: ambiguous detection")
     case .licensePlateNotVisible:

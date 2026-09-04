@@ -472,4 +472,45 @@ final class VerifierSelectorTests: XCTestCase {
 
     wait(for: [expectation], timeout: 15.0)
   }
+
+  // MARK: - APIHealthMonitor reporting
+
+  func test_verify_networkFailure_reportsFailureNotSuccess() {
+    // Regression: TrafficEyeVerifier catches its own network errors and
+    // surfaces them as a non-throwing `.networkError` outcome. The selector
+    // must inspect the outcome (not just "did the publisher throw") so this
+    // doesn't get miscounted as a healthy request.
+    let mockHealthMonitor = MockAPIHealthMonitor()
+    let config = VerificationConfig(expectedPlate: nil, strategy: .hybrid)
+    let selector = VerifierSelector(
+      targetTextDescription: "blue Toyota Camry",
+      config: config,
+      apiHealthMonitor: mockHealthMonitor
+    )
+
+    let candidate = TestCandidates.make()
+    store.upsert(candidate)
+
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    // No network is available in the test sandbox, so the real TrafficEye/LLM
+    // verifiers will fail with a connectivity error.
+    selector.verify(image: UIImage(), candidate: candidate, store: store)
+      .sink(
+        receiveCompletion: { _ in expectation.fulfill() },
+        receiveValue: { outcome, _ in
+          if outcome.rejectReason == .networkError {
+            XCTAssertEqual(mockHealthMonitor.recordFailureCallCount, 1)
+            XCTAssertEqual(mockHealthMonitor.lastFailureWasConnectivityRelated, true)
+            XCTAssertEqual(mockHealthMonitor.recordSuccessCallCount, 0)
+          } else {
+            XCTAssertEqual(mockHealthMonitor.recordSuccessCallCount, 1)
+            XCTAssertEqual(mockHealthMonitor.recordFailureCallCount, 0)
+          }
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 15.0)
+  }
 }

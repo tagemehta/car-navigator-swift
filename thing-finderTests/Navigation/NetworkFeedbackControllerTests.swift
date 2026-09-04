@@ -2,8 +2,8 @@
 //  thing-finderTests
 //
 //  Unit tests for NetworkFeedbackController.
-//  Covers: pre-flight offline check, hard outage transitions, weak-signal
-//  transitions, and reset behavior.
+//  Covers: pre-flight offline check, hard outage transitions (with distinct
+//  lost/restored haptics), weak-signal transitions, and reset behavior.
 
 import XCTest
 
@@ -96,7 +96,8 @@ final class NetworkFeedbackControllerTests: XCTestCase {
     XCTAssertEqual(mockHaptics.failureCallCount, 1)
   }
 
-  func test_connectionRestored_announcesWithoutHaptics() {
+  func test_connectionRestored_announcesWithSuccessHaptic() {
+    settings.enableHaptics = true
     mockNetworkMonitor.isConnected = false
     let controller = makeController()
     let now = Date()
@@ -109,6 +110,8 @@ final class NetworkFeedbackControllerTests: XCTestCase {
     controller.tick(timestamp: now.addingTimeInterval(1.0))
 
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Connection restored"))
+    // Distinct haptic from the "lost" case — success tap, not an error tap.
+    XCTAssertEqual(mockHaptics.successCallCount, 1)
     XCTAssertEqual(mockHaptics.failureCallCount, 0)
   }
 
@@ -190,8 +193,11 @@ final class NetworkFeedbackControllerTests: XCTestCase {
     controller.tick(timestamp: now)  // pre-flight, online
     mockNetworkMonitor.isConnected = false
     controller.tick(timestamp: now.addingTimeInterval(1.0))
+    mockNetworkMonitor.isConnected = true
+    controller.tick(timestamp: now.addingTimeInterval(2.0))
 
     XCTAssertEqual(mockHaptics.failureCallCount, 0)
+    XCTAssertEqual(mockHaptics.successCallCount, 0)
   }
 
   // MARK: - Reset
