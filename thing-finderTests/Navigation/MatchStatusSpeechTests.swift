@@ -10,7 +10,7 @@ import XCTest
 final class MatchStatusSpeechTests: XCTestCase {
 
   // MARK: - Waiting Status
-  // Waiting is now silent — feedback is handled by the earcon.
+  // Waiting is now silent — no feedback while a candidate is being evaluated.
 
   func test_phrase_waiting_returnsNil() {
     XCTAssertNil(MatchStatusSpeech.phrase(for: .waiting))

@@ -6,7 +6,7 @@ import Foundation
 ///
 /// Controller split:
 ///   • `PreMatchFeedbackController`    — handles all audio before a match exists
-///     (session-start, heartbeat, earcon, rejection announcements).
+///     (session-start, heartbeat, rejection announcements).
 ///   • `NavAnnouncer`                  — announces partial / full / lost transitions.
 ///   • `DirectionSpeechController`     — "on your left / right" guidance (change-gated).
 ///   • `DistanceMilestoneController`   — "10 meters / 5 meters / almost there" (LiDAR only).
@@ -24,8 +24,7 @@ final class FrameNavigationManager: NavigationSpeaker {
     targetDescription: String,
     speaker: SpeechOutput,
     beeper: Beeper? = nil,
-    hapticManager: HapticManagerProtocol? = nil,
-    earcon: EarconOutput? = nil
+    hapticManager: HapticManagerProtocol? = nil
   ) {
     // Shared cache coordinates phrase throttling across all controllers.
     let cache = AnnouncementCache()
@@ -39,8 +38,6 @@ final class FrameNavigationManager: NavigationSpeaker {
 
     self.preMatchController = PreMatchFeedbackController(
       speaker: speaker,
-      earcon: earcon ?? DetectionEarcon(),
-      hapticManager: sharedHaptics,
       cache: cache,
       config: config,
       settings: settings,

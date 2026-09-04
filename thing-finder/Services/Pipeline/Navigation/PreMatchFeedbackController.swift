@@ -8,9 +8,7 @@
 //  Responsibilities:
 //    1. Session-start  — "Searching for [targetDescription]…" once per search.
 //    2. Heartbeat      — "Still looking…" every ~20 s while no candidates exist.
-//    3. Earcon         — soft tone + light haptic tap ~0.3 s after any new car
-//                        enters the pipeline (deduped for candidate lifetime).
-//    4. Rejections     — "Not yours — [desc]" per candidate, throttled;
+//    3. Rejections     — "Not yours — [desc]" per candidate, throttled;
 //                        degrades to "Several cars nearby, still looking" in
 //                        high-density mode (> N rejections in a rolling window).
 
@@ -21,8 +19,6 @@ final class PreMatchFeedbackController {
   // MARK: - Dependencies
 
   private let speaker: SpeechOutput
-  private let earcon: EarconOutput
-  private let hapticManager: HapticManagerProtocol
   private let cache: AnnouncementCache
   private let config: NavigationFeedbackConfig
   private let settings: Settings
@@ -31,14 +27,6 @@ final class PreMatchFeedbackController {
   // MARK: - Session state
 
   private var sessionStarted = false
-
-  // MARK: - Earcon deduplication
-
-  /// Lifetime set — never pruned. Prevents re-firing for candidates that
-  /// leave and re-enter the frame (e.g., momentary occlusion).
-  private var seenCandidates: Set<UUID> = []
-  /// First-seen timestamps for the stability gate; pruned when candidate leaves.
-  private var candidateFirstSeen: [UUID: Date] = [:]
 
   // MARK: - Heartbeat
 
@@ -57,16 +45,12 @@ final class PreMatchFeedbackController {
 
   init(
     speaker: SpeechOutput,
-    earcon: EarconOutput,
-    hapticManager: HapticManagerProtocol,
     cache: AnnouncementCache,
     config: NavigationFeedbackConfig,
     settings: Settings,
     targetDescription: String
   ) {
     self.speaker = speaker
-    self.earcon = earcon
-    self.hapticManager = hapticManager
     self.cache = cache
     self.config = config
     self.settings = settings
@@ -92,61 +76,20 @@ final class PreMatchFeedbackController {
 
     let hasMatch = candidates.contains { $0.matchStatus == .partial || $0.matchStatus == .full }
 
-    if !hasMatch {
-      // tickEarcons runs unconditionally — it has its own enableBeeps/enableHaptics guards.
-      tickEarcons(candidates: candidates, timestamp: timestamp)
-      // Speech-only: heartbeat and rejection announcements remain gated by enableSpeech.
-      if settings.enableSpeech {
-        tickHeartbeat(candidates: candidates, timestamp: timestamp)
-        tickRejections(candidates: candidates, timestamp: timestamp)
-      }
-    }
-
-    // Prune first-seen times for candidates that left the snapshot.
-    // Runs unconditionally so entries don't leak when speech is off.
-    // (seenCandidates is intentionally never pruned — lifetime deduplication.)
-    let liveIDs = Set(candidates.map { $0.id })
-    for id in candidateFirstSeen.keys where !liveIDs.contains(id) {
-      candidateFirstSeen.removeValue(forKey: id)
+    // Speech-only: heartbeat and rejection announcements remain gated by enableSpeech.
+    if !hasMatch && settings.enableSpeech {
+      tickHeartbeat(candidates: candidates, timestamp: timestamp)
+      tickRejections(candidates: candidates, timestamp: timestamp)
     }
   }
 
   /// Resets all session state. Call when the user starts a new search.
   func reset() {
     sessionStarted = false
-    seenCandidates.removeAll()
-    candidateFirstSeen.removeAll()
     lastHeartbeatTime = .distantPast
     announcedRejections.removeAll()
     recentRejectionTimes.removeAll()
     lastGroupedRejectionTime = .distantPast
-  }
-
-  // MARK: - Earcon
-
-  private func tickEarcons(candidates: [Candidate], timestamp: Date) {
-    guard settings.enableBeeps else { return }
-
-    for candidate in candidates {
-      let id = candidate.id
-      guard !seenCandidates.contains(id) else { continue }
-
-      // Record when we first saw this candidate.
-      if candidateFirstSeen[id] == nil {
-        candidateFirstSeen[id] = timestamp
-      }
-      guard let firstSeen = candidateFirstSeen[id] else { continue }
-
-      // Stability gate: ignore transient detections under the threshold.
-      guard timestamp.timeIntervalSince(firstSeen) >= config.earconStabilityGate else { continue }
-
-      // Commit: mark as seen for the lifetime of this session.
-      seenCandidates.insert(id)
-      earcon.play()
-      if settings.enableHaptics {
-        hapticManager.playDetection()
-      }
-    }
   }
 
   // MARK: - Heartbeat

@@ -6,7 +6,7 @@
 //  Ownership boundary
 //  ──────────────────
 //  NavAnnouncer handles: full / partial / lost status transitions + vehicle view.
-//  PreMatchFeedbackController handles: session-start, heartbeat, earcon, rejections.
+//  PreMatchFeedbackController handles: session-start, heartbeat, rejections.
 
 import XCTest
 
@@ -165,7 +165,7 @@ final class NavAnnouncerTests: XCTestCase {
   }
 
   func test_tick_noSpeechForWaitingStatus() {
-    // Waiting is now silent — earcon handles evaluation feedback.
+    // Waiting is now silent — no feedback while a candidate is being evaluated.
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.make()
