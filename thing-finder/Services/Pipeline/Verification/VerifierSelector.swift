@@ -187,8 +187,13 @@ public final class VerifierSelector {
         scheduler: DispatchQueue.main,
         customError: { VerificationError.timeout }
       )
+      .handleEvents(receiveOutput: { _ in
+        APIHealthMonitor.shared.recordSuccess()
+      })
       .catch { error -> AnyPublisher<VerificationOutcome, Error> in
-        Self.outcomeForError(error)
+        APIHealthMonitor.shared.recordFailure(
+          isConnectivityRelated: NetworkErrorClassifier.isConnectivityError(error))
+        return Self.outcomeForError(error)
       }
       .map { outcome in (outcome, verifierName) }
       .eraseToAnyPublisher()

@@ -91,6 +91,7 @@ struct InputView: View {
   @State private var showPlaceholder = true
   @State private var showPasteAlert = false
   @State private var pasteAlertMessage = ""
+  @State private var showNoConnectionAlert = false
   @FocusState private var isInputFocused: Bool
   // Vehicle classes for Uber Finder
   private let vehicleClasses = ["car", "truck", "bus"]
@@ -131,7 +132,7 @@ struct InputView: View {
       showPlaceholder = false
       isParatransitMode = false
       saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
-      isShowingCamera = true
+      attemptStartSearch()
     }
 
     if let paratransitDesc = shortcutNavigationState.consumePendingParatransitDescription() {
@@ -140,7 +141,19 @@ struct InputView: View {
       showPlaceholder = false
       isParatransitMode = true
       saveToHistory(paratransitDesc, mode: .uberFinder, paratransit: true)
+      attemptStartSearch()
+    }
+  }
+
+  /// Gates navigation to the camera view on connectivity — starting a search
+  /// with no network at all (airplane mode, no Wi-Fi/cellular) can't verify
+  /// anything, so we stop the user here with an alert instead of letting them
+  /// discover it once the camera is already running.
+  private func attemptStartSearch() {
+    if NetworkMonitor.shared.isConnected {
       isShowingCamera = true
+    } else {
+      showNoConnectionAlert = true
     }
   }
 
@@ -245,7 +258,7 @@ struct InputView: View {
         Section {
           Button {
             saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
-            isShowingCamera = true
+            attemptStartSearch()
           } label: {
             if searchMode == .uberFinder {
               Text("Find My Ride")
@@ -274,7 +287,7 @@ struct InputView: View {
                 showPlaceholder = false
                 saveToHistory(
                   item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                isShowingCamera = true
+                attemptStartSearch()
               } label: {
                 HStack {
                   Image(systemName: "star.fill")
@@ -354,7 +367,7 @@ struct InputView: View {
                 showPlaceholder = false
                 saveToHistory(
                   item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                isShowingCamera = true
+                attemptStartSearch()
               } label: {
                 HStack {
                   Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
@@ -409,6 +422,15 @@ struct InputView: View {
           dismissButton: .cancel(Text("OK"))
         )
       }
+      .alert(
+        "No Internet Connection", isPresented: $showNoConnectionAlert,
+        actions: {
+          Button("OK", role: .cancel) {}
+        },
+        message: {
+          Text("Connect to Wi-Fi or cellular data before starting a search.")
+        }
+      )
       .onAppear {
         hideKeyboard()
         checkForShortcutNavigation()
