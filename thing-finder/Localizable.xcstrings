@@ -603,7 +603,14 @@
       }
     },
     "Connect to Wi-Fi or cellular data before starting a search." : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conéctate a Wi-Fi o a datos móviles antes de iniciar una búsqueda."
+          }
+        }
+      }
     },
     "Connected!" : {
       "extractionState" : "stale",
@@ -627,11 +634,38 @@
         }
       }
     },
+    "Connection issue" : {
+      "comment" : "Reject reason: connectivity-related failure",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problema de conexión"
+          }
+        }
+      }
+    },
     "Connection lost — search paused" : {
-      "comment" : "Speech: internet connectivity lost mid-search"
+      "comment" : "Speech: internet connectivity lost mid-search",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conexión perdida; búsqueda pausada"
+          }
+        }
+      }
     },
     "Connection restored — search resumed" : {
-      "comment" : "Speech: internet connectivity restored mid-search"
+      "comment" : "Speech: internet connectivity restored mid-search",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conexión restaurada; búsqueda reanudada"
+          }
+        }
+      }
     },
     "Contact Us" : {
       "localizations" : {
@@ -1606,10 +1640,25 @@
       }
     },
     "No Internet Connection" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión a Internet"
+          }
+        }
+      }
     },
     "No internet connection — search may not work" : {
-      "comment" : "Speech: device is offline when a search session starts"
+      "comment" : "Speech: device is offline when a search session starts",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay conexión a Internet; es posible que la búsqueda no funcione"
+          }
+        }
+      }
     },
     "No vehicles detected" : {
       "localizations" : {
@@ -2155,7 +2204,15 @@
       }
     },
     "Signal improved" : {
-      "comment" : "Speech: weak-signal condition has cleared"
+      "comment" : "Speech: weak-signal condition has cleared",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La señal ha mejorado"
+          }
+        }
+      }
     },
     "Siri Shortcuts" : {
       "localizations" : {
@@ -2589,7 +2646,15 @@
       }
     },
     "Weak signal — verification may be delayed" : {
-      "comment" : "Speech: connected, but requests are failing or timing out"
+      "comment" : "Speech: connected, but requests are failing or timing out",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Señal débil; la verificación puede tardar"
+          }
+        }
+      }
     },
     "What are you looking for?" : {
       "localizations" : {
