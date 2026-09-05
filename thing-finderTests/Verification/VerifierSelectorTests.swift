@@ -503,10 +503,48 @@ final class VerifierSelectorTests: XCTestCase {
             XCTAssertEqual(mockHealthMonitor.recordFailureCallCount, 1)
             XCTAssertEqual(mockHealthMonitor.lastFailureWasConnectivityRelated, true)
             XCTAssertEqual(mockHealthMonitor.recordSuccessCallCount, 0)
-          } else {
+          } else if outcome.didCompleteNetworkRequest {
             XCTAssertEqual(mockHealthMonitor.recordSuccessCallCount, 1)
             XCTAssertEqual(mockHealthMonitor.recordFailureCallCount, 0)
+          } else {
+            // Local outcome (e.g. rejected before any network request was
+            // made) — must not affect APIHealthMonitor at all.
+            XCTAssertEqual(mockHealthMonitor.recordSuccessCallCount, 0)
+            XCTAssertEqual(mockHealthMonitor.recordFailureCallCount, 0)
           }
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 15.0)
+  }
+
+  func test_verify_localUnclearImageOutcome_doesNotRecordSuccess() {
+    // `UIImage()` has no backing `cgImage`, so `TrafficEyeVerifier`'s blur
+    // check rejects it locally as `.unclearImage` before ever issuing a
+    // network request. This must not be mistaken for a completed request
+    // and must not clear APIHealthMonitor degradation.
+    let mockHealthMonitor = MockAPIHealthMonitor()
+    let config = VerificationConfig(expectedPlate: nil, strategy: .hybrid)
+    let selector = VerifierSelector(
+      targetTextDescription: "blue Toyota Camry",
+      config: config,
+      apiHealthMonitor: mockHealthMonitor
+    )
+
+    let candidate = TestCandidates.make()
+    store.upsert(candidate)
+
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    selector.verify(image: UIImage(), candidate: candidate, store: store)
+      .sink(
+        receiveCompletion: { _ in expectation.fulfill() },
+        receiveValue: { outcome, _ in
+          XCTAssertEqual(outcome.rejectReason, .unclearImage)
+          XCTAssertFalse(outcome.didCompleteNetworkRequest)
+          XCTAssertEqual(mockHealthMonitor.recordSuccessCallCount, 0)
+          XCTAssertEqual(mockHealthMonitor.recordFailureCallCount, 0)
         }
       )
       .store(in: &cancellables)

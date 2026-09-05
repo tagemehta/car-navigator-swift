@@ -199,9 +199,15 @@ public final class VerifierSelector {
         // internally and surface them as a non-throwing `.networkError`
         // outcome, so a request can "succeed" at the Combine level while
         // still representing a connectivity failure.
+        //
+        // Some outcomes (e.g. a blurry image rejected before any API call,
+        // or a local JPEG-encode failure) never touch the network at all.
+        // Those must not be mistaken for a successful request, so they're
+        // excluded via `didCompleteNetworkRequest` rather than reporting a
+        // spurious success.
         if outcome.rejectReason == .networkError {
           self.apiHealthMonitor.recordFailure(isConnectivityRelated: true)
-        } else {
+        } else if outcome.didCompleteNetworkRequest {
           self.apiHealthMonitor.recordSuccess()
         }
         return (outcome, verifierName)

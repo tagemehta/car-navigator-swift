@@ -132,7 +132,7 @@ struct InputView: View {
       showPlaceholder = false
       isParatransitMode = false
       saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
-      attemptStartSearch()
+      Task { await attemptStartSearch() }
     }
 
     if let paratransitDesc = shortcutNavigationState.consumePendingParatransitDescription() {
@@ -141,7 +141,7 @@ struct InputView: View {
       showPlaceholder = false
       isParatransitMode = true
       saveToHistory(paratransitDesc, mode: .uberFinder, paratransit: true)
-      attemptStartSearch()
+      Task { await attemptStartSearch() }
     }
   }
 
@@ -154,9 +154,16 @@ struct InputView: View {
   /// (`VerifierService` auto-promotes candidates when there's no target
   /// description to verify against — see `hasTargetDescription`), so those
   /// are allowed to proceed offline.
-  private func attemptStartSearch() {
+  ///
+  /// Waits for `NetworkMonitor`'s real (not optimistic) connectivity state —
+  /// on a cold launch (e.g. via a Shortcut) `NWPathMonitor` may not have
+  /// delivered its first callback yet, and trusting the optimistic default
+  /// could let an offline search start unannounced.
+  @MainActor
+  private func attemptStartSearch() async {
     let needsNetwork = !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    if !needsNetwork || NetworkMonitor.shared.isConnected {
+    let isConnected = needsNetwork ? await NetworkMonitor.shared.currentConnectivity() : true
+    if !needsNetwork || isConnected {
       isShowingCamera = true
     } else {
       showNoConnectionAlert = true
@@ -264,7 +271,7 @@ struct InputView: View {
         Section {
           Button {
             saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
-            attemptStartSearch()
+            Task { await attemptStartSearch() }
           } label: {
             if searchMode == .uberFinder {
               Text("Find My Ride")
@@ -293,7 +300,7 @@ struct InputView: View {
                 showPlaceholder = false
                 saveToHistory(
                   item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                attemptStartSearch()
+                Task { await attemptStartSearch() }
               } label: {
                 HStack {
                   Image(systemName: "star.fill")
@@ -373,7 +380,7 @@ struct InputView: View {
                 showPlaceholder = false
                 saveToHistory(
                   item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                attemptStartSearch()
+                Task { await attemptStartSearch() }
               } label: {
                 HStack {
                   Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")

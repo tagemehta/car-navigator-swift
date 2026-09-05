@@ -23,4 +23,8 @@ final class MockNetworkMonitor: NetworkMonitorProtocol {
   var connectionPublisher: AnyPublisher<Bool, Never> {
     subject.removeDuplicates().eraseToAnyPublisher()
   }
+
+  func currentConnectivity() async -> Bool {
+    subject.value
+  }
 }

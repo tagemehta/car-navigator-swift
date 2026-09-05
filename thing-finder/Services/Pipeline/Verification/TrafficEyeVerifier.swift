@@ -160,14 +160,21 @@ public final class TrafficEyeVerifier: ImageVerifier {
         "[TrafficEye][\(candidateId.uuidString.suffix(8))] Rejecting: Image too blurry (blurScore=\(blurScore ?? -1))"
       )
       return Just(
-        VerificationOutcome(isMatch: false, description: "blurry", rejectReason: .unclearImage)
+        VerificationOutcome(
+          isMatch: false, description: "blurry", rejectReason: .unclearImage,
+          didCompleteNetworkRequest: false)
       ).setFailureType(to: Error.self)  // promote to Error failure
         .eraseToAnyPublisher()
     }
     guard let imageBytes = image.jpegData(compressionQuality: 1) else {
       DebugPublisher.shared.error(
         "[TrafficEye][\(candidateId.uuidString.suffix(8))] Failed to convert image to JPEG data")
-      return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
+      return Just(
+        VerificationOutcome(
+          isMatch: false, description: "encode_failed", rejectReason: .apiError,
+          didCompleteNetworkRequest: false)
+      ).setFailureType(to: Error.self)
+        .eraseToAnyPublisher()
     }
     return callTrafficEyeAPI(imageBytes: imageBytes, candidateId: candidateId)
       .catch { error -> AnyPublisher<RecognitionResult, Error> in
