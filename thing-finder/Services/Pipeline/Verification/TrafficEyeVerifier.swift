@@ -160,21 +160,35 @@ public final class TrafficEyeVerifier: ImageVerifier {
         "[TrafficEye][\(candidateId.uuidString.suffix(8))] Rejecting: Image too blurry (blurScore=\(blurScore ?? -1))"
       )
       return Just(
-        VerificationOutcome(isMatch: false, description: "blurry", rejectReason: .unclearImage)
+        VerificationOutcome(
+          isMatch: false, description: "blurry", rejectReason: .unclearImage,
+          didCompleteNetworkRequest: false)
       ).setFailureType(to: Error.self)  // promote to Error failure
         .eraseToAnyPublisher()
     }
     guard let imageBytes = image.jpegData(compressionQuality: 1) else {
       DebugPublisher.shared.error(
         "[TrafficEye][\(candidateId.uuidString.suffix(8))] Failed to convert image to JPEG data")
-      return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
+      return Just(
+        VerificationOutcome(
+          isMatch: false, description: "encode_failed", rejectReason: .apiError,
+          didCompleteNetworkRequest: false)
+      ).setFailureType(to: Error.self)
+        .eraseToAnyPublisher()
     }
     return callTrafficEyeAPI(imageBytes: imageBytes, candidateId: candidateId)
-      .catch { error in
+      .catch { error -> AnyPublisher<RecognitionResult, Error> in
         DebugPublisher.shared.error(
           "[TrafficEye][\(candidateId.uuidString.suffix(8))] API call failed: \(error.localizedDescription)"
         )
-        return Just(RecognitionResult(mmr: nil, plate: nil)).setFailureType(to: Error.self)
+        // Distinguish a real connectivity failure from a decode/parsing issue
+        // so it isn't mistaken for a normal "no vehicle detected" response.
+        let isNetworkError = NetworkErrorClassifier.isConnectivityError(error)
+        return Just(
+          RecognitionResult(
+            mmr: nil, plate: nil, isNetworkError: isNetworkError, didCompleteRequest: false))
+          .setFailureType(to: Error.self)
+          .eraseToAnyPublisher()
       }
       .flatMap { result -> AnyPublisher<VerificationOutcome, Error> in
         // --- License plate early verification ---
@@ -214,11 +228,20 @@ public final class TrafficEyeVerifier: ImageVerifier {
         }
 
         guard let mmr = result.mmr else {
+          if result.isNetworkError {
+            DebugPublisher.shared.warning(
+              "[TrafficEye][\(candidateId.uuidString.suffix(8))] Network error during recognition"
+            )
+            let outcome = VerificationOutcome(
+              isMatch: false, description: "Network error", rejectReason: .networkError)
+            return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
+          }
           // No vehicle detection at all
           DebugPublisher.shared.error(
             "[TrafficEye][\(candidateId.uuidString.suffix(8))] No vehicle MMR data in API response")
           let outcome = VerificationOutcome(
-            isMatch: false, description: "No vehicle detected", rejectReason: .apiError)
+            isMatch: false, description: "No vehicle detected", rejectReason: .apiError,
+            didCompleteNetworkRequest: result.didCompleteRequest)
           return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
@@ -268,6 +291,10 @@ public final class TrafficEyeVerifier: ImageVerifier {
   private struct RecognitionResult {
     let mmr: MMR?
     let plate: Plate?
+    var isNetworkError: Bool = false
+    /// False when the response never arrived or couldn't be parsed, so an
+    /// empty result says nothing about the API's health.
+    var didCompleteRequest: Bool = true
   }
 
   private func callTrafficEyeAPI(imageBytes: Data, candidateId: UUID) -> AnyPublisher<

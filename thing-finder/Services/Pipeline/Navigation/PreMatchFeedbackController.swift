@@ -63,7 +63,16 @@ final class PreMatchFeedbackController {
   func tick(candidates: [Candidate], timestamp: Date) {
     // Session-start fires exactly once per search, regardless of match state.
     // Gated by enableSpeech — it's a spoken phrase.
-    if settings.enableSpeech && !sessionStarted {
+    //
+    // `NetworkFeedbackController` runs earlier in the same tick and, on a
+    // cold offline start, speaks a connectivity warning with this same
+    // `timestamp`. `Speaker.speak` cancels whatever is currently playing, so
+    // if we spoke immediately here we'd cut that warning off before the user
+    // ever heard it. Detect that case via the shared cache and defer session
+    // start by one tick (a single frame) so the higher-priority connectivity
+    // warning survives; the normal online path is unaffected.
+    let announcedElsewhereThisTick = cache.lastGlobal?.time == timestamp
+    if settings.enableSpeech && !sessionStarted && !announcedElsewhereThisTick {
       let phrase = String(
         format: NSLocalizedString(
           "Searching for %@",

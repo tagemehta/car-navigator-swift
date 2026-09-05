@@ -182,6 +182,81 @@ final class TrafficEyeVerifierTests: XCTestCase {
         receiveValue: { outcome in
           XCTAssertFalse(outcome.isMatch)
           XCTAssertEqual(outcome.rejectReason, .apiError)
+          // The server answered; the API is healthy even though it saw no vehicle.
+          XCTAssertTrue(outcome.didCompleteNetworkRequest)
+          expectation.fulfill()
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 2.0)
+  }
+
+  func test_verify_networkFailure_reportsNetworkErrorNotApiError() {
+    // Regression: a real connectivity failure must be distinguishable from a
+    // legitimate "no vehicle detected" API response so APIHealthMonitor can
+    // tell the two apart (see test_verify_handlesNoVehicleDetected above).
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    mockURLSession.setResponse(
+      .error(URLError(.notConnectedToInternet)),
+      for: "trafficeye.ai/recognition"
+    )
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let verifier = TrafficEyeVerifier(
+      targetTextDescription: "blue honda",
+      config: config,
+      imgUtils: mockImageUtils,
+      urlSession: mockURLSession,
+      trafficEyeApiKey: "test-key",
+      openAIApiKey: "test-key"
+    )
+
+    let image = createTestImage()
+    let candidateId = UUID()
+
+    verifier.verify(image: image, candidateId: candidateId)
+      .sink(
+        receiveCompletion: { _ in },
+        receiveValue: { outcome in
+          XCTAssertFalse(outcome.isMatch)
+          XCTAssertEqual(outcome.rejectReason, .networkError)
+          expectation.fulfill()
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 2.0)
+  }
+
+  func test_verify_malformedResponse_doesNotCountAsCompletedRequest() {
+    // Regression: an undecodable payload is caught and surfaced as the same
+    // "no vehicle detected" outcome as a valid empty response. It must not
+    // report a completed request, or it would clear a weak-signal warning.
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    mockURLSession.setJSONResponse(
+      "{ this is not valid json",
+      for: "trafficeye.ai/recognition"
+    )
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let verifier = TrafficEyeVerifier(
+      targetTextDescription: "blue honda",
+      config: config,
+      imgUtils: mockImageUtils,
+      urlSession: mockURLSession,
+      trafficEyeApiKey: "test-key",
+      openAIApiKey: "test-key"
+    )
+
+    verifier.verify(image: createTestImage(), candidateId: UUID())
+      .sink(
+        receiveCompletion: { _ in },
+        receiveValue: { outcome in
+          XCTAssertFalse(outcome.isMatch)
+          XCTAssertFalse(outcome.didCompleteNetworkRequest)
           expectation.fulfill()
         }
       )

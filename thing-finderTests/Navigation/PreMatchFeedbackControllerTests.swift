@@ -96,6 +96,39 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     XCTAssertEqual(mockSpeaker.speakCallCount, 0)
   }
 
+  func test_sessionStart_deferredWhenAnotherControllerSpokeSameTick() {
+    // Regression: `NetworkFeedbackController` runs earlier in the same
+    // `FrameNavigationManager.tick()` call and, on a cold offline start,
+    // speaks a connectivity warning using the same `timestamp`. Since
+    // `Speaker.speak` cancels whatever is currently playing, the session
+    // start announcement must not immediately speak over it.
+    let controller = makeController(description: "red Toyota")
+    let now = Date()
+
+    // Simulate NetworkFeedbackController having already spoken this tick.
+    cache.lastGlobal = (phrase: "No internet connection — search may not work", time: now)
+
+    controller.tick(candidates: [], timestamp: now)
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Searching for"))
+  }
+
+  func test_sessionStart_firesOnNextTick_afterDeferral() {
+    let controller = makeController(description: "red Toyota")
+    let now = Date()
+
+    // First tick: deferred because another controller already spoke.
+    cache.lastGlobal = (phrase: "No internet connection — search may not work", time: now)
+    controller.tick(candidates: [], timestamp: now)
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Searching for"))
+
+    // Next tick: nothing new was spoken at this later timestamp, so session
+    // start proceeds normally.
+    let next = now.addingTimeInterval(0.05)
+    controller.tick(candidates: [], timestamp: next)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Searching for"))
+  }
+
   // MARK: - Heartbeat
 
   func test_heartbeat_firesAfterInterval_whenNoCandidates() {

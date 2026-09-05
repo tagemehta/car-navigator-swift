@@ -5,6 +5,7 @@ import Foundation
 /// Call `tick(at:candidates:targetBox:distance:)` *once per video frame*.
 ///
 /// Controller split:
+///   • `NetworkFeedbackController`     — warns about connectivity loss / weak signal.
 ///   • `PreMatchFeedbackController`    — handles all audio before a match exists
 ///     (session-start, heartbeat, rejection announcements).
 ///   • `NavAnnouncer`                  — announces partial / full / lost transitions.
@@ -13,6 +14,7 @@ import Foundation
 ///   • `HapticBeepController`          — proximity beeps and haptic pulses.
 final class FrameNavigationManager: NavigationSpeaker {
   private let settings: Settings
+  private let networkController: NetworkFeedbackController
   private let preMatchController: PreMatchFeedbackController
   private let announcer: NavAnnouncer
   private let dirController: DirectionSpeechController
@@ -24,7 +26,9 @@ final class FrameNavigationManager: NavigationSpeaker {
     targetDescription: String,
     speaker: SpeechOutput,
     beeper: Beeper? = nil,
-    hapticManager: HapticManagerProtocol? = nil
+    hapticManager: HapticManagerProtocol? = nil,
+    networkMonitor: NetworkMonitorProtocol? = nil,
+    apiHealthMonitor: APIHealthMonitorProtocol? = nil
   ) {
     // Shared cache coordinates phrase throttling across all controllers.
     let cache = AnnouncementCache()
@@ -35,6 +39,14 @@ final class FrameNavigationManager: NavigationSpeaker {
       retryPhraseCooldown: 6)
 
     let sharedHaptics = hapticManager ?? HapticManager(settings: settings)
+
+    self.networkController = NetworkFeedbackController(
+      speaker: speaker,
+      hapticManager: sharedHaptics,
+      cache: cache,
+      settings: settings,
+      networkMonitor: networkMonitor ?? NetworkMonitor.shared,
+      apiHealthMonitor: apiHealthMonitor ?? APIHealthMonitor.shared)
 
     self.preMatchController = PreMatchFeedbackController(
       speaker: speaker,
@@ -67,7 +79,9 @@ final class FrameNavigationManager: NavigationSpeaker {
     targetBox: CGRect?,
     distance: Double?
   ) {
-    // Pre-match runs first so its cache updates are visible to other controllers.
+    // Network runs first — connectivity issues are relevant regardless of match
+    // state, and its cache updates should be visible to other controllers.
+    networkController.tick(timestamp: timestamp)
     preMatchController.tick(candidates: candidates, timestamp: timestamp)
     announcer.tick(candidates: candidates, timestamp: timestamp)
 
@@ -87,6 +101,7 @@ final class FrameNavigationManager: NavigationSpeaker {
   }
 
   func reset() {
+    networkController.reset()
     preMatchController.reset()
     dirController.reset()
     milestoneController.reset()

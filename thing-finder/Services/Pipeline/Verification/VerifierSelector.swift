@@ -57,6 +57,7 @@ public final class VerifierSelector {
   let targetTextDescription: String
   private let config: VerificationConfig
   private let strategy: VerifierStrategy
+  private let apiHealthMonitor: APIHealthMonitorProtocol
 
   /// Timeout applied to each individual verification call.
   /// TrafficEye is hybrid (API + OpenAI) so allow enough headroom.
@@ -80,11 +81,13 @@ public final class VerifierSelector {
 
   public init(
     targetTextDescription: String,
-    config: VerificationConfig
+    config: VerificationConfig,
+    apiHealthMonitor: APIHealthMonitorProtocol = APIHealthMonitor.shared
   ) {
     self.targetTextDescription = targetTextDescription
     self.config = config
     self.strategy = config.strategy
+    self.apiHealthMonitor = apiHealthMonitor
 
     // Only instantiate verifiers we'll actually use
     switch config.strategy {
@@ -190,7 +193,25 @@ public final class VerifierSelector {
       .catch { error -> AnyPublisher<VerificationOutcome, Error> in
         Self.outcomeForError(error)
       }
-      .map { outcome in (outcome, verifierName) }
+      .map { outcome -> (VerificationOutcome, String) in
+        // Inspect the final outcome rather than the raw publisher event: some
+        // verifiers (e.g. TrafficEyeVerifier) catch their own network errors
+        // internally and surface them as a non-throwing `.networkError`
+        // outcome, so a request can "succeed" at the Combine level while
+        // still representing a connectivity failure.
+        //
+        // Some outcomes (e.g. a blurry image rejected before any API call,
+        // or a local JPEG-encode failure) never touch the network at all.
+        // Those must not be mistaken for a successful request, so they're
+        // excluded via `didCompleteNetworkRequest` rather than reporting a
+        // spurious success.
+        if outcome.rejectReason == .networkError {
+          self.apiHealthMonitor.recordFailure(isConnectivityRelated: true)
+        } else if outcome.didCompleteNetworkRequest {
+          self.apiHealthMonitor.recordSuccess()
+        }
+        return (outcome, verifierName)
+      }
       .eraseToAnyPublisher()
   }
 
@@ -232,18 +253,23 @@ public final class VerifierSelector {
       verificationError == .timeout
     {
       DebugPublisher.shared.warning("[VerifierSelector] Verification timed out")
-      reason = .apiError  // retryable
+      reason = .networkError  // retryable, and a signal for APIHealthMonitor
     } else if let twoStep = error as? TwoStepError {
       switch twoStep {
-      case .noToolResponse, .networkError: reason = .apiError
+      case .noToolResponse: reason = .apiError
+      case .networkError: reason = .networkError
       case .occluded: reason = .unclearImage
       case .lowConfidence: reason = .lowConfidence
       }
     } else {
-      reason = .apiError
+      reason = NetworkErrorClassifier.isConnectivityError(error) ? .networkError : .apiError
     }
+    // The request threw — timed out, failed in transport, or returned
+    // something we couldn't decode. None of that is evidence the API is
+    // healthy, so it must not clear an existing degradation.
     let outcome = VerificationOutcome(
-      isMatch: false, description: "", rejectReason: reason
+      isMatch: false, description: "", rejectReason: reason,
+      didCompleteNetworkRequest: false
     )
     return Just(outcome)
       .setFailureType(to: Error.self)
