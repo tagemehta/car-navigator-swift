@@ -9,6 +9,18 @@ extension InputView {
   }
 }
 
+/// Immutable snapshot of everything a search needs, captured at the moment the
+/// user starts one. The connectivity check is asynchronous, so the input fields
+/// can change (or another start can be triggered) before it completes; carrying
+/// the snapshot through guarantees the search that opens is the one submitted.
+private struct SearchRequest: Identifiable, Hashable {
+  let id = UUID()
+  let description: String
+  let mode: SearchMode
+  let targetClasses: [String]
+  let isParatransitMode: Bool
+}
+
 struct InputView: View {
   @EnvironmentObject var settings: Settings
 
@@ -87,7 +99,7 @@ struct InputView: View {
   @State private var searchMode: SearchMode = .uberFinder
   @State private var selectedClass: String = "car"
   @State private var description: String = ""
-  @State private var isShowingCamera = false
+  @State private var activeSearch: SearchRequest?
   @State private var showPlaceholder = true
   @State private var showPasteAlert = false
   @State private var pasteAlertMessage = ""
@@ -110,10 +122,6 @@ struct InputView: View {
     "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush",
   ].sorted()
 
-  var selectedClasses: [String] {
-    searchMode == .uberFinder ? vehicleClasses : [selectedClass]
-  }
-
   var placeholderText: String {
     searchMode == .uberFinder
       ? String(
@@ -131,8 +139,7 @@ struct InputView: View {
       searchMode = .uberFinder
       showPlaceholder = false
       isParatransitMode = false
-      saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
-      Task { await attemptStartSearch() }
+      startSearch(description: carDesc, mode: .uberFinder, paratransit: false)
     }
 
     if let paratransitDesc = shortcutNavigationState.consumePendingParatransitDescription() {
@@ -140,8 +147,7 @@ struct InputView: View {
       searchMode = .uberFinder
       showPlaceholder = false
       isParatransitMode = true
-      saveToHistory(paratransitDesc, mode: .uberFinder, paratransit: true)
-      Task { await attemptStartSearch() }
+      startSearch(description: paratransitDesc, mode: .uberFinder, paratransit: true)
     }
   }
 
@@ -160,14 +166,30 @@ struct InputView: View {
   /// delivered its first callback yet, and trusting the optimistic default
   /// could let an offline search start unannounced.
   @MainActor
-  private func attemptStartSearch() async {
-    let needsNetwork = !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    let isConnected = needsNetwork ? await NetworkMonitor.shared.currentConnectivity() : true
-    if !needsNetwork || isConnected {
-      isShowingCamera = true
-    } else {
-      showNoConnectionAlert = true
+  private func attemptStartSearch(_ request: SearchRequest) async {
+    let needsNetwork = !request.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    if needsNetwork {
+      let isConnected = await NetworkMonitor.shared.currentConnectivity()
+      guard isConnected else {
+        showNoConnectionAlert = true
+        return
+      }
     }
+    // History is only written once the search actually starts, so a blocked
+    // offline attempt doesn't create or reorder recent searches.
+    saveToHistory(
+      request.description, mode: request.mode, paratransit: request.isParatransitMode)
+    activeSearch = request
+  }
+
+  /// Snapshots the submitted search and runs the connectivity gate for it.
+  private func startSearch(description: String, mode: SearchMode, paratransit: Bool) {
+    let request = SearchRequest(
+      description: description,
+      mode: mode,
+      targetClasses: mode == .uberFinder ? vehicleClasses : [selectedClass],
+      isParatransitMode: paratransit)
+    Task { await attemptStartSearch(request) }
   }
 
   var body: some View {
@@ -270,8 +292,8 @@ struct InputView: View {
 
         Section {
           Button {
-            saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
-            Task { await attemptStartSearch() }
+            startSearch(
+              description: description, mode: searchMode, paratransit: isParatransitMode)
           } label: {
             if searchMode == .uberFinder {
               Text("Find My Ride")
@@ -298,9 +320,9 @@ struct InputView: View {
                 searchMode = item.mode
                 isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
-                saveToHistory(
-                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                Task { await attemptStartSearch() }
+                startSearch(
+                  description: item.description, mode: item.mode,
+                  paratransit: item.isParatransitMode)
               } label: {
                 HStack {
                   Image(systemName: "star.fill")
@@ -378,9 +400,9 @@ struct InputView: View {
                 searchMode = item.mode
                 isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
-                saveToHistory(
-                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                Task { await attemptStartSearch() }
+                startSearch(
+                  description: item.description, mode: item.mode,
+                  paratransit: item.isParatransitMode)
               } label: {
                 HStack {
                   Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
@@ -461,12 +483,12 @@ struct InputView: View {
       .onDisappear {
         hideKeyboard()
       }
-      .navigationDestination(isPresented: $isShowingCamera) {
+      .navigationDestination(item: $activeSearch) { request in
         ContentView(
-          description: description,
-          searchMode: searchMode,
-          targetClasses: selectedClasses,
-          isParatransitMode: isParatransitMode
+          description: request.description,
+          searchMode: request.mode,
+          targetClasses: request.targetClasses,
+          isParatransitMode: request.isParatransitMode
         )
       }
     }

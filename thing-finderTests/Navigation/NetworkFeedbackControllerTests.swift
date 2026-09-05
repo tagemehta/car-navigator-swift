@@ -144,10 +144,10 @@ final class NetworkFeedbackControllerTests: XCTestCase {
   }
 
   func test_degraded_recoveryAnnounces() {
-    mockAPIHealthMonitor.isDegraded = true
     let controller = makeController()
     let now = Date()
 
+    mockAPIHealthMonitor.isDegraded = true
     controller.tick(timestamp: now)
     mockSpeaker.reset()
 
@@ -238,6 +238,19 @@ final class NetworkFeedbackControllerTests: XCTestCase {
     XCTAssertEqual(mockHaptics.successCallCount, 0)
   }
 
+  func test_newSession_ignoresDegradationFromPreviousSearch() {
+    // The health monitor is shared across searches: a search that ended while
+    // degraded must not make the next one announce "Weak signal" before it has
+    // issued a single request.
+    mockAPIHealthMonitor.isDegraded = true
+    let controller = makeController()
+
+    controller.tick(timestamp: Date())
+
+    XCTAssertEqual(mockAPIHealthMonitor.resetCallCount, 1)
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Weak signal"))
+  }
+
   // MARK: - Reset
 
   func test_reset_allowsPreflightToFireAgain() {
@@ -252,5 +265,26 @@ final class NetworkFeedbackControllerTests: XCTestCase {
     controller.tick(timestamp: now.addingTimeInterval(1.0))
 
     XCTAssertTrue(mockSpeaker.didSpeakContaining("No internet connection"))
+  }
+
+  func test_reset_clearsAPIHealthState() {
+    let controller = makeController()
+
+    mockAPIHealthMonitor.isDegraded = true
+    controller.reset()
+
+    XCTAssertFalse(mockAPIHealthMonitor.isDegraded)
+  }
+
+  // MARK: - Frame priority
+
+  func test_announcement_claimsFrameSoOtherControllersDefer() {
+    mockNetworkMonitor.isConnected = false
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(timestamp: now)
+
+    XCTAssertTrue(cache.isFramePreempted(now))
   }
 }

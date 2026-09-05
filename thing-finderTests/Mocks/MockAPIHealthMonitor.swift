@@ -12,6 +12,7 @@ final class MockAPIHealthMonitor: APIHealthMonitorProtocol {
   private let subject: CurrentValueSubject<Bool, Never>
   private(set) var recordFailureCallCount = 0
   private(set) var recordSuccessCallCount = 0
+  private(set) var resetCallCount = 0
   private(set) var lastFailureWasConnectivityRelated: Bool?
 
   init(isDegraded: Bool = false) {
@@ -34,5 +35,10 @@ final class MockAPIHealthMonitor: APIHealthMonitorProtocol {
 
   func recordSuccess() {
     recordSuccessCallCount += 1
+  }
+
+  func reset() {
+    resetCallCount += 1
+    subject.send(false)
   }
 }

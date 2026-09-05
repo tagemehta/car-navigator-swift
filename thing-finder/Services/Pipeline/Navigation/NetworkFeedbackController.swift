@@ -62,6 +62,10 @@ final class NetworkFeedbackController {
     self.settings = settings
     self.networkMonitor = networkMonitor
     self.apiHealthMonitor = apiHealthMonitor
+    // The health monitor is shared and long-lived: without this, a search that
+    // ended while degraded would make the next one announce "weak signal"
+    // before it has issued a single request.
+    apiHealthMonitor.reset()
   }
 
   // MARK: - Public API
@@ -76,6 +80,7 @@ final class NetworkFeedbackController {
   func reset() {
     lastKnownConnected = nil
     lastKnownDegraded = false
+    apiHealthMonitor.reset()
   }
 
   // MARK: - Hard connectivity (offline / restored)
@@ -167,5 +172,6 @@ final class NetworkFeedbackController {
     guard settings.enableSpeech else { return }
     speaker.speak(phrase)
     cache.lastGlobal = (phrase: phrase, time: timestamp)
+    cache.priorityFrame = timestamp
   }
 }

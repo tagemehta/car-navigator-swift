@@ -58,13 +58,20 @@ final class NavAnnouncer {
     // Lost candidates are always eligible (they were previously .full)
     active += lost
 
+    // A connectivity warning already spoke this frame; speaking now would
+    // cancel it mid-phrase. Leave the transition state untouched so the match
+    // announcement is still made — on the next frame.
+    let framePreempted = cache.isFramePreempted(timestamp)
+
     // Announce status transitions (full / partial / lost)
-    for candidate in active {
-      handleCandidate(candidate, now: timestamp)
+    if !framePreempted {
+      for candidate in active {
+        handleCandidate(candidate, now: timestamp)
+      }
     }
 
     // Announce vehicle view changes (front/rear/side) for tracked candidates
-    if settings.enableSpeech {
+    if settings.enableSpeech && !framePreempted {
       for candidate in active {
         announceViewIfChanged(candidate)
       }

@@ -22,6 +22,9 @@ public protocol APIHealthMonitorProtocol: AnyObject {
   func recordFailure(isConnectivityRelated: Bool)
   /// Report a successful verification request, clearing the degraded state.
   func recordSuccess()
+  /// Discard all accumulated health state. Call when a new search session
+  /// begins so it isn't judged by the previous session's failures.
+  func reset()
 }
 
 public final class APIHealthMonitor: APIHealthMonitorProtocol {
@@ -59,6 +62,15 @@ public final class APIHealthMonitor: APIHealthMonitorProtocol {
   }
 
   public func recordSuccess() {
+    lock.lock()
+    defer { lock.unlock() }
+    consecutiveFailures = 0
+    if subject.value {
+      subject.send(false)
+    }
+  }
+
+  public func reset() {
     lock.lock()
     defer { lock.unlock() }
     consecutiveFailures = 0
