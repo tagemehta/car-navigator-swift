@@ -28,28 +28,32 @@ public protocol NetworkMonitorProtocol: AnyObject {
   func currentConnectivity() async -> Bool
 }
 
-public final class NetworkMonitor: NetworkMonitorProtocol {
+public final class NetworkMonitor: NetworkMonitorProtocol, @unchecked Sendable {
   public static let shared = NetworkMonitor()
 
   private let monitor = NWPathMonitor()
+  /// All mutable state below is accessed on this serial queue. The explicit
+  /// Sendable conformance is limited to allowing Network framework callbacks
+  /// and timeout closures to capture this queue-confined object.
   private let queue = DispatchQueue(label: "com.thingfinder.NetworkMonitor")
   private let subject = CurrentValueSubject<Bool, Never>(true)
 
-  /// Wraps a single continuation so both the real path-update callback and
-  /// the timeout fallback can race to resume it exactly once. Both are only
-  /// ever invoked from `queue` (a serial queue), so no extra locking is
-  /// needed here — the second caller simply finds `continuation` already
-  /// `nil` and does nothing.
-  private final class PendingWait {
+  /// A continuation can be completed by either the first path update or the
+  /// timeout fallback. Both callbacks run on `queue`, so clearing the
+  /// continuation before returning prevents a double resume without locks.
+  private final class PendingWait: @unchecked Sendable {
     var continuation: CheckedContinuation<Bool, Never>?
-    init(_ continuation: CheckedContinuation<Bool, Never>) { self.continuation = continuation }
+
+    init(_ continuation: CheckedContinuation<Bool, Never>) {
+      self.continuation = continuation
+    }
+
     func resume(with value: Bool) {
       continuation?.resume(returning: value)
       continuation = nil
     }
   }
 
-  private let lock = NSLock()
   private var hasReceivedInitialPath = false
   private var pendingWaits: [PendingWait] = []
 
@@ -74,55 +78,46 @@ public final class NetworkMonitor: NetworkMonitorProtocol {
     monitor.start(queue: queue)
   }
 
+  /// Called by `NWPathMonitor` on `queue`.
   private func handlePathUpdate(connected: Bool) {
     subject.send(connected)
-
-    lock.lock()
     hasReceivedInitialPath = true
-    let waits = pendingWaits
-    pendingWaits = []
-    lock.unlock()
 
-    // Runs on `queue`, same as the timeout fallback below, so this can never
-    // race with a `PendingWait.resume(with:)` call from `asyncAfter`.
+    let waits = pendingWaits
+    pendingWaits.removeAll()
     for wait in waits {
       wait.resume(with: connected)
     }
   }
 
   public func currentConnectivity() async -> Bool {
-    lock.lock()
-    if hasReceivedInitialPath {
-      let value = subject.value
-      lock.unlock()
-      return value
-    }
-    lock.unlock()
-
-    return await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
-      lock.lock()
-      // Re-check: the real path update may have arrived between releasing
-      // the lock above and entering this closure.
-      if hasReceivedInitialPath {
-        let value = subject.value
-        lock.unlock()
-        continuation.resume(returning: value)
-        return
-      }
-      let wait = PendingWait(continuation)
-      pendingWaits.append(wait)
-      lock.unlock()
-
-      queue.asyncAfter(deadline: .now() + Self.initialStatusTimeout) { [weak self] in
+    await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+      // Registration and timeout both happen on the monitor's serial queue.
+      // This avoids suspending while holding a lock and makes the path update,
+      // timeout, and pending-wait state one easy-to-follow synchronization
+      // domain.
+      queue.async { [weak self] in
         guard let self else {
-          wait.resume(with: true)
+          continuation.resume(returning: true)
           return
         }
-        self.lock.lock()
-        self.pendingWaits.removeAll { $0 === wait }
-        let fallback = self.subject.value
-        self.lock.unlock()
-        wait.resume(with: fallback)
+
+        if self.hasReceivedInitialPath {
+          continuation.resume(returning: self.subject.value)
+          return
+        }
+
+        let wait = PendingWait(continuation)
+        self.pendingWaits.append(wait)
+        self.queue.asyncAfter(deadline: .now() + Self.initialStatusTimeout) { [weak self, wait] in
+          guard let self else {
+            wait.resume(with: true)
+            return
+          }
+
+          self.pendingWaits.removeAll { $0 === wait }
+          wait.resume(with: self.subject.value)
+        }
       }
     }
   }
