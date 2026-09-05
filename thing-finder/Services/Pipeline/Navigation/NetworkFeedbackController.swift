@@ -118,11 +118,12 @@ final class NetworkFeedbackController {
 
   private func checkDegradedSignal(timestamp: Date) {
     let isDegraded = apiHealthMonitor.isDegraded
-    guard isDegraded != lastKnownDegraded else { return }
-    lastKnownDegraded = isDegraded
 
     // A hard outage already announces its own, clearer message — don't pile on.
     guard networkMonitor.isConnected else { return }
+
+    guard isDegraded != lastKnownDegraded else { return }
+    lastKnownDegraded = isDegraded
 
     if isDegraded {
       announce(
