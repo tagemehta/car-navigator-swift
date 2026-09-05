@@ -100,6 +100,7 @@ struct InputView: View {
   @State private var selectedClass: String = "car"
   @State private var description: String = ""
   @State private var activeSearch: SearchRequest?
+  @State private var pendingStart: Task<Void, Never>?
   @State private var showPlaceholder = true
   @State private var showPasteAlert = false
   @State private var pasteAlertMessage = ""
@@ -170,6 +171,8 @@ struct InputView: View {
     let needsNetwork = !request.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     if needsNetwork {
       let isConnected = await NetworkMonitor.shared.currentConnectivity()
+      // A newer start superseded this one while the check was in flight.
+      guard !Task.isCancelled else { return }
       guard isConnected else {
         showNoConnectionAlert = true
         return
@@ -189,7 +192,10 @@ struct InputView: View {
       mode: mode,
       targetClasses: mode == .uberFinder ? vehicleClasses : [selectedClass],
       isParatransitMode: paratransit)
-    Task { await attemptStartSearch(request) }
+    // Connectivity checks can complete out of order, so only the most recent
+    // submission is allowed to open a search.
+    pendingStart?.cancel()
+    pendingStart = Task { await attemptStartSearch(request) }
   }
 
   var body: some View {

@@ -264,8 +264,12 @@ public final class VerifierSelector {
     } else {
       reason = NetworkErrorClassifier.isConnectivityError(error) ? .networkError : .apiError
     }
+    // The request threw — timed out, failed in transport, or returned
+    // something we couldn't decode. None of that is evidence the API is
+    // healthy, so it must not clear an existing degradation.
     let outcome = VerificationOutcome(
-      isMatch: false, description: "", rejectReason: reason
+      isMatch: false, description: "", rejectReason: reason,
+      didCompleteNetworkRequest: false
     )
     return Just(outcome)
       .setFailureType(to: Error.self)

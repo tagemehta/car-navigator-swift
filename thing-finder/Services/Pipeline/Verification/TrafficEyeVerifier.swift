@@ -184,7 +184,9 @@ public final class TrafficEyeVerifier: ImageVerifier {
         // Distinguish a real connectivity failure from a decode/parsing issue
         // so it isn't mistaken for a normal "no vehicle detected" response.
         let isNetworkError = NetworkErrorClassifier.isConnectivityError(error)
-        return Just(RecognitionResult(mmr: nil, plate: nil, isNetworkError: isNetworkError))
+        return Just(
+          RecognitionResult(
+            mmr: nil, plate: nil, isNetworkError: isNetworkError, didCompleteRequest: false))
           .setFailureType(to: Error.self)
           .eraseToAnyPublisher()
       }
@@ -238,7 +240,8 @@ public final class TrafficEyeVerifier: ImageVerifier {
           DebugPublisher.shared.error(
             "[TrafficEye][\(candidateId.uuidString.suffix(8))] No vehicle MMR data in API response")
           let outcome = VerificationOutcome(
-            isMatch: false, description: "No vehicle detected", rejectReason: .apiError)
+            isMatch: false, description: "No vehicle detected", rejectReason: .apiError,
+            didCompleteNetworkRequest: result.didCompleteRequest)
           return Just(outcome).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
@@ -289,6 +292,9 @@ public final class TrafficEyeVerifier: ImageVerifier {
     let mmr: MMR?
     let plate: Plate?
     var isNetworkError: Bool = false
+    /// False when the response never arrived or couldn't be parsed, so an
+    /// empty result says nothing about the API's health.
+    var didCompleteRequest: Bool = true
   }
 
   private func callTrafficEyeAPI(imageBytes: Data, candidateId: UUID) -> AnyPublisher<
