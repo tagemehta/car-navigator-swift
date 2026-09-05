@@ -173,6 +173,44 @@ final class NetworkFeedbackControllerTests: XCTestCase {
     XCTAssertFalse(mockSpeaker.didSpeakContaining("Weak signal"))
   }
 
+  func test_degraded_stillDegradedOnRestore_doesNotCutOffRestorationMessage() {
+    // Regression: if API health became (and remains) degraded during a hard
+    // outage, restoring the connection must not have "Weak signal" cut off
+    // "Connection restored" — `Speaker.speak` cancels whatever is currently
+    // playing, so both being spoken on the same tick would lose the
+    // restoration message.
+    let controller = makeController()
+    let now = Date()
+
+    controller.tick(timestamp: now)  // pre-flight, online
+    mockSpeaker.reset()
+
+    // Outage begins; API health degrades while offline (state preserved,
+    // not yet reflected in `lastKnownDegraded` since it's suppressed
+    // during a hard outage).
+    mockNetworkMonitor.isConnected = false
+    mockAPIHealthMonitor.isDegraded = true
+    controller.tick(timestamp: now.addingTimeInterval(1.0))
+    mockSpeaker.reset()
+
+    // Connection restored — API health is still degraded.
+    mockNetworkMonitor.isConnected = true
+    let restoreTime = now.addingTimeInterval(2.0)
+    controller.tick(timestamp: restoreTime)
+
+    XCTAssertEqual(
+      mockSpeaker.speakCallCount, 1,
+      "Only one phrase should speak this tick — weak signal must be deferred")
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Connection restored"))
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Weak signal"))
+
+    // The still-degraded transition isn't lost — it announces on the next
+    // tick, once it won't collide with another announcement.
+    controller.tick(timestamp: restoreTime.addingTimeInterval(1.0))
+
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Weak signal"))
+  }
+
   // MARK: - Settings gating
 
   func test_noSpeech_whenSpeechDisabled() {

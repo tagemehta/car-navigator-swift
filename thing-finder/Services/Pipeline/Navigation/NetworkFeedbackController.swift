@@ -123,6 +123,17 @@ final class NetworkFeedbackController {
     guard networkMonitor.isConnected else { return }
 
     guard isDegraded != lastKnownDegraded else { return }
+
+    // `checkConnectivity` runs earlier this same tick and may have just
+    // announced "Connection restored" (e.g. the connection came back while
+    // API health was — and still is — degraded from before the outage).
+    // `Speaker.speak` cancels whatever is currently playing, so speaking the
+    // weak-signal transition immediately would cut off the restoration
+    // message. Defer by one tick instead: leave `lastKnownDegraded` stale so
+    // this transition is still detected and announced next tick, once it
+    // won't collide with another announcement.
+    guard cache.lastGlobal?.time != timestamp else { return }
+
     lastKnownDegraded = isDegraded
 
     if isDegraded {
