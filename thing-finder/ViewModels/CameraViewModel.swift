@@ -172,10 +172,12 @@ class CameraViewModel: NSObject, ObservableObject, FrameProviderDelegate {
   /// - Parameters:
   ///   - capture: The frame provider
   ///   - buffer: The pixel buffer containing the current frame
-  ///   - depthAt: Function to get depth at a specific point
+  ///   - depthAt: Function to get one depth per requested point, preserving order
   ///   - imageToViewRect: Function to convert image rectangles to view rectangles
   func processFrame(
-    _ capture: any FrameProvider, buffer: CVPixelBuffer, depthAt: @escaping (CGPoint) -> Float?
+    _ capture: any FrameProvider,
+    buffer: CVPixelBuffer,
+    depthAt: @escaping ([CGPoint]) -> [Float?]
   ) {
     // Track the current capture source type
     currentCaptureSourceType = capture.sourceType

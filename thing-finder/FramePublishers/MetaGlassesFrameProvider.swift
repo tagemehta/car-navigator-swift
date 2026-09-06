@@ -75,7 +75,9 @@ final class MetaGlassesFrameProvider: NSObject, FrameProvider {
           self.previewImageView.image = frame
           // Use zero-copy pixel buffer extracted directly from the SDK's CMSampleBuffer
           if let pixelBuffer = self.streamSessionVM.currentPixelBuffer {
-            self.delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
+            self.delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { points in
+              points.map { _ in nil }
+            })
           }
         }
         try? await Task.sleep(nanoseconds: 33_000_000)  // ~30fps polling
