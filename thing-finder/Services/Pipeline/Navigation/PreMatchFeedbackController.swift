@@ -134,6 +134,10 @@ final class PreMatchFeedbackController {
 
     for candidate in candidates {
       let id = candidate.id
+      guard candidate.isBoundingBoxFresh else {
+        candidateFirstSeen.removeValue(forKey: id)
+        continue
+      }
       guard !seenCandidates.contains(id) else { continue }
 
       if candidateFirstSeen[id] == nil {
