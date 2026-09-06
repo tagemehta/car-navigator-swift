@@ -14,13 +14,15 @@ import simd
 
 protocol ARVideoCaptureDelegate: AnyObject {
   /// - imageBuffer: the live camera frame
-  /// - depthData: a closure you can call with any point in view coords to get its depth (in meters).
-  ///              On LiDAR devices this reads the sceneDepth map; otherwise it raycasts.
+  /// - depthData: a closure returning one depth per point in view coords (in meters),
+  ///              preserving input order. On LiDAR devices this reads the sceneDepth
+  ///              map; otherwise it raycasts.
   func processFrame(
     _ capture: ARVideoCapture,
     frame: ARFrame,
     imageBuffer: CVPixelBuffer,
-    depthData: @escaping (CGPoint) -> Float?)
+    depthData: @escaping ([CGPoint]) -> [Float?]
+  )
 }
 
 class ARVideoCapture: NSObject, ARSessionDelegate, FrameProvider {
@@ -155,25 +157,27 @@ class ARVideoCapture: NSObject, ARSessionDelegate, FrameProvider {
 
     let pixelBuffer = frame.capturedImage
     let cameraTransform = frame.camera.transform
-    // Build our depth‐lookup closure
-    let depthProvider: (CGPoint) -> Float? = {
-      [weak previewARView, weak session] point in
+    // Build our depth-lookup closure. Raycast all requested points while the
+    // frame and camera transform are still current.
+    let depthProvider: ([CGPoint]) -> [Float?] = {
+      [weak previewARView, weak session] points in
+      let camPos = cameraTransform.columns.3
 
-      // Raycast
+      return points.map { point in
+        guard
+          let query = previewARView?.makeRaycastQuery(
+            from: point,
+            allowing: .estimatedPlane,
+            alignment: .any
+          ),
+          let result = session?.raycast(query).first
+        else {
+          return nil
+        }
 
-      if let query = previewARView?.makeRaycastQuery(
-        from: point,
-        allowing: .estimatedPlane,
-        alignment: .any
-      ),
-        let result = session?.raycast(query).first
-      {
-        let camPos = cameraTransform.columns.3
         let hitPos = result.worldTransform.columns.3
         return simd_distance(camPos, hitPos)
       }
-
-      return nil
     }
 
     delegate?.processFrame(
