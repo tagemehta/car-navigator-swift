@@ -114,11 +114,7 @@ final class FramePipelineCoordinatorTests: XCTestCase {
       let point = CGPoint(
         x: box.minX + box.width * offset.x,
         y: box.minY + box.height * offset.y)
-      let sampleRect = CGRect(
-        x: point.x,
-        y: point.y,
-        width: max(box.width * 0.01, 0.0001),
-        height: max(box.height * 0.01, 0.0001))
+      let sampleRect = CGRect(origin: point, size: .zero)
       let (_, viewRect) = ImageUtilities.shared.unscaledBoundingBoxes(
         for: sampleRect,
         imageSize: imageSize,

@@ -158,11 +158,7 @@ public final class FramePipelineCoordinator: ObservableObject {
       }
 
       let depthPoints: [CGPoint] = normalizedPoints.map { point in
-        let sampleRect = CGRect(
-          x: point.x,
-          y: point.y,
-          width: max(box.width * 0.01, 0.0001),
-          height: max(box.height * 0.01, 0.0001))
+        let sampleRect = CGRect(origin: point, size: .zero)
         switch captureType {
         case .avFoundation, .videoFile, .metaGlasses:
           // Convert normalized image points to the normalized coordinates
