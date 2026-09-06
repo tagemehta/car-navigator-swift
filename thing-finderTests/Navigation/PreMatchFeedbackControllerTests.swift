@@ -2,7 +2,7 @@
 //  thing-finderTests
 //
 //  Unit tests for PreMatchFeedbackController.
-//  Covers: session-start, heartbeat, rejection announcements,
+//  Covers: session-start, detection haptics, heartbeat, rejection announcements,
 //  high-density grouped fallback, and dormancy when a match exists.
 
 import XCTest
@@ -12,6 +12,7 @@ import XCTest
 final class PreMatchFeedbackControllerTests: XCTestCase {
 
   private var mockSpeaker: MockSpeechOutput!
+  private var mockHaptics: MockHapticManager!
   private var cache: AnnouncementCache!
   private var settings: Settings!
   private var config: NavigationFeedbackConfig!
@@ -19,6 +20,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   override func setUp() {
     super.setUp()
     mockSpeaker = MockSpeechOutput()
+    mockHaptics = MockHapticManager()
     cache = AnnouncementCache()
     settings = TestSettings.makeDefault()
     // Short intervals so tests don't need to advance time by 20s.
@@ -27,6 +29,8 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
       directionChangeInterval: 4.0,
       retryPhraseCooldown: 8.0
     )
+    config.detectionHapticStabilityGate = 0.3
+    config.detectionHapticCooldown = 0.5
     config.scanningHeartbeatInterval = 5.0
     config.rejectionCooldown = 1.0
     config.rejectionDensityWindow = 10.0
@@ -35,6 +39,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
 
   override func tearDown() {
     mockSpeaker = nil
+    mockHaptics = nil
     cache = nil
     settings = nil
     config = nil
@@ -46,6 +51,7 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   {
     return PreMatchFeedbackController(
       speaker: mockSpeaker,
+      hapticManager: mockHaptics,
       cache: cache,
       config: config,
       settings: settings,
@@ -127,6 +133,72 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     let next = now.addingTimeInterval(0.05)
     controller.tick(candidates: [], timestamp: next)
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Searching for"))
+  }
+
+  // MARK: - Detection haptics
+
+  func test_detectionHaptic_firesAfterStabilityGate() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+    let candidate = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
+
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+  }
+
+  func test_detectionHaptic_doesNotRefireForSameCandidate() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+    let candidate = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [candidate], timestamp: now)
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(2.0))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+  }
+
+  func test_detectionHaptic_coolsDownBetweenNearbyCars() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+    let first = TestCandidates.make(id: UUID())
+    let second = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [first, second], timestamp: now)
+    controller.tick(candidates: [first, second], timestamp: now.addingTimeInterval(0.3))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+
+    controller.tick(candidates: [first, second], timestamp: now.addingTimeInterval(0.8))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 2)
+  }
+
+  func test_detectionHaptic_isSuppressedWhenDisabled() {
+    settings.enableHaptics = false
+    let controller = makeController()
+    let now = Date()
+    let candidate = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [candidate], timestamp: now)
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
+  }
+
+  func test_detectionHaptic_isSuppressedWhenMatchExists() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    var candidate = TestCandidates.make(id: UUID())
+    candidate.matchStatus = .partial
+
+    controller.tick(candidates: [candidate], timestamp: Date().addingTimeInterval(1.0))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
   }
 
   // MARK: - Heartbeat

@@ -1,14 +1,15 @@
 //  PreMatchFeedbackController.swift
 //  thing-finder
 //
-//  Owns all audio feedback during the pre-match phase (no candidate is yet
-//  partial or full). Goes dormant once a match exists so it doesn't fight
-//  NavAnnouncer or the beep controller.
+//  Owns feedback during the pre-match phase (no candidate is yet partial or
+//  full). Goes dormant once a match exists so it doesn't fight NavAnnouncer or
+//  the beep controller.
 //
 //  Responsibilities:
 //    1. Session-start  — "Searching for [targetDescription]…" once per search.
-//    2. Heartbeat      — "Still looking…" every ~20 s while no candidates exist.
-//    3. Rejections     — "Not yours — [desc]" per candidate, throttled;
+//    2. Detection      — spaced light haptic taps for stable, new candidates.
+//    3. Heartbeat      — "Still looking…" every ~20 s while no candidates exist.
+//    4. Rejections     — "Not yours — [desc]" per candidate, throttled;
 //                        degrades to "Several cars nearby, still looking" in
 //                        high-density mode (> N rejections in a rolling window).
 
@@ -19,6 +20,7 @@ final class PreMatchFeedbackController {
   // MARK: - Dependencies
 
   private let speaker: SpeechOutput
+  private let hapticManager: HapticManagerProtocol
   private let cache: AnnouncementCache
   private let config: NavigationFeedbackConfig
   private let settings: Settings
@@ -27,6 +29,15 @@ final class PreMatchFeedbackController {
   // MARK: - Session state
 
   private var sessionStarted = false
+
+  // MARK: - Detection haptic deduplication
+
+  /// Lifetime set — prevents re-firing for candidates that leave and re-enter.
+  private var seenCandidates: Set<UUID> = []
+  /// First-seen timestamps for the stability gate; pruned when candidates leave.
+  private var candidateFirstSeen: [UUID: Date] = [:]
+  /// Last time a detection haptic was played.
+  private var lastDetectionHapticTime: Date = .distantPast
 
   // MARK: - Heartbeat
 
@@ -45,12 +56,14 @@ final class PreMatchFeedbackController {
 
   init(
     speaker: SpeechOutput,
+    hapticManager: HapticManagerProtocol,
     cache: AnnouncementCache,
     config: NavigationFeedbackConfig,
     settings: Settings,
     targetDescription: String
   ) {
     self.speaker = speaker
+    self.hapticManager = hapticManager
     self.cache = cache
     self.config = config
     self.settings = settings
@@ -85,20 +98,61 @@ final class PreMatchFeedbackController {
 
     let hasMatch = candidates.contains { $0.matchStatus == .partial || $0.matchStatus == .full }
 
-    // Speech-only: heartbeat and rejection announcements remain gated by enableSpeech.
-    if !hasMatch && settings.enableSpeech {
-      tickHeartbeat(candidates: candidates, timestamp: timestamp)
-      tickRejections(candidates: candidates, timestamp: timestamp)
+    if !hasMatch {
+      tickDetectionHaptics(candidates: candidates, timestamp: timestamp)
+
+      // Speech-only: heartbeat and rejection announcements remain gated by enableSpeech.
+      if settings.enableSpeech {
+        tickHeartbeat(candidates: candidates, timestamp: timestamp)
+        tickRejections(candidates: candidates, timestamp: timestamp)
+      }
+    }
+
+    // Prune first-seen times for candidates that left the snapshot.
+    let liveIDs = Set(candidates.map(\.id))
+    for id in candidateFirstSeen.keys where !liveIDs.contains(id) {
+      candidateFirstSeen.removeValue(forKey: id)
     }
   }
 
   /// Resets all session state. Call when the user starts a new search.
   func reset() {
     sessionStarted = false
+    seenCandidates.removeAll()
+    candidateFirstSeen.removeAll()
+    lastDetectionHapticTime = .distantPast
     lastHeartbeatTime = .distantPast
     announcedRejections.removeAll()
     recentRejectionTimes.removeAll()
     lastGroupedRejectionTime = .distantPast
+  }
+
+  // MARK: - Detection haptic
+
+  private func tickDetectionHaptics(candidates: [Candidate], timestamp: Date) {
+    guard settings.enableHaptics else { return }
+
+    for candidate in candidates {
+      let id = candidate.id
+      guard candidate.isBoundingBoxFresh else {
+        candidateFirstSeen.removeValue(forKey: id)
+        continue
+      }
+      guard !seenCandidates.contains(id) else { continue }
+
+      if candidateFirstSeen[id] == nil {
+        candidateFirstSeen[id] = timestamp
+      }
+      guard let firstSeen = candidateFirstSeen[id],
+        timestamp.timeIntervalSince(firstSeen) >= config.detectionHapticStabilityGate
+      else { continue }
+      guard timestamp.timeIntervalSince(lastDetectionHapticTime) >= config.detectionHapticCooldown
+      else { continue }
+
+      seenCandidates.insert(id)
+      lastDetectionHapticTime = timestamp
+      hapticManager.playDetection()
+    }
   }
 
   // MARK: - Heartbeat

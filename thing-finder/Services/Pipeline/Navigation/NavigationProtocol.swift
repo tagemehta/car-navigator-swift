@@ -11,6 +11,10 @@ public struct NavigationFeedbackConfig {
   public var retryPhraseCooldown: TimeInterval = 8
 
   // MARK: Pre-match (PreMatchFeedbackController)
+  /// Seconds a candidate must remain visible before the detection haptic fires.
+  public var detectionHapticStabilityGate: TimeInterval = 0.3
+  /// Minimum gap between detection haptics when multiple cars are nearby.
+  public var detectionHapticCooldown: TimeInterval = 0.5
   /// Seconds between "Still looking…" heartbeat announcements.
   public var scanningHeartbeatInterval: TimeInterval = 20
   /// Minimum seconds between consecutive individual rejection announcements.

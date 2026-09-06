@@ -6,8 +6,8 @@ import Foundation
 ///
 /// Controller split:
 ///   • `NetworkFeedbackController`     — warns about connectivity loss / weak signal.
-///   • `PreMatchFeedbackController`    — handles all audio before a match exists
-///     (session-start, heartbeat, rejection announcements).
+///   • `PreMatchFeedbackController`    — handles feedback before a match exists
+///     (session-start, detection haptics, heartbeat, rejection announcements).
 ///   • `NavAnnouncer`                  — announces partial / full / lost transitions.
 ///   • `DirectionSpeechController`     — "on your left / right" guidance (change-gated).
 ///   • `DistanceMilestoneController`   — "10 meters / 5 meters / almost there" (LiDAR only).
@@ -50,6 +50,7 @@ final class FrameNavigationManager: NavigationSpeaker {
 
     self.preMatchController = PreMatchFeedbackController(
       speaker: speaker,
+      hapticManager: sharedHaptics,
       cache: cache,
       config: config,
       settings: settings,
