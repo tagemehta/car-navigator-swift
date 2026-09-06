@@ -163,11 +163,7 @@ public final class FramePipelineCoordinator: ObservableObject {
         // Convert normalized image points to the normalized coordinates
         // expected by the AVFoundation depth provider.
         depthPoints = normalizedPoints.map { point in
-          let sampleRect = CGRect(
-            x: point.x,
-            y: point.y,
-            width: max(box.width * 0.01, 0.0001),
-            height: max(box.height * 0.01, 0.0001))
+          let sampleRect = CGRect(origin: point, size: .zero)
           let (imageRect, _) = imgUtils.unscaledBoundingBoxes(
             for: sampleRect,
             imageSize: imageSize,
