@@ -157,17 +157,16 @@ public final class FramePipelineCoordinator: ObservableObject {
           y: box.minY + box.height * offset.y)
       }
 
-      let depthPoints: [CGPoint]
-      switch captureType {
-      case .avFoundation, .videoFile, .metaGlasses:
-        // Convert normalized image points to the normalized coordinates
-        // expected by the AVFoundation depth provider.
-        depthPoints = normalizedPoints.map { point in
-          let sampleRect = CGRect(
-            x: point.x,
-            y: point.y,
-            width: max(box.width * 0.01, 0.0001),
-            height: max(box.height * 0.01, 0.0001))
+      let depthPoints: [CGPoint] = normalizedPoints.map { point in
+        let sampleRect = CGRect(
+          x: point.x,
+          y: point.y,
+          width: max(box.width * 0.01, 0.0001),
+          height: max(box.height * 0.01, 0.0001))
+        switch captureType {
+        case .avFoundation, .videoFile, .metaGlasses:
+          // Convert normalized image points to the normalized coordinates
+          // expected by the AVFoundation depth provider.
           let (imageRect, _) = imgUtils.unscaledBoundingBoxes(
             for: sampleRect,
             imageSize: imageSize,
@@ -176,9 +175,19 @@ public final class FramePipelineCoordinator: ObservableObject {
           let normImageRect = VNNormalizedRectForImageRect(
             imageRect, Int(imageSize.width), Int(imageSize.height))
           return CGPoint(x: normImageRect.midX, y: normImageRect.midY)
+        case .arKit:
+          // ARView.makeRaycastQuery(from:) expects a point in the preview
+          // view's own coordinate system, not a normalized image point.
+          // Reuse the same view-rect mapping used elsewhere to place
+          // candidate boxes on screen, honoring orientation and the
+          // aspect-fill crop.
+          let (_, viewRect) = imgUtils.unscaledBoundingBoxes(
+            for: sampleRect,
+            imageSize: imageSize,
+            viewSize: viewBounds.size,
+            orientation: orientation)
+          return CGPoint(x: viewRect.midX, y: viewRect.midY)
         }
-      case .arKit:
-        depthPoints = normalizedPoints
       }
 
       let distances = depthAt(depthPoints).compactMap { $0.map(Double.init) }
