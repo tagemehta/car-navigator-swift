@@ -5,14 +5,16 @@ import Foundation
 /// Call `tick(at:candidates:targetBox:distance:)` *once per video frame*.
 ///
 /// Controller split:
-///   • `PreMatchFeedbackController`    — handles all audio before a match exists
-///     (session-start, heartbeat, earcon, rejection announcements).
+///   • `NetworkFeedbackController`     — warns about connectivity loss / weak signal.
+///   • `PreMatchFeedbackController`    — handles feedback before a match exists
+///     (session-start, detection haptics, heartbeat, rejection announcements).
 ///   • `NavAnnouncer`                  — announces partial / full / lost transitions.
 ///   • `DirectionSpeechController`     — "on your left / right" guidance (change-gated).
 ///   • `DistanceMilestoneController`   — "10 meters / 5 meters / almost there" (LiDAR only).
 ///   • `HapticBeepController`          — proximity beeps and haptic pulses.
 final class FrameNavigationManager: NavigationSpeaker {
   private let settings: Settings
+  private let networkController: NetworkFeedbackController
   private let preMatchController: PreMatchFeedbackController
   private let announcer: NavAnnouncer
   private let dirController: DirectionSpeechController
@@ -25,7 +27,8 @@ final class FrameNavigationManager: NavigationSpeaker {
     speaker: SpeechOutput,
     beeper: Beeper? = nil,
     hapticManager: HapticManagerProtocol? = nil,
-    earcon: EarconOutput? = nil
+    networkMonitor: NetworkMonitorProtocol? = nil,
+    apiHealthMonitor: APIHealthMonitorProtocol? = nil
   ) {
     // Shared cache coordinates phrase throttling across all controllers.
     let cache = AnnouncementCache()
@@ -37,9 +40,16 @@ final class FrameNavigationManager: NavigationSpeaker {
 
     let sharedHaptics = hapticManager ?? HapticManager(settings: settings)
 
+    self.networkController = NetworkFeedbackController(
+      speaker: speaker,
+      hapticManager: sharedHaptics,
+      cache: cache,
+      settings: settings,
+      networkMonitor: networkMonitor ?? NetworkMonitor.shared,
+      apiHealthMonitor: apiHealthMonitor ?? APIHealthMonitor.shared)
+
     self.preMatchController = PreMatchFeedbackController(
       speaker: speaker,
-      earcon: earcon ?? DetectionEarcon(),
       hapticManager: sharedHaptics,
       cache: cache,
       config: config,
@@ -70,7 +80,9 @@ final class FrameNavigationManager: NavigationSpeaker {
     targetBox: CGRect?,
     distance: Double?
   ) {
-    // Pre-match runs first so its cache updates are visible to other controllers.
+    // Network runs first — connectivity issues are relevant regardless of match
+    // state, and its cache updates should be visible to other controllers.
+    networkController.tick(timestamp: timestamp)
     preMatchController.tick(candidates: candidates, timestamp: timestamp)
     announcer.tick(candidates: candidates, timestamp: timestamp)
 
@@ -90,6 +102,7 @@ final class FrameNavigationManager: NavigationSpeaker {
   }
 
   func reset() {
+    networkController.reset()
     preMatchController.reset()
     dirController.reset()
     milestoneController.reset()

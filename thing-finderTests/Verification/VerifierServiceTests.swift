@@ -41,7 +41,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -70,7 +71,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -97,7 +99,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "",  // Empty description = auto-promote
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -125,7 +128,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "",  // No description
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -153,7 +157,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     let pixelBuffer = createTestPixelBuffer()
@@ -199,7 +204,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -221,7 +227,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     // Should not crash with empty store
@@ -255,7 +262,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -290,7 +298,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     service.tick(
@@ -320,7 +329,8 @@ final class VerifierServiceTests: XCTestCase {
     let service = VerifierService(
       targetTextDescription: "blue honda",
       imgUtils: ImageUtilities.shared,
-      config: config
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: true)
     )
 
     // Wait for rate limit to pass but not per-candidate interval
@@ -336,6 +346,75 @@ final class VerifierServiceTests: XCTestCase {
 
     // Should still be unknown (per-candidate throttled)
     XCTAssertEqual(store[candidate.id]?.matchStatus, .unknown)
+  }
+
+  // MARK: - Offline Pause
+
+  func test_tick_skipsVerification_whenOffline() {
+    // "Search paused" (NetworkFeedbackController) needs to be literally true:
+    // no verify() calls should go out while the device is offline.
+    var candidate = TestCandidates.make(
+      boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.3, height: 0.2)
+    )
+    candidate.matchStatus = .unknown
+    store.upsert(candidate)
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let service = VerifierService(
+      targetTextDescription: "blue honda",
+      imgUtils: ImageUtilities.shared,
+      config: config,
+      networkMonitor: MockNetworkMonitor(isConnected: false)
+    )
+
+    service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      viewBounds: CGRect(x: 0, y: 0, width: 100, height: 100),
+      store: store
+    )
+
+    // Never transitions to .waiting — verification was skipped entirely.
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .unknown)
+  }
+
+  func test_tick_resumesVerification_afterReconnecting() {
+    var candidate = TestCandidates.make(
+      boundingBox: CGRect(x: 0.1, y: 0.1, width: 0.3, height: 0.2)
+    )
+    candidate.matchStatus = .unknown
+    store.upsert(candidate)
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let mockMonitor = MockNetworkMonitor(isConnected: false)
+    let service = VerifierService(
+      targetTextDescription: "blue honda",
+      imgUtils: ImageUtilities.shared,
+      config: config,
+      networkMonitor: mockMonitor
+    )
+
+    service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      viewBounds: CGRect(x: 0, y: 0, width: 100, height: 100),
+      store: store
+    )
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .unknown)
+
+    // Reconnect — verification should resume on the very next tick, without
+    // waiting out the rate-limit window (it was never consumed while offline).
+    mockMonitor.isConnected = true
+    service.tick(
+      pixelBuffer: createTestPixelBuffer(),
+      orientation: .up,
+      imageSize: CGSize(width: 100, height: 100),
+      viewBounds: CGRect(x: 0, y: 0, width: 100, height: 100),
+      store: store
+    )
+    XCTAssertEqual(store[candidate.id]?.matchStatus, .waiting)
   }
 
   // MARK: - Helpers

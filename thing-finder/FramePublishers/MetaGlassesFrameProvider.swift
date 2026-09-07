@@ -68,7 +68,8 @@ final class MetaGlassesFrameProvider: NSObject, @preconcurrency FrameProvider {
         guard let self, self.isRunning else { return }
         self.previewImageView.image = frame
         if let pixelBuffer = self.glassesVM.currentPixelBuffer {
-          self.delegate?.processFrame(self, buffer: pixelBuffer, depthAt: { _ in nil })
+          self.delegate?.processFrame(
+            self, buffer: pixelBuffer, depthAt: { points in points.map { _ in nil } })
         }
       }
   }

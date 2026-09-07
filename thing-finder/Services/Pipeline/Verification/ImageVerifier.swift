@@ -20,6 +20,16 @@ public struct VerificationOutcome {
   public let isPlateMatch: Bool
   public let vehicleView: Candidate.VehicleView?
   public let viewScore: Double?
+  /// Whether this outcome resulted from a network request that actually
+  /// completed (i.e. we received and parsed a real response from the
+  /// server), as opposed to a local/pre-request rejection (e.g. a blurry
+  /// image caught before any API call, or a local encode failure).
+  ///
+  /// `APIHealthMonitor` uses this to avoid being reset by outcomes that
+  /// never touched the network — only outcomes that reflect an actual
+  /// completed request (successful or semantically rejected) should be able
+  /// to clear degradation.
+  public let didCompleteNetworkRequest: Bool
 
   public init(
     isMatch: Bool,
@@ -27,7 +37,8 @@ public struct VerificationOutcome {
     rejectReason: RejectReason?,
     isPlateMatch: Bool = false,
     vehicleView: Candidate.VehicleView? = nil,
-    viewScore: Double? = nil
+    viewScore: Double? = nil,
+    didCompleteNetworkRequest: Bool = true
   ) {
     self.isMatch = isMatch
     self.description = description
@@ -35,6 +46,7 @@ public struct VerificationOutcome {
     self.isPlateMatch = isPlateMatch
     self.vehicleView = vehicleView
     self.viewScore = viewScore
+    self.didCompleteNetworkRequest = didCompleteNetworkRequest
   }
 }
 

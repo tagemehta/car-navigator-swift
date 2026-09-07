@@ -169,7 +169,11 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
       finalBuf = buf
     }
 
-    delegate?.processFrame(self, buffer: finalBuf, depthAt: { _ in nil })
+    delegate?.processFrame(
+      self, buffer: finalBuf,
+      depthAt: { points in
+        points.map { _ in nil }
+      })
   }
 
   // MARK: ‑ Helpers
@@ -181,7 +185,7 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
     let angle: CGFloat
     switch ori {
     case .portrait: angle = 0
-    case .portraitUpsideDown: angle = .pi/2
+    case .portraitUpsideDown: angle = .pi / 2
     case .landscapeLeft: angle = .pi
     case .landscapeRight: angle = -.pi
     default: angle = 0
@@ -191,7 +195,7 @@ final class VideoFileFrameProvider: NSObject, FrameProvider {
 
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer).oriented(forExifOrientation: 1)
       .transformed(by: CGAffineTransform(rotationAngle: angle))
-//    print(UIImage(ciImage: ciImage).jpegData(compressionQuality: 0.5)?.base64EncodedString())
+    //    print(UIImage(ciImage: ciImage).jpegData(compressionQuality: 0.5)?.base64EncodedString())
     var newBuf: CVPixelBuffer?
     let w = Int(ciImage.extent.width)
     let h = Int(ciImage.extent.height)

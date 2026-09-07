@@ -1,15 +1,14 @@
 //  PreMatchFeedbackController.swift
 //  thing-finder
 //
-//  Owns all audio feedback during the pre-match phase (no candidate is yet
-//  partial or full). Goes dormant once a match exists so it doesn't fight
-//  NavAnnouncer or the beep controller.
+//  Owns feedback during the pre-match phase (no candidate is yet partial or
+//  full). Goes dormant once a match exists so it doesn't fight NavAnnouncer or
+//  the beep controller.
 //
 //  Responsibilities:
 //    1. Session-start  — "Searching for [targetDescription]…" once per search.
-//    2. Heartbeat      — "Still looking…" every ~20 s while no candidates exist.
-//    3. Earcon         — soft tone + light haptic tap ~0.3 s after any new car
-//                        enters the pipeline (deduped for candidate lifetime).
+//    2. Detection      — spaced light haptic taps for stable, new candidates.
+//    3. Heartbeat      — "Still looking…" every ~20 s while no candidates exist.
 //    4. Rejections     — "Not yours — [desc]" per candidate, throttled;
 //                        degrades to "Several cars nearby, still looking" in
 //                        high-density mode (> N rejections in a rolling window).
@@ -21,7 +20,6 @@ final class PreMatchFeedbackController {
   // MARK: - Dependencies
 
   private let speaker: SpeechOutput
-  private let earcon: EarconOutput
   private let hapticManager: HapticManagerProtocol
   private let cache: AnnouncementCache
   private let config: NavigationFeedbackConfig
@@ -32,13 +30,14 @@ final class PreMatchFeedbackController {
 
   private var sessionStarted = false
 
-  // MARK: - Earcon deduplication
+  // MARK: - Detection haptic deduplication
 
-  /// Lifetime set — never pruned. Prevents re-firing for candidates that
-  /// leave and re-enter the frame (e.g., momentary occlusion).
+  /// Lifetime set — prevents re-firing for candidates that leave and re-enter.
   private var seenCandidates: Set<UUID> = []
-  /// First-seen timestamps for the stability gate; pruned when candidate leaves.
+  /// First-seen timestamps for the stability gate; pruned when candidates leave.
   private var candidateFirstSeen: [UUID: Date] = [:]
+  /// Last time a detection haptic was played.
+  private var lastDetectionHapticTime: Date = .distantPast
 
   // MARK: - Heartbeat
 
@@ -57,7 +56,6 @@ final class PreMatchFeedbackController {
 
   init(
     speaker: SpeechOutput,
-    earcon: EarconOutput,
     hapticManager: HapticManagerProtocol,
     cache: AnnouncementCache,
     config: NavigationFeedbackConfig,
@@ -65,7 +63,6 @@ final class PreMatchFeedbackController {
     targetDescription: String
   ) {
     self.speaker = speaker
-    self.earcon = earcon
     self.hapticManager = hapticManager
     self.cache = cache
     self.config = config
@@ -79,7 +76,16 @@ final class PreMatchFeedbackController {
   func tick(candidates: [Candidate], timestamp: Date) {
     // Session-start fires exactly once per search, regardless of match state.
     // Gated by enableSpeech — it's a spoken phrase.
-    if settings.enableSpeech && !sessionStarted {
+    //
+    // `NetworkFeedbackController` runs earlier in the same tick and, on a
+    // cold offline start, speaks a connectivity warning with this same
+    // `timestamp`. `Speaker.speak` cancels whatever is currently playing, so
+    // if we spoke immediately here we'd cut that warning off before the user
+    // ever heard it. Detect that case via the shared cache and defer session
+    // start by one tick (a single frame) so the higher-priority connectivity
+    // warning survives; the normal online path is unaffected.
+    let announcedElsewhereThisTick = cache.lastGlobal?.time == timestamp
+    if settings.enableSpeech && !sessionStarted && !announcedElsewhereThisTick {
       let phrase = String(
         format: NSLocalizedString(
           "Searching for %@",
@@ -93,8 +99,8 @@ final class PreMatchFeedbackController {
     let hasMatch = candidates.contains { $0.matchStatus == .partial || $0.matchStatus == .full }
 
     if !hasMatch {
-      // tickEarcons runs unconditionally — it has its own enableBeeps/enableHaptics guards.
-      tickEarcons(candidates: candidates, timestamp: timestamp)
+      tickDetectionHaptics(candidates: candidates, timestamp: timestamp)
+
       // Speech-only: heartbeat and rejection announcements remain gated by enableSpeech.
       if settings.enableSpeech {
         tickHeartbeat(candidates: candidates, timestamp: timestamp)
@@ -103,9 +109,7 @@ final class PreMatchFeedbackController {
     }
 
     // Prune first-seen times for candidates that left the snapshot.
-    // Runs unconditionally so entries don't leak when speech is off.
-    // (seenCandidates is intentionally never pruned — lifetime deduplication.)
-    let liveIDs = Set(candidates.map { $0.id })
+    let liveIDs = Set(candidates.map(\.id))
     for id in candidateFirstSeen.keys where !liveIDs.contains(id) {
       candidateFirstSeen.removeValue(forKey: id)
     }
@@ -116,36 +120,38 @@ final class PreMatchFeedbackController {
     sessionStarted = false
     seenCandidates.removeAll()
     candidateFirstSeen.removeAll()
+    lastDetectionHapticTime = .distantPast
     lastHeartbeatTime = .distantPast
     announcedRejections.removeAll()
     recentRejectionTimes.removeAll()
     lastGroupedRejectionTime = .distantPast
   }
 
-  // MARK: - Earcon
+  // MARK: - Detection haptic
 
-  private func tickEarcons(candidates: [Candidate], timestamp: Date) {
-    guard settings.enableBeeps else { return }
+  private func tickDetectionHaptics(candidates: [Candidate], timestamp: Date) {
+    guard settings.enableHaptics else { return }
 
     for candidate in candidates {
       let id = candidate.id
+      guard candidate.isBoundingBoxFresh else {
+        candidateFirstSeen.removeValue(forKey: id)
+        continue
+      }
       guard !seenCandidates.contains(id) else { continue }
 
-      // Record when we first saw this candidate.
       if candidateFirstSeen[id] == nil {
         candidateFirstSeen[id] = timestamp
       }
-      guard let firstSeen = candidateFirstSeen[id] else { continue }
+      guard let firstSeen = candidateFirstSeen[id],
+        timestamp.timeIntervalSince(firstSeen) >= config.detectionHapticStabilityGate
+      else { continue }
+      guard timestamp.timeIntervalSince(lastDetectionHapticTime) >= config.detectionHapticCooldown
+      else { continue }
 
-      // Stability gate: ignore transient detections under the threshold.
-      guard timestamp.timeIntervalSince(firstSeen) >= config.earconStabilityGate else { continue }
-
-      // Commit: mark as seen for the lifetime of this session.
       seenCandidates.insert(id)
-      earcon.play()
-      if settings.enableHaptics {
-        hapticManager.playDetection()
-      }
+      lastDetectionHapticTime = timestamp
+      hapticManager.playDetection()
     }
   }
 

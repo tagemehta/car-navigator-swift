@@ -2,7 +2,7 @@
 //  thing-finderTests
 //
 //  Unit tests for PreMatchFeedbackController.
-//  Covers: session-start, heartbeat, earcon stability gate, rejection announcements,
+//  Covers: session-start, detection haptics, heartbeat, rejection announcements,
 //  high-density grouped fallback, and dormancy when a match exists.
 
 import XCTest
@@ -12,7 +12,6 @@ import XCTest
 final class PreMatchFeedbackControllerTests: XCTestCase {
 
   private var mockSpeaker: MockSpeechOutput!
-  private var mockEarcon: MockEarconOutput!
   private var mockHaptics: MockHapticManager!
   private var cache: AnnouncementCache!
   private var settings: Settings!
@@ -21,7 +20,6 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   override func setUp() {
     super.setUp()
     mockSpeaker = MockSpeechOutput()
-    mockEarcon = MockEarconOutput()
     mockHaptics = MockHapticManager()
     cache = AnnouncementCache()
     settings = TestSettings.makeDefault()
@@ -31,7 +29,8 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
       directionChangeInterval: 4.0,
       retryPhraseCooldown: 8.0
     )
-    config.earconStabilityGate = 0.3
+    config.detectionHapticStabilityGate = 0.3
+    config.detectionHapticCooldown = 0.5
     config.scanningHeartbeatInterval = 5.0
     config.rejectionCooldown = 1.0
     config.rejectionDensityWindow = 10.0
@@ -40,7 +39,6 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
 
   override func tearDown() {
     mockSpeaker = nil
-    mockEarcon = nil
     mockHaptics = nil
     cache = nil
     settings = nil
@@ -53,7 +51,6 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
   {
     return PreMatchFeedbackController(
       speaker: mockSpeaker,
-      earcon: mockEarcon,
       hapticManager: mockHaptics,
       cache: cache,
       config: config,
@@ -103,6 +100,105 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     controller.tick(candidates: [], timestamp: Date())
 
     XCTAssertEqual(mockSpeaker.speakCallCount, 0)
+  }
+
+  func test_sessionStart_deferredWhenAnotherControllerSpokeSameTick() {
+    // Regression: `NetworkFeedbackController` runs earlier in the same
+    // `FrameNavigationManager.tick()` call and, on a cold offline start,
+    // speaks a connectivity warning using the same `timestamp`. Since
+    // `Speaker.speak` cancels whatever is currently playing, the session
+    // start announcement must not immediately speak over it.
+    let controller = makeController(description: "red Toyota")
+    let now = Date()
+
+    // Simulate NetworkFeedbackController having already spoken this tick.
+    cache.lastGlobal = (phrase: "No internet connection — search may not work", time: now)
+
+    controller.tick(candidates: [], timestamp: now)
+
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Searching for"))
+  }
+
+  func test_sessionStart_firesOnNextTick_afterDeferral() {
+    let controller = makeController(description: "red Toyota")
+    let now = Date()
+
+    // First tick: deferred because another controller already spoke.
+    cache.lastGlobal = (phrase: "No internet connection — search may not work", time: now)
+    controller.tick(candidates: [], timestamp: now)
+    XCTAssertFalse(mockSpeaker.didSpeakContaining("Searching for"))
+
+    // Next tick: nothing new was spoken at this later timestamp, so session
+    // start proceeds normally.
+    let next = now.addingTimeInterval(0.05)
+    controller.tick(candidates: [], timestamp: next)
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Searching for"))
+  }
+
+  // MARK: - Detection haptics
+
+  func test_detectionHaptic_firesAfterStabilityGate() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+    let candidate = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
+
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+  }
+
+  func test_detectionHaptic_doesNotRefireForSameCandidate() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+    let candidate = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [candidate], timestamp: now)
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(2.0))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+  }
+
+  func test_detectionHaptic_coolsDownBetweenNearbyCars() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    let now = Date()
+    let first = TestCandidates.make(id: UUID())
+    let second = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [first, second], timestamp: now)
+    controller.tick(candidates: [first, second], timestamp: now.addingTimeInterval(0.3))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
+
+    controller.tick(candidates: [first, second], timestamp: now.addingTimeInterval(0.8))
+    XCTAssertEqual(mockHaptics.detectionCallCount, 2)
+  }
+
+  func test_detectionHaptic_isSuppressedWhenDisabled() {
+    settings.enableHaptics = false
+    let controller = makeController()
+    let now = Date()
+    let candidate = TestCandidates.make(id: UUID())
+
+    controller.tick(candidates: [candidate], timestamp: now)
+    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
+  }
+
+  func test_detectionHaptic_isSuppressedWhenMatchExists() {
+    settings.enableHaptics = true
+    let controller = makeController()
+    var candidate = TestCandidates.make(id: UUID())
+    candidate.matchStatus = .partial
+
+    controller.tick(candidates: [candidate], timestamp: Date().addingTimeInterval(1.0))
+
+    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
   }
 
   // MARK: - Heartbeat
@@ -181,128 +277,6 @@ final class PreMatchFeedbackControllerTests: XCTestCase {
     controller.tick(candidates: [], timestamp: now.addingTimeInterval(6.0))
 
     XCTAssertTrue(mockSpeaker.didSpeakContaining("Still looking"))
-  }
-
-  // MARK: - Earcon
-
-  func test_earcon_firesAfterStabilityGate() {
-    let controller = makeController()
-    let now = Date()
-
-    controller.tick(candidates: [], timestamp: now)  // session start
-    let candidate = TestCandidates.make(id: UUID())
-
-    // Register candidate — within stability gate (0.1s < 0.3s), no earcon yet
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
-    XCTAssertEqual(mockEarcon.playCallCount, 0)
-
-    // Second tick — clearly past stability gate (gap = 0.4s > 0.3s), earcon fires
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
-    XCTAssertEqual(mockEarcon.playCallCount, 1)
-  }
-
-  func test_earcon_doesNotRefire_forSameCandidate() {
-    let controller = makeController()
-    let now = Date()
-
-    controller.tick(candidates: [], timestamp: now)
-    let candidate = TestCandidates.make(id: UUID())
-
-    // Register candidate, then fire earcon past stability gate
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
-    XCTAssertEqual(mockEarcon.playCallCount, 1)
-
-    // Further ticks — earcon must not re-fire
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
-    XCTAssertEqual(mockEarcon.playCallCount, 1)
-  }
-
-  func test_earcon_survivesReset_forSameCandidateID() {
-    // After reset, the lifetime deduplication set is cleared,
-    // so the same candidate ID can trigger the earcon again in a new session.
-    let controller = makeController()
-    let now = Date()
-    let candidateID = UUID()
-
-    controller.tick(candidates: [], timestamp: now)
-    let candidate = TestCandidates.make(id: candidateID)
-    // Register + fire
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
-    XCTAssertEqual(mockEarcon.playCallCount, 1)
-
-    controller.reset()
-    controller.tick(candidates: [], timestamp: now.addingTimeInterval(1.0))  // session-start
-    // Register + fire again in new session
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.1))
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.5))
-    XCTAssertEqual(mockEarcon.playCallCount, 2)
-  }
-
-  func test_earcon_suppressed_whenBeepsDisabled() {
-    settings.enableBeeps = false
-    let controller = makeController()
-    let now = Date()
-
-    controller.tick(candidates: [], timestamp: now)
-    let candidate = TestCandidates.make(id: UUID())
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
-
-    XCTAssertEqual(mockEarcon.playCallCount, 0)
-  }
-
-  func test_earcon_suppressed_whenMatchExists() {
-    // Once a partial/full match exists, the earcon must not fire for new candidates.
-    let controller = makeController()
-    let now = Date()
-
-    controller.tick(candidates: [], timestamp: now)
-
-    var matchedCandidate = TestCandidates.make(id: UUID())
-    matchedCandidate.matchStatus = .partial
-
-    let newCandidate = TestCandidates.make(id: UUID())
-
-    // Register new candidate
-    controller.tick(
-      candidates: [matchedCandidate, newCandidate],
-      timestamp: now.addingTimeInterval(0.1))
-    // Attempt to fire past stability gate — match exists, earcon must stay silent
-    controller.tick(
-      candidates: [matchedCandidate, newCandidate],
-      timestamp: now.addingTimeInterval(0.5))
-
-    XCTAssertEqual(mockEarcon.playCallCount, 0)
-  }
-
-  func test_earcon_playsHaptic_whenHapticsEnabled() {
-    settings.enableHaptics = true
-    let controller = makeController()
-    let now = Date()
-
-    controller.tick(candidates: [], timestamp: now)
-    let candidate = TestCandidates.make(id: UUID())
-    // Register, then fire past stability gate
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
-
-    XCTAssertEqual(mockHaptics.detectionCallCount, 1)
-  }
-
-  func test_earcon_noHaptic_whenHapticsDisabled() {
-    settings.enableHaptics = false
-    let controller = makeController()
-    let now = Date()
-
-    controller.tick(candidates: [], timestamp: now)
-    let candidate = TestCandidates.make(id: UUID())
-    // Register, then fire past stability gate
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.1))
-    controller.tick(candidates: [candidate], timestamp: now.addingTimeInterval(0.5))
-
-    XCTAssertEqual(mockHaptics.detectionCallCount, 0)
   }
 
   // MARK: - Rejection Announcements

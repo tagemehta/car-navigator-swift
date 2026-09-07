@@ -10,11 +10,12 @@ import UIKit
 
 public protocol FrameProviderDelegate: AnyObject {
   /// - buffer: BGRA pixel buffer of the live camera frame
-  /// - depthAt: closure returning depth (metres) for a point in view-coords, or `nil`
+  /// - depthAt: closure returning one depth (metres) per requested point,
+  ///   preserving the input order; unavailable samples are `nil`
   func processFrame(
     _ provider: any FrameProvider,
     buffer: CVPixelBuffer,
-    depthAt: @escaping (CGPoint) -> Float?
+    depthAt: @escaping ([CGPoint]) -> [Float?]
   )
 }
 

@@ -89,7 +89,12 @@ public final class AdvancedLLMVerifier: ImageVerifier {
     guard let base64 = image.jpegData(compressionQuality: 0.7)?.base64EncodedString() else {
       DebugPublisher.shared.error(
         "[AdvancedLLM][\(candidateId.uuidString.suffix(8))] Failed to encode image")
-      return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
+      return Just(
+        VerificationOutcome(
+          isMatch: false, description: "encode_failed", rejectReason: .apiError,
+          didCompleteNetworkRequest: false)
+      ).setFailureType(to: Error.self)
+        .eraseToAnyPublisher()
     }
     lastVerifiedDate = Date()
 

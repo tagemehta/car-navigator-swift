@@ -6,7 +6,7 @@
 //  Ownership boundary
 //  ──────────────────
 //  NavAnnouncer handles: full / partial / lost status transitions + vehicle view.
-//  PreMatchFeedbackController handles: session-start, heartbeat, earcon, rejections.
+//  PreMatchFeedbackController handles: session-start, heartbeat, rejections.
 
 import XCTest
 
@@ -80,6 +80,26 @@ final class NavAnnouncerTests: XCTestCase {
     announcer.tick(candidates: [candidate], timestamp: Date())
 
     XCTAssertGreaterThan(mockSpeaker.speakCallCount, 0)
+  }
+
+  // MARK: - Frame priority
+
+  func test_tick_defersWhenConnectivityAnnouncementClaimedTheFrame() {
+    // A connectivity warning speaks earlier in the same frame; speaking now
+    // would cancel it. The match transition must survive to the next frame.
+    let announcer = makeAnnouncer()
+    let now = Date()
+    cache.priorityFrame = now
+    cache.lastGlobal = ("Connection lost — search paused", now)
+
+    var candidate = TestCandidates.make()
+    candidate.matchStatus = .full
+
+    announcer.tick(candidates: [candidate], timestamp: now)
+    XCTAssertEqual(mockSpeaker.speakCallCount, 0)
+
+    announcer.tick(candidates: [candidate], timestamp: now.addingTimeInterval(1.0))
+    XCTAssertTrue(mockSpeaker.didSpeakContaining("Found it"))
   }
 
   // MARK: - Status Transition Announcements
@@ -165,7 +185,7 @@ final class NavAnnouncerTests: XCTestCase {
   }
 
   func test_tick_noSpeechForWaitingStatus() {
-    // Waiting is now silent — earcon handles evaluation feedback.
+    // Waiting is now silent — no feedback while a candidate is being evaluated.
     let announcer = makeAnnouncer()
 
     var candidate = TestCandidates.make()

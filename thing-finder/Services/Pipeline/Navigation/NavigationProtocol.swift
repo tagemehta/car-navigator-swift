@@ -11,8 +11,10 @@ public struct NavigationFeedbackConfig {
   public var retryPhraseCooldown: TimeInterval = 8
 
   // MARK: Pre-match (PreMatchFeedbackController)
-  /// Seconds a candidate must be stable before the earcon fires.
-  public var earconStabilityGate: TimeInterval = 0.3
+  /// Seconds a candidate must remain visible before the detection haptic fires.
+  public var detectionHapticStabilityGate: TimeInterval = 0.3
+  /// Minimum gap between detection haptics when multiple cars are nearby.
+  public var detectionHapticCooldown: TimeInterval = 0.5
   /// Seconds between "Still looking…" heartbeat announcements.
   public var scanningHeartbeatInterval: TimeInterval = 20
   /// Minimum seconds between consecutive individual rejection announcements.
@@ -71,7 +73,7 @@ public protocol NavigationSpeaker {
     candidates: [Candidate],
     targetBox: CGRect?,
     distance: Double?)
-  /// Reset session state (session-start announcement, earcon deduplication, etc.).
+  /// Reset session state (session-start announcement, rejection deduplication, etc.).
   /// Call whenever the user starts a new search.
   func reset()
 }

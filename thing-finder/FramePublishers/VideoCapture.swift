@@ -321,31 +321,32 @@ extension VideoCapture: AVCaptureDataOutputSynchronizerDelegate {
       as? AVCaptureSynchronizedSampleBufferData
 
     guard let pixelBuffer = syncedVideoData?.sampleBuffer.imageBuffer else { return }
-    let depthProvider: (CGPoint) -> Float? = { point in
-      var distanceMeters: Float32? = nil
-      if let depthData = syncedDepthData?.depthData {
-        let depth = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
-        let depthBuf = depth.depthDataMap
-        CVPixelBufferLockBaseAddress(depthBuf, .readOnly)
-        let width = CVPixelBufferGetWidth(depthBuf)
-        let height = CVPixelBufferGetHeight(depthBuf)
+    let depthProvider: ([CGPoint]) -> [Float?] = { points in
+      guard let depthData = syncedDepthData?.depthData else {
+        return points.map { _ in nil }
+      }
+
+      let depth = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
+      let depthBuf = depth.depthDataMap
+      CVPixelBufferLockBaseAddress(depthBuf, .readOnly)
+      defer { CVPixelBufferUnlockBaseAddress(depthBuf, .readOnly) }
+
+      guard let base = CVPixelBufferGetBaseAddress(depthBuf) else {
+        return points.map { _ in nil }
+      }
+
+      let width = CVPixelBufferGetWidth(depthBuf)
+      let height = CVPixelBufferGetHeight(depthBuf)
+      let rowBytes = CVPixelBufferGetBytesPerRow(depthBuf)
+
+      return points.map { point in
         let x = max(0, min(width - 1, Int(point.x * CGFloat(width))))
         let y = max(0, min(height - 1, Int(point.y * CGFloat(height))))
-        let normalizedPoint = CGPoint(x: x, y: y)
-        if let base = CVPixelBufferGetBaseAddress(depthBuf) {
-          let rowBytes = CVPixelBufferGetBytesPerRow(depthBuf)
-          let ptr = base.advanced(
-            by: Int(normalizedPoint.y) * rowBytes + Int(normalizedPoint.x)
-              * MemoryLayout<Float32>.size)
-          let val = ptr.load(as: Float32.self)
-          if val.isFinite && val > 0 {
-            distanceMeters = val
-          }
-        }
-        CVPixelBufferUnlockBaseAddress(depthBuf, .readOnly)
-        return distanceMeters
+        let ptr = base.advanced(
+          by: y * rowBytes + x * MemoryLayout<Float32>.size)
+        let val = ptr.load(as: Float32.self)
+        return val.isFinite && val > 0 ? val : nil
       }
-      return nil
     }
     // Package the captured data.
     delegate?.processFrame(

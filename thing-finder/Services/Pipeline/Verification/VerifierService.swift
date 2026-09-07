@@ -25,6 +25,7 @@ public final class VerifierService: VerifierServiceProtocol {
   internal let imgUtils: ImageUtilities
   internal let verificationConfig: VerificationConfig
   internal let ocrEngine: OCREngine
+  private let networkMonitor: NetworkMonitorProtocol
   private var cancellables: Set<AnyCancellable> = []
   /// Timestamp of the most recent *batch* of verify() requests (i.e., the last tick that sent one or more verify calls).
   private var lastVerifyBatch: Date = .distantPast
@@ -35,7 +36,8 @@ public final class VerifierService: VerifierServiceProtocol {
     targetTextDescription: String,
     imgUtils: ImageUtilities,
     config: VerificationConfig,
-    ocrEngine: OCREngine = VisionOCREngine()
+    ocrEngine: OCREngine = VisionOCREngine(),
+    networkMonitor: NetworkMonitorProtocol = NetworkMonitor.shared
   ) {
     self.selector = VerifierSelector(
       targetTextDescription: targetTextDescription,
@@ -44,6 +46,7 @@ public final class VerifierService: VerifierServiceProtocol {
     self.imgUtils = imgUtils
     self.verificationConfig = config
     self.ocrEngine = ocrEngine
+    self.networkMonitor = networkMonitor
   }
 
   /// Called every frame by `FramePipelineCoordinator`.
@@ -95,6 +98,18 @@ public final class VerifierService: VerifierServiceProtocol {
     }
     // Rate-limit: if the previous batch was too recent, skip this tick entirely.
     guard now.timeIntervalSince(lastVerifyBatch) >= minVerifyInterval else {
+      return
+    }
+
+    // Actually pause verification while offline — this is what backs
+    // NetworkFeedbackController's "search paused" / "search resumed"
+    // announcements. `lastVerifyBatch` is deliberately left untouched so
+    // verification resumes on the very next tick after reconnecting, rather
+    // than waiting out `minVerifyInterval` again. OCR above is unaffected;
+    // it runs entirely on-device.
+    guard networkMonitor.isConnected else {
+      DebugPublisher.shared.info(
+        "[Verifier] Skipping verification batch — offline")
       return
     }
 

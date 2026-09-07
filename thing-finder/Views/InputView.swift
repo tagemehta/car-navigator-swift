@@ -10,6 +10,18 @@ extension InputView {
   }
 }
 
+/// Immutable snapshot of everything a search needs, captured at the moment the
+/// user starts one. The connectivity check is asynchronous, so the input fields
+/// can change (or another start can be triggered) before it completes; carrying
+/// the snapshot through guarantees the search that opens is the one submitted.
+private struct SearchRequest: Identifiable, Hashable {
+  let id = UUID()
+  let description: String
+  let mode: SearchMode
+  let targetClasses: [String]
+  let isParatransitMode: Bool
+}
+
 struct InputView: View {
   @EnvironmentObject var settings: Settings
   @EnvironmentObject private var glassesVM: MetaGlassesViewModel
@@ -89,10 +101,12 @@ struct InputView: View {
   @State private var searchMode: SearchMode = .uberFinder
   @State private var selectedClass: String = "car"
   @State private var description: String = ""
-  @State private var isShowingCamera = false
+  @State private var activeSearch: SearchRequest?
+  @State private var pendingStart: Task<Void, Never>?
   @State private var showPlaceholder = true
   @State private var showPasteAlert = false
   @State private var pasteAlertMessage = ""
+  @State private var showNoConnectionAlert = false
   @State private var showingGlassesChecklist = false
   @FocusState private var isInputFocused: Bool
   // Vehicle classes for Uber Finder
@@ -111,10 +125,6 @@ struct InputView: View {
     "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator",
     "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush",
   ].sorted()
-
-  var selectedClasses: [String] {
-    searchMode == .uberFinder ? vehicleClasses : [selectedClass]
-  }
 
   var placeholderText: String {
     searchMode == .uberFinder
@@ -146,8 +156,7 @@ struct InputView: View {
       searchMode = .uberFinder
       showPlaceholder = false
       isParatransitMode = false
-      saveToHistory(carDesc, mode: .uberFinder, paratransit: false)
-      isShowingCamera = true
+      startSearch(description: carDesc, mode: .uberFinder, paratransit: false)
     }
 
     if let paratransitDesc = shortcutNavigationState.consumePendingParatransitDescription() {
@@ -155,9 +164,54 @@ struct InputView: View {
       searchMode = .uberFinder
       showPlaceholder = false
       isParatransitMode = true
-      saveToHistory(paratransitDesc, mode: .uberFinder, paratransit: true)
-      isShowingCamera = true
+      startSearch(description: paratransitDesc, mode: .uberFinder, paratransit: true)
     }
+  }
+
+  /// Gates navigation to the camera view on connectivity — starting a search
+  /// with no network at all (airplane mode, no Wi-Fi/cellular) can't verify
+  /// anything, so we stop the user here with an alert instead of letting them
+  /// discover it once the camera is already running.
+  ///
+  /// Object Finder searches with no description run entirely on-device
+  /// (`VerifierService` auto-promotes candidates when there's no target
+  /// description to verify against — see `hasTargetDescription`), so those
+  /// are allowed to proceed offline.
+  ///
+  /// Waits for `NetworkMonitor`'s real (not optimistic) connectivity state —
+  /// on a cold launch (e.g. via a Shortcut) `NWPathMonitor` may not have
+  /// delivered its first callback yet, and trusting the optimistic default
+  /// could let an offline search start unannounced.
+  @MainActor
+  private func attemptStartSearch(_ request: SearchRequest) async {
+    let needsNetwork = !request.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    if needsNetwork {
+      let isConnected = await NetworkMonitor.shared.currentConnectivity()
+      // A newer start superseded this one while the check was in flight.
+      guard !Task.isCancelled else { return }
+      guard isConnected else {
+        showNoConnectionAlert = true
+        return
+      }
+    }
+    // History is only written once the search actually starts, so a blocked
+    // offline attempt doesn't create or reorder recent searches.
+    saveToHistory(
+      request.description, mode: request.mode, paratransit: request.isParatransitMode)
+    activeSearch = request
+  }
+
+  /// Snapshots the submitted search and runs the connectivity gate for it.
+  private func startSearch(description: String, mode: SearchMode, paratransit: Bool) {
+    let request = SearchRequest(
+      description: description,
+      mode: mode,
+      targetClasses: mode == .uberFinder ? vehicleClasses : [selectedClass],
+      isParatransitMode: paratransit)
+    // Connectivity checks can complete out of order, so only the most recent
+    // submission is allowed to open a search.
+    pendingStart?.cancel()
+    pendingStart = Task { await attemptStartSearch(request) }
   }
 
   var body: some View {
@@ -186,7 +240,7 @@ struct InputView: View {
 
           ZStack(alignment: .topLeading) {
             HStack {
-              ZStack {
+              ZStack(alignment: .topLeading) {
                 TextField("", text: $description, axis: .vertical)
                   .textFieldStyle(RoundedBorderTextFieldStyle())
                   .lineLimit(2, reservesSpace: true)
@@ -199,7 +253,7 @@ struct InputView: View {
                   Text(placeholderText)
                     .foregroundColor(.gray)
                     .padding(.horizontal, 4)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .onTapGesture {
                       isInputFocused = true
                     }
@@ -211,6 +265,9 @@ struct InputView: View {
               }
               .font(.subheadline)
               .foregroundColor(.blue)
+              .accessibilityLabel("Clear description")
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
             }
             .onChange(of: isInputFocused) { oldValue, newValue in
               if newValue {
@@ -257,8 +314,8 @@ struct InputView: View {
 
         Section {
           Button {
-            saveToHistory(description, mode: searchMode, paratransit: isParatransitMode)
-            isShowingCamera = true
+            startSearch(
+              description: description, mode: searchMode, paratransit: isParatransitMode)
           } label: {
             if searchMode == .uberFinder {
               Text("Find My Ride")
@@ -308,9 +365,9 @@ struct InputView: View {
                 searchMode = item.mode
                 isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
-                saveToHistory(
-                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                isShowingCamera = true
+                startSearch(
+                  description: item.description, mode: item.mode,
+                  paratransit: item.isParatransitMode)
               } label: {
                 HStack {
                   Image(systemName: "star.fill")
@@ -378,6 +435,8 @@ struct InputView: View {
               .foregroundColor(.blue)
               .accessibilityLabel("Clear all recent searches")
               .accessibilityHint("Removes all non-favorite searches from history")
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
             }
           ) {
             ForEach(recentItems, id: \.id) { item in
@@ -386,9 +445,9 @@ struct InputView: View {
                 searchMode = item.mode
                 isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
-                saveToHistory(
-                  item.description, mode: item.mode, paratransit: item.isParatransitMode)
-                isShowingCamera = true
+                startSearch(
+                  description: item.description, mode: item.mode,
+                  paratransit: item.isParatransitMode)
               } label: {
                 HStack {
                   Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
@@ -443,6 +502,15 @@ struct InputView: View {
           dismissButton: .cancel(Text("OK"))
         )
       }
+      .alert(
+        "No Internet Connection", isPresented: $showNoConnectionAlert,
+        actions: {
+          Button("OK", role: .cancel) {}
+        },
+        message: {
+          Text("Connect to Wi-Fi or cellular data before starting a search.")
+        }
+      )
       .onAppear {
         hideKeyboard()
         checkForShortcutNavigation()
@@ -460,12 +528,12 @@ struct InputView: View {
       .onDisappear {
         hideKeyboard()
       }
-      .navigationDestination(isPresented: $isShowingCamera) {
+      .navigationDestination(item: $activeSearch) { request in
         ContentView(
-          description: description,
-          searchMode: searchMode,
-          targetClasses: selectedClasses,
-          isParatransitMode: isParatransitMode
+          description: request.description,
+          searchMode: request.mode,
+          targetClasses: request.targetClasses,
+          isParatransitMode: request.isParatransitMode
         )
       }
     }

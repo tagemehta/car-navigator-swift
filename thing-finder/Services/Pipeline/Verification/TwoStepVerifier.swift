@@ -106,7 +106,12 @@ public final class TwoStepVerifier: ImageVerifier {
   public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
   {
     guard let base64 = image.jpegData(compressionQuality: 1)?.base64EncodedString() else {
-      return Fail(error: NSError(domain: "", code: 0, userInfo: nil)).eraseToAnyPublisher()
+      return Just(
+        VerificationOutcome(
+          isMatch: false, description: "encode_failed", rejectReason: .apiError,
+          didCompleteNetworkRequest: false)
+      ).setFailureType(to: Error.self)
+        .eraseToAnyPublisher()
     }
     let startTime = Date()
     lastVerifiedDate = startTime

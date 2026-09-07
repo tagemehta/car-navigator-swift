@@ -75,7 +75,7 @@ public final class FramePipelineCoordinator: ObservableObject {
     orientation: CGImagePropertyOrientation,
     imageSize: CGSize,
     viewBounds: CGRect,
-    depthAt: @escaping (CGPoint) -> Float?,
+    depthAt: @escaping ([CGPoint]) -> [Float?],
     captureType: CaptureSourceType
   ) {
     // 1. Detection (filter always true for now)
@@ -141,24 +141,55 @@ public final class FramePipelineCoordinator: ObservableObject {
 
     var targetDistance: Double?
     if let box = targetBBox {
-      // Sample depth at the box centre using the supplied depthAt closure.
-      let center: CGPoint
-      switch captureType {
-      case .avFoundation, .videoFile, .metaGlasses:
-        // Convert view-rect back to normalized image rect for AVF buffers
-        let (imageRect, _) = imgUtils.unscaledBoundingBoxes(
-          for: box,
-          imageSize: imageSize,
-          viewSize: imageSize,
-          orientation: orientation)
-        let normImageRect = VNNormalizedRectForImageRect(
-          imageRect, Int(imageSize.width), Int(imageSize.height))
-        center = CGPoint(x: normImageRect.midX, y: normImageRect.midY)
-      case .arKit:
-        center = CGPoint(x: box.midX, y: box.midY)
+      // Sample several points inside the box. The center can land on a gap in
+      // the vehicle or on the background, so use the median valid depth as a
+      // more stable estimate than a single midpoint lookup.
+      let sampleOffsets = [
+        CGPoint(x: 0.5, y: 0.5),
+        CGPoint(x: 0.25, y: 0.5),
+        CGPoint(x: 0.75, y: 0.5),
+        CGPoint(x: 0.5, y: 0.25),
+        CGPoint(x: 0.5, y: 0.75),
+      ]
+      let normalizedPoints = sampleOffsets.map { offset in
+        CGPoint(
+          x: box.minX + box.width * offset.x,
+          y: box.minY + box.height * offset.y)
       }
-      if let d = depthAt(center) {
-        targetDistance = Double(d)
+
+      let depthPoints: [CGPoint] = normalizedPoints.map { point in
+        let sampleRect = CGRect(origin: point, size: .zero)
+        switch captureType {
+        case .avFoundation, .videoFile, .metaGlasses:
+          // Convert normalized image points to the normalized coordinates
+          // expected by the AVFoundation depth provider.
+          let (imageRect, _) = imgUtils.unscaledBoundingBoxes(
+            for: sampleRect,
+            imageSize: imageSize,
+            viewSize: imageSize,
+            orientation: orientation)
+          let normImageRect = VNNormalizedRectForImageRect(
+            imageRect, Int(imageSize.width), Int(imageSize.height))
+          return CGPoint(x: normImageRect.midX, y: normImageRect.midY)
+        case .arKit:
+          // ARView.makeRaycastQuery(from:) expects a point in the preview
+          // view's own coordinate system, not a normalized image point.
+          // Reuse the same view-rect mapping used elsewhere to place
+          // candidate boxes on screen, honoring orientation and the
+          // aspect-fill crop.
+          let (_, viewRect) = imgUtils.unscaledBoundingBoxes(
+            for: sampleRect,
+            imageSize: imageSize,
+            viewSize: viewBounds.size,
+            orientation: orientation)
+          return CGPoint(x: viewRect.midX, y: viewRect.midY)
+        }
+      }
+
+      let distances = depthAt(depthPoints).compactMap { $0.map(Double.init) }
+      if !distances.isEmpty {
+        let sortedDistances = distances.sorted()
+        targetDistance = sortedDistances[sortedDistances.count / 2]
       }
       //      print("Target distance: \(targetDistance ?? 0)")
     }
