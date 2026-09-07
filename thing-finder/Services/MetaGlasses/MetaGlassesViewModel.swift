@@ -743,15 +743,16 @@ public final class MetaGlassesViewModel: ObservableObject {
         resolution: resolution,
         frameRate: frameRate
       )
-      guard let newStream = try session.addStream(config: config) else {
-        state = .failed("Failed to add stream. Ensure device session is started.")
+      guard let camera = try session.addCamera(config: config) else {
+        state = .failed("Failed to add camera. Ensure device session is started.")
         return false
       }
+      let newStream = camera.stream
 
       // Final cancellation check before we take ownership: otherwise a teardown
       // that already ran would leave this session/stream with nothing to stop it.
       if Task.isCancelled {
-        Task { await newStream.stop() }
+        newStream.stop()
         session.stop()
         return false
       }
@@ -787,7 +788,7 @@ public final class MetaGlassesViewModel: ObservableObject {
       subscribeStreamListeners(to: newStream)
 
       // Start the stream capability
-      await newStream.start()
+      newStream.start()
       return true
 
     } catch {
@@ -968,9 +969,7 @@ public final class MetaGlassesViewModel: ObservableObject {
     sessionStateTask?.cancel()
     sessionStateTask = nil
 
-    if let stream = stream {
-      Task { await stream.stop() }
-    }
+    stream?.stop()
     deviceSession?.stop()
     stream = nil
     deviceSession = nil
@@ -993,6 +992,7 @@ public final class MetaGlassesViewModel: ObservableObject {
     case .peakPowerShutdown: return "Peak power shutdown. Streaming stopped."
     case .batteryCritical: return "Battery critically low. Streaming stopped."
     case .internalError: return "An internal streaming error occurred."
+    case .photoCaptureFailed: return "Failed to capture the photo. Please try again."
     @unknown default: return "An unknown streaming error occurred."
     }
   }
@@ -1011,16 +1011,20 @@ public final class MetaGlassesViewModel: ObservableObject {
       }
 
       MockDeviceKit.shared.enable()
-      let mockDevice = MockDeviceKit.shared.pairRaybanMeta()
 
       Task {
-        mockDevice.powerOn()
-        mockDevice.unfold()
-        mockDevice.don()
+        do {
+          let mockDevice = try MockDeviceKit.shared.pairGlasses(model: .rayBanMeta)
+          mockDevice.powerOn()
+          mockDevice.unfold()
+          mockDevice.don()
 
-        let camera = mockDevice.services.camera
-        camera.setCameraFeed(fileURL: videoURL)
-        self.hasMockDevice = true
+          let camera = mockDevice.services.camera
+          camera.setCameraFeed(fileURL: videoURL)
+          self.hasMockDevice = true
+        } catch {
+          self.state = .failed("Failed to pair mock device: \(error.localizedDescription)")
+        }
       }
     }
 
