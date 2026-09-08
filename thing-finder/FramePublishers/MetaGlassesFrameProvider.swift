@@ -4,7 +4,7 @@
 /*
  * MetaGlassesFrameProvider.swift
  *
- * FrameProvider implementation for Meta glasses using the DAT SDK 0.7.
+ * FrameProvider implementation for Meta glasses using the DAT SDK 0.9.
  *
  * Push-based adapter: subscribes to MetaGlassesViewModel's frame publisher
  * and forwards each new frame to the FrameProviderDelegate. No polling.
@@ -90,8 +90,7 @@ final class MetaGlassesFrameProvider: NSObject, @preconcurrency FrameProvider {
         }
       }
 
-      let started = await self.glassesVM.startStreaming(
-        highQuality: self.glassesVM.useHighQualityStream)
+      let started = await self.glassesVM.startStreaming()
       guard self.isRunning else {
         if started {
           self.glassesVM.stopStreaming()

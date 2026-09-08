@@ -69,6 +69,18 @@
         }
       }
     },
+    "NSLocalNetworkUsageDescription" : {
+      "comment" : "Privacy - Local Network Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Needed to stream from Meta Wearables over Wi-Fi"
+          }
+        }
+      }
+    },
     "NSLocationWhenInUseUsageDescription" : {
       "comment" : "Privacy - Location When In Use Usage Description",
       "extractionState" : "extracted_with_value",

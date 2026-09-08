@@ -6,7 +6,7 @@
 //  thing-finder
 //
 //  Settings section for Meta Ray-Ban glasses configuration.
-//  Uses consolidated MetaGlassesViewModel (DAT SDK 0.7).
+//  Uses consolidated MetaGlassesViewModel (DAT SDK 0.9).
 //
 
 import MWDATCore
@@ -32,12 +32,6 @@ struct MetaGlassesSettingsSection: View {
         if glassesVM.isRegistered {
           disconnectButton
         }
-
-        // Stream quality toggle
-        Toggle("High Quality Stream", isOn: $glassesVM.useHighQualityStream)
-        Text("Uses more Bluetooth bandwidth for higher resolution (720p / 30fps).")
-          .font(.caption)
-          .foregroundColor(.secondary)
       }
     }
     .sheet(isPresented: $showingSetupSheet) {

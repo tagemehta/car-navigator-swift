@@ -9,7 +9,7 @@
 //  Replaces the previous split architecture (MetaGlassesManager, WearablesViewModel,
 //  StreamSessionViewModel, MetaGlassesEnvironment).
 //
-//  Uses DAT SDK 0.7 DeviceSession + Stream capability model.
+//  Uses DAT SDK 0.9 DeviceSession + Camera/Stream capability model.
 //
 //  State machine:
 //    unconfigured → idle → registering → registered → requestingPermission → ready → streaming
@@ -180,7 +180,6 @@ public final class MetaGlassesViewModel: ObservableObject {
 
   private var didInitiateRegistration = false
   private var permissionGrantedThisSession: Bool = false
-  @AppStorage("use_high_quality_glasses_stream") var useHighQualityStream: Bool = false
   private var registrationTask: Task<Void, Never>?
   private var deviceStreamTask: Task<Void, Never>?
   private var sessionStateTask: Task<Void, Never>?
@@ -191,9 +190,9 @@ public final class MetaGlassesViewModel: ObservableObject {
   private var compatibilityListenerTokens: [DeviceIdentifier: any AnyListenerToken] = [:]
   private var linkStateTokens: [DeviceIdentifier: any AnyListenerToken] = [:]
 
-  /// The active DeviceSession (0.7 API).
+  /// The active DeviceSession (0.9 API).
   private var deviceSession: DeviceSession?
-  /// The active Stream capability (0.7 API).
+  /// The active Stream capability, obtained via `Camera.stream` (0.9 API).
   private var stream: MWDATCamera.Stream?
 
   /// Incremented on each startStreaming call; stopStreaming is a no-op if the
@@ -529,7 +528,7 @@ public final class MetaGlassesViewModel: ObservableObject {
     }
   }
 
-  // MARK: - Public Actions: Streaming (0.7 DeviceSession + Stream)
+  // MARK: - Public Actions: Streaming (0.9 DeviceSession + Camera/Stream)
 
   /// Wait until the SDK is registered and at least one paired device is known,
   /// so `createSession` won't immediately throw "no eligible devices". Polls the
@@ -585,13 +584,13 @@ public final class MetaGlassesViewModel: ObservableObject {
   /// duplicate sessions or clobber each other's state.
   /// Returns true if streaming was successfully initiated.
   @discardableResult
-  public func startStreaming(highQuality: Bool = false) async -> Bool {
+  public func startStreaming() async -> Bool {
     if let existing = streamingTask {
       return await existing.value
     }
     streamingTaskToken &+= 1
     let token = streamingTaskToken
-    let task = Task { await self.runStreamingAttempt(highQuality: highQuality) }
+    let task = Task { await self.runStreamingAttempt() }
     streamingTask = task
     let result = await task.value
     // Only clear if a newer attempt hasn't replaced ours in the meantime.
@@ -602,7 +601,7 @@ public final class MetaGlassesViewModel: ObservableObject {
   /// The actual streaming attempt. Runs inside `streamingTask`; checks
   /// `Task.isCancelled` at its suspension points so a teardown during startup
   /// stops promptly without writing a stale `.failed` state.
-  private func runStreamingAttempt(highQuality: Bool) async -> Bool {
+  private func runStreamingAttempt() async -> Bool {
     // On a cold launch the SDK re-registers and re-discovers paired devices
     // asynchronously. Creating a session before a device is known throws
     // "no eligible devices available", so wait (bounded) for the SDK to be
@@ -639,8 +638,8 @@ public final class MetaGlassesViewModel: ObservableObject {
 
     streamGeneration += 1
 
-    let resolution: StreamingResolution = highQuality ? .high : .medium
-    let frameRate: UInt = highQuality ? 30 : 24
+    let resolution: StreamingResolution = .high
+    let frameRate: UInt = 30
 
     do {
       let wearables = Wearables.shared
