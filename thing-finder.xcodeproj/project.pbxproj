@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EE7E17060000000000000005 /* GlassesCore in Frameworks */ = {isa = PBXBuildFile; productRef = EE7E17060000000000000002 /* GlassesCore */; };
+		EE7E17060000000000000006 /* GlassesUI in Frameworks */ = {isa = PBXBuildFile; productRef = EE7E17060000000000000003 /* GlassesUI */; };
+		EE7E17060000000000000007 /* GlassesDebug in Frameworks */ = {isa = PBXBuildFile; productRef = EE7E17060000000000000004 /* GlassesDebug */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3106F9122E2C3DBD00A9092B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -59,10 +65,34 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE7E17060000000000000005 /* GlassesCore in Frameworks */,
+				EE7E17060000000000000006 /* GlassesUI in Frameworks */,
+				EE7E17060000000000000007 /* GlassesDebug in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		EE7E17060000000000000008 /* Extentos Session Inject */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/extentos.session.plist",
+			);
+			name = "Extentos Session Inject";
+			outputPaths = (
+				"/.app/extentos.session.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ] && [ -f \"$SRCROOT/extentos.session.plist\" ]; then cp \"$SRCROOT/extentos.session.plist\" \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/extentos.session.plist\"; fi";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXGroup section */
 		3137839B2DF497B200C36BEE = {
@@ -113,6 +143,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 313783C82DF497B300C36BEE /* Build configuration list for PBXNativeTarget "thing-finder" */;
 			buildPhases = (
+				EE7E17060000000000000008 /* Extentos Session Inject */,
 				313783A02DF497B200C36BEE /* Sources */,
 				313783A12DF497B200C36BEE /* Frameworks */,
 				313783A22DF497B200C36BEE /* Resources */,
@@ -126,6 +157,9 @@
 			);
 			name = "thing-finder";
 			packageProductDependencies = (
+				EE7E17060000000000000002 /* GlassesCore */,
+				EE7E17060000000000000003 /* GlassesUI */,
+				EE7E17060000000000000004 /* GlassesDebug */,
 			);
 			productName = "thing-finder";
 			productReference = 313783A42DF497B200C36BEE /* thing-finder.app */;
@@ -160,6 +194,7 @@
 			mainGroup = 3137839B2DF497B200C36BEE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				EE7E17060000000000000001 /* XCRemoteSwiftPackageReference "swift-glasses" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 313783A52DF497B200C36BEE /* Products */;
@@ -219,6 +254,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_ENTITLEMENTS = "thing-finder/thing-finder.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = XK27F6NC2A;
@@ -237,6 +273,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_ENTITLEMENTS = "thing-finder/thing-finder.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = XK27F6NC2A;
@@ -378,6 +415,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "thing-finder/thing-finder.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"thing-finder/Preview Content\"";
@@ -419,6 +457,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "thing-finder/thing-finder.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"thing-finder/Preview Content\"";
@@ -484,6 +523,23 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EE7E17060000000000000001 /* XCRemoteSwiftPackageReference "swift-glasses" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/extentos/swift-glasses";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.2.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EE7E17060000000000000002 /* GlassesCore */ = {isa = XCSwiftPackageProductDependency; package = EE7E17060000000000000001; productName = GlassesCore; };
+		EE7E17060000000000000003 /* GlassesUI */ = {isa = XCSwiftPackageProductDependency; package = EE7E17060000000000000001; productName = GlassesUI; };
+		EE7E17060000000000000004 /* GlassesDebug */ = {isa = XCSwiftPackageProductDependency; package = EE7E17060000000000000001; productName = GlassesDebug; };
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3137839C2DF497B200C36BEE /* Project object */;
 }

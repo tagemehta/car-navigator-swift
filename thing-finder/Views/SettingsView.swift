@@ -1,7 +1,10 @@
+import GlassesCore
+import GlassesUI
 import SwiftUI
 
 struct SettingsView: View {
   @ObservedObject var settings: Settings
+  @ObservedObject private var glasses = GlassesReadiness.shared
   @State private var showingHelpModal = false
   @State private var showingRestartAlert = false
   @State private var previousLanguage: String = ""
@@ -17,6 +20,32 @@ struct SettingsView: View {
             Text("Help & Guide")
           }
           .accessibilityLabel("Help and Guide. Learn how to use CurbToCar")
+        }
+
+        // MARK: - Smart Glasses
+        // A device connection rather than a preference, so it sits above the
+        // app-behaviour sections instead of inside Advanced Settings. Still
+        // gated by FeatureFlags.metaGlassesEnabled, which is false in release
+        // builds.
+        if FeatureFlags.metaGlassesEnabled {
+          Section(header: Text("Smart Glasses")) {
+            Toggle("Use Smart Glasses Camera", isOn: $settings.useMetaGlasses)
+            Text("Use the glasses camera instead of the phone camera when connected.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            NavigationLink(value: GlassesRoute()) {
+              HStack {
+                Text("Connection")
+                Spacer()
+                Text(glasses.isReady ? "Connected" : "Not connected")
+                  .foregroundColor(.secondary)
+              }
+            }
+            .accessibilityLabel(
+              glasses.isReady
+                ? "Smart glasses connection. Connected"
+                : "Smart glasses connection. Not connected")
+          }
         }
 
         // MARK: - Language
@@ -258,14 +287,6 @@ struct SettingsView: View {
           //   }
           // }
 
-          // MARK: - Meta Glasses
-          // COMMENTED OUT FOR APP STORE SUBMISSION
-          // if FeatureFlags.metaGlassesEnabled {
-          //   Section(header: Text("Meta Glasses")) {
-          //     MetaGlassesSettingsSection(settings: settings)
-          //   }
-          // }
-
           // MARK: - Developer Options
           Section(header: Text("Developer Options")) {
             Toggle("Debug Overlay", isOn: $settings.debugOverlayEnabled)
@@ -286,6 +307,10 @@ struct SettingsView: View {
         Section(header: Text("Contact Us")) {
           FeedbackSection()
         }
+      }
+      .navigationDestination(for: GlassesRoute.self) { _ in
+        ExtentosConnectionPage(glasses: ExtentosBootstrap.shared.glasses)
+          .navigationTitle("Smart glasses")
       }
       .navigationTitle("Settings")
       .sheet(isPresented: $showingHelpModal) {
@@ -318,3 +343,6 @@ struct SettingsView_Previews: PreviewProvider {
     SettingsView(settings: Settings())
   }
 }
+
+/// Navigation value for the glasses connection subscreen.
+struct GlassesRoute: Hashable {}

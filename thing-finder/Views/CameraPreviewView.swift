@@ -19,7 +19,14 @@ struct CameraPreviewWrapper: View {
           .overlay(Text("Camera Preview").foregroundColor(.white))
       } else {
         #if targetEnvironment(simulator)
-          CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: .videoFile)
+          // The iOS Simulator has no camera, hence the bundled-clip fallback.
+          // Glasses frames arrive over the network rather than from local
+          // hardware, so they work here exactly as they do on a device - and
+          // testing them without hardware is the point. Only fall back to the
+          // bundled clip when glasses are not the selected source.
+          CameraPreviewView(
+            isRunning: $isRunning, delegate: delegate,
+            source: source == .metaGlasses ? source : .videoFile)
         #else
           CameraPreviewView(isRunning: $isRunning, delegate: delegate, source: source)
         #endif
@@ -121,9 +128,8 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         return ARVideoCapture()
       case .videoFile:
         return VideoFileFrameProvider()
-      // COMMENTED OUT FOR APP STORE SUBMISSION
-      // case .metaGlasses:
-      //   return MetaGlassesFrameProvider()
+      case .metaGlasses:
+        return ExtentosFrameProvider(glasses: ExtentosBootstrap.shared.glasses)
       default:
         return VideoCapture()
       }
