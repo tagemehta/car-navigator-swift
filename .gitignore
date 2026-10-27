@@ -1,3 +1,9 @@
+# Agent config: local-only files
+.agents/HANDOFF.md
+AGENTS.local.md
+CLAUDE.local.md
+.claude/settings.local.json
+
 .windsurf/rules/import-errors.md
 .devin/rules/import-errors.md
 app.todo
