@@ -119,6 +119,10 @@ public final class TrafficEyeVerifier: ImageVerifier {
   private let jsonDecoder = JSONDecoder()
   private let confidenceThresholdMatch: Double = 0.80
   private let confidenceThresholdAmbiguous: Double = 0.60
+  /// MMR reads below this weighted confidence are skipped without an LLM call (retryable).
+  /// In the real-image eval only ~8% of reads between 0.40 and 0.85 were correct, and every
+  /// false match had infoQ >= 0.87.
+  static let minInfoQuality: Double = 0.85
 
   private let imgUtils: ImageUtilities
   private let urlSession: URLSessionProtocol
@@ -266,9 +270,9 @@ public final class TrafficEyeVerifier: ImageVerifier {
           let colorScore = mmr.color?.score ?? 0
           return 0.5 * makeScore + 0.3 * modelScore + 0.2 * colorScore
         }()
-        if infoQ < 0.4 {
+        if infoQ < Self.minInfoQuality {
           DebugPublisher.shared.warning(
-            "[TrafficEye][\(candidateId.uuidString.suffix(8))] Insufficient information quality (infoQ=\(String(format: "%.2f", infoQ)), threshold=0.40)"
+            "[TrafficEye][\(candidateId.uuidString.suffix(8))] Insufficient information quality (infoQ=\(String(format: "%.2f", infoQ)), threshold=\(Self.minInfoQuality))"
           )
           return Just(
             VerificationOutcome(
@@ -280,9 +284,6 @@ public final class TrafficEyeVerifier: ImageVerifier {
           .setFailureType(to: Error.self)
           .eraseToAnyPublisher()
         }
-        //        print(infoQ)
-        // Even for low information quality, defer to LLM – it can respond with `maybe` which we map to a retryable reason.
-        // Defer to LLM for make/model/color comparison regardless of info quality
         return self.callLLMForComparison(with: mmr, candidateId: candidateId)
       }
       .eraseToAnyPublisher()
@@ -432,7 +433,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
       """
 
     let requestPayload = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(role: "system", content: [MessageContent(text: systemPrompt)]),
         Message(role: "user", content: [MessageContent(text: userPrompt)]),
@@ -459,7 +460,7 @@ public final class TrafficEyeVerifier: ImageVerifier {
                   ),
                 ], required: ["probability_match", "semantic_reason"]))
         )
-      ], max_tokens: 50
+      ], max_completion_tokens: 300
     )
     var request = URLRequest(url: openAIEndpoint)
     request.httpMethod = "POST"
@@ -482,52 +483,22 @@ public final class TrafficEyeVerifier: ImageVerifier {
           let probability_match: Double
           let semantic_reason: String
         }
-        func infoQuality(from mmr: MMR) -> Double {
-          let makeScore = mmr.make?.score ?? 0
-          let modelScore = mmr.model?.score ?? 0
-          let colorScore = mmr.color?.score ?? 0
-          return 0.5 * makeScore + 0.3 * modelScore + 0.2 * colorScore
-        }
         let args = try self.jsonDecoder.decode(LLMResult.self, from: data)
-        let infoQ = infoQuality(from: mmrResult)
-        let qualityLevel: String = infoQ >= 0.85 ? "high" : (infoQ >= 0.4 ? "medium" : "low")
 
         DebugPublisher.shared.info(
           "[TrafficEye][\(candidateId.uuidString.suffix(8))] LLM comparison: probability=\(String(format: "%.2f", args.probability_match)) reason=\(args.semantic_reason)"
         )
-        DebugPublisher.shared.info(
-          "[TrafficEye][\(candidateId.uuidString.suffix(8))] Quality metrics: infoQ=\(String(format: "%.2f", infoQ)) qualityLevel=\(qualityLevel)"
-        )
-
         // Log the target text description for comparison
         DebugPublisher.shared.info(
           "[TrafficEye][\(candidateId.uuidString.suffix(8))] Target description: '\(self.targetTextDescription)'"
         )
-        var isMatch = false
-        var rejectReason: RejectReason = .insufficientInfo
-        if qualityLevel == "high" {
-          // Use full decision table as before
-
-          switch args.semantic_reason {
-          case "match":
-            isMatch = true
-            rejectReason = .success
-          case "maybe":
-            isMatch = false
-            rejectReason = .lowConfidence
-          default:
-            isMatch = false
-            rejectReason = .wrongModelOrColor
-          }
-        } else {  // medium quality
-          switch args.semantic_reason {
-          case "match":
-            isMatch = true
-            rejectReason = .success
-          default:
-            isMatch = false
-            rejectReason = .insufficientInfo
-          }
+        // Reads below `minInfoQuality` never reach the LLM, so every comparison is high quality.
+        let isMatch = args.semantic_reason == "match"
+        let rejectReason: RejectReason
+        switch args.semantic_reason {
+        case "match": rejectReason = .success
+        case "maybe": rejectReason = .lowConfidence
+        default: rejectReason = .wrongModelOrColor
         }
         let (vehicleView, viewScore) = parseVehicleView(mmr: mmrResult)
         let outcome = VerificationOutcome(

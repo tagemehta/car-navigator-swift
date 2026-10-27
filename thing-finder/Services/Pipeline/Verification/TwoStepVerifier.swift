@@ -124,7 +124,7 @@ public final class TwoStepVerifier: ImageVerifier {
     req1.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     req1.setValue("application/json", forHTTPHeaderField: "Content-Type")
     let chat1 = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(
           role: "system",
@@ -133,7 +133,7 @@ public final class TwoStepVerifier: ImageVerifier {
           role: "user", content: [MessageContent(imageURL: "data:image/png;base64,\(base64)")]),
       ],
       tools: [Self.extractToolSchema],
-      max_tokens: 100)
+      max_completion_tokens: 300)
     req1.httpBody = try? encoder.encode(chat1)
 
     return URLSession.shared.dataTaskPublisher(for: req1)
@@ -228,7 +228,7 @@ public final class TwoStepVerifier: ImageVerifier {
       """
 
     let requestPayload = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(role: "system", content: [MessageContent(text: systemPrompt)]),
         Message(role: "user", content: [MessageContent(text: userPrompt)]),
@@ -254,7 +254,7 @@ public final class TwoStepVerifier: ImageVerifier {
               ], required: ["probability_match", "semantic_reason"]))
         )
       ],
-      max_tokens: 50)
+      max_completion_tokens: 300)
 
     var req = URLRequest(url: endpoint)
     req.httpMethod = "POST"

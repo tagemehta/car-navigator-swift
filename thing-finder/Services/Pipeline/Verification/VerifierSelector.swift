@@ -13,7 +13,7 @@
 ///
 /// ### Escalation loop (hybrid and paratransit modes)
 /// TrafficEye is tried first. After `maxTrafficEyeRetries` consecutive
-/// failures the selector switches to LLM and resets the TrafficEye counter.
+/// failures (one in hybrid mode) the selector switches to LLM and resets the TrafficEye counter.
 /// After `maxLLMRetries` LLM failures it cycles back.
 /// - hybrid uses TwoStepVerifier for LLM step
 /// - paratransit uses AdvancedLLMVerifier (prompted for route numbers, logos)
@@ -65,8 +65,10 @@ public final class VerifierSelector {
 
   // MARK: - Escalation thresholds (hybrid mode)
 
-  /// TrafficEye failures before escalating to LLM
-  private static let maxTrafficEyeRetries: Int = 3
+  /// TrafficEye failures before escalating to LLM. One: a confident TrafficEye misread can't be
+  /// told apart from a correct read by score, so any non-match gets a TwoStep second opinion
+  /// (real-image eval: rider's car matched 75% → 90%, strict false match 0.3% → 1.0%).
+  static let maxTrafficEyeRetries: Int = 1
   /// LLM failures before cycling back to TrafficEye
   private static let maxLLMRetries: Int = 3
 

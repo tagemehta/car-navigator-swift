@@ -300,6 +300,42 @@ final class TrafficEyeVerifierTests: XCTestCase {
     wait(for: [expectation], timeout: 2.0)
   }
 
+  /// infoQ 0.72 used to reach the LLM; with the 0.85 gate it is a retryable skip.
+  func test_verify_mediumConfidenceMMR_isGatedBeforeLLM() {
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    mockURLSession.setJSONResponse(
+      TestAPIResponses.trafficEyeBelowInfoGate,
+      for: "trafficeye.ai/recognition"
+    )
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let verifier = TrafficEyeVerifier(
+      targetTextDescription: "blue honda",
+      config: config,
+      imgUtils: mockImageUtils,
+      urlSession: mockURLSession,
+      trafficEyeApiKey: "test-key",
+      openAIApiKey: "test-key"
+    )
+
+    let image = createTestImage()
+    let candidateId = UUID()
+
+    verifier.verify(image: image, candidateId: candidateId)
+      .sink(
+        receiveCompletion: { _ in },
+        receiveValue: { outcome in
+          XCTAssertFalse(outcome.isMatch)
+          XCTAssertEqual(outcome.rejectReason, .insufficientInfo)
+          expectation.fulfill()
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 2.0)
+  }
+
   // MARK: - Network Error Handling
 
   func test_verify_handlesNetworkError() {

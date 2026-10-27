@@ -104,7 +104,7 @@ public final class AdvancedLLMVerifier: ImageVerifier {
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let chat = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(role: "system", content: [MessageContent(text: systemPrompt)]),
         Message(
@@ -119,7 +119,7 @@ public final class AdvancedLLMVerifier: ImageVerifier {
         ),
       ],
       tools: [Self.verifyToolSchema],
-      max_tokens: 100
+      max_completion_tokens: 300
     )
     req.httpBody = try? encoder.encode(chat)
 
