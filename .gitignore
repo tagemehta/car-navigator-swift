@@ -10,6 +10,11 @@ datasets/*
 results/*
 # Secrets
 thing-finder/Secrets.xcconfig
+scripts/.env
+scripts/api-health-check.log
 **.JPG
 **.mp4
-evals/**
+**/__pycache__/
+evals/cache/
+evals/data/
+evals/results/
