@@ -1,0 +1,310 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Verifier Eval Review</title>
+<style>
+  :root { --ok:#1a7f37; --bad:#cf222e; --maybe:#9a6700; --muted:#57606a; --border:#d0d7de; }
+  * { box-sizing: border-box; }
+  body { font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; color: #1f2328; }
+  header { position: sticky; top: 0; z-index: 2; background: #f6f8fa; border-bottom: 1px solid var(--border); padding: 8px 16px; }
+  header h1 { font-size: 15px; display: inline; margin-right: 16px; }
+  .tab { border: 0; background: none; padding: 6px 10px; cursor: pointer; font-size: 13px; border-radius: 6px; }
+  .tab.active { background: #fff; box-shadow: 0 0 0 1px var(--border); font-weight: 600; }
+  .controls { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .controls label { color: var(--muted); }
+  select, input { font-size: 12px; padding: 2px 4px; }
+  main { padding: 12px 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+  .card { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; }
+  .card img { width: 100%; height: 220px; object-fit: contain; background: #111; display: block; }
+  .body { padding: 8px 10px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .desc { margin: 4px 0; padding: 4px 6px; border-radius: 4px; }
+  .pos { background: #dafbe1; } .neg { background: #ffebe9; }
+  .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 10px; border: 1px solid var(--border); margin-right: 4px; color: var(--muted); }
+  .chips { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  .chip { font-size: 12px; padding: 2px 6px; border-radius: 4px; border-left: 4px solid; background: #f6f8fa; }
+  .chip.correct { border-color: var(--ok); } .chip.wrong { border-color: var(--bad); background: #fff1f0; }
+  .chip .d { font-weight: 600; } .chip .x { color: var(--muted); }
+  .review { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .review button { font-size: 11px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; padding: 1px 6px; }
+  .review button.on { background: #cf222e; color: #fff; border-color: #cf222e; }
+  .review input { flex: 1; min-width: 120px; }
+  table { border-collapse: collapse; margin-bottom: 14px; font-size: 12px; }
+  th, td { border: 1px solid var(--border); padding: 4px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  tr.sel td { background: #ddf4ff; }
+  tbody tr { cursor: pointer; }
+  .good { color: var(--ok); font-weight: 600; } .badv { color: var(--bad); font-weight: 600; }
+  .pager { margin: 12px 0; display: flex; gap: 8px; align-items: center; }
+  .stats { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Verifier Eval Review</h1>
+  <button class="tab" data-tab="data">Data</button>
+  <button class="tab" data-tab="evals">Evals</button>
+  <div class="controls" id="controls"></div>
+</header>
+<main>
+  <div id="summary"></div>
+  <div class="stats" id="stats"></div>
+  <div class="grid" id="grid"></div>
+  <div class="pager" id="pager"></div>
+</main>
+<script>
+const PAGE = 48;
+// Any flag excludes the image from the eval. TrafficEye correctness is computed, not reviewed.
+const FLAGS = ["bad color", "bad view", "wrong make/model", "unusable", "bad description"];
+const S = { tab: "data", index: null, cases: [], run: null, reviews: {}, page: 0, f: {} };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const uniq = (xs) => [...new Set(xs.filter((x) => x != null))].sort();
+const pct = (x) => (x == null ? "–" : (100 * x).toFixed(1) + "%");
+const api = (p) => fetch(p).then((r) => r.json());
+
+async function init() {
+  S.index = await api("/api/index");
+  S.reviews = await api("/api/reviews");
+  document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => switchTab(b.dataset.tab)));
+  const params = new URLSearchParams(location.hash.slice(1));
+  switchTab(params.get("tab") || "data");
+}
+
+async function switchTab(tab) {
+  S.tab = tab; S.page = 0; S.f = {};
+  document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  location.hash = "tab=" + tab;
+  $("summary").innerHTML = "";
+  if (tab === "data") {
+    const preferred = ["realworld_cases.jsonl", "preview_cases.jsonl"];
+    const file = preferred.find((f) => S.index.case_files.includes(f)) || S.index.case_files[0];
+    await loadCases(file);
+  } else {
+    if (!S.index.runs.length) { $("controls").innerHTML = "No eval runs yet."; $("grid").innerHTML = ""; return; }
+    await loadRun(S.index.runs[0]);
+  }
+}
+
+// ---------- Data tab: one card per image with its positive + negative description ----------
+async function loadCases(file) {
+  S.file = file; S.cases = await api("/api/cases?file=" + encodeURIComponent(file)); S.page = 0;
+  renderDataControls(); renderData();
+}
+
+function select(id, label, opts, val, onchange) {
+  return `<label>${label} <select id="${id}">${opts.map((o) => `<option ${o === val ? "selected" : ""} value="${esc(o)}">${esc(o || "all")}</option>`).join("")}</select></label>`;
+}
+
+function renderDataControls() {
+  const c = S.cases;
+  $("controls").innerHTML = [
+    select("f_file", "Cases", S.index.case_files, S.file),
+    select("f_source", "Source", ["", ...uniq(c.map((x) => x.source))], S.f.source),
+    select("f_view", "View", ["", ...uniq(c.map((x) => x.view))], S.f.view),
+    select("f_neg", "Negative type", ["", ...uniq(c.map((x) => x.neg_type))], S.f.neg),
+    select("f_style", "Desc style", ["", ...uniq(c.map((x) => x.desc_style))], S.f.style),
+    select("f_flag", "Review", ["", "flagged", "unflagged"], S.f.flag),
+    select("f_te", "TrafficEye color", ["", "disagrees", "agrees", "no TrafficEye result"], S.f.te),
+    `<label>Search <input id="f_q" value="${esc(S.f.q || "")}" placeholder="make, model, desc"></label>`,
+  ].join("");
+  $("f_file").onchange = (e) => loadCases(e.target.value);
+  for (const [id, key] of [["f_source", "source"], ["f_view", "view"], ["f_neg", "neg"], ["f_style", "style"], ["f_flag", "flag"], ["f_te", "te"]])
+    $(id).onchange = (e) => { S.f[key] = e.target.value; S.page = 0; renderData(); };
+  $("f_q").oninput = (e) => { S.f.q = e.target.value.toLowerCase(); S.page = 0; renderData(); };
+}
+
+function groupByImage(cases) {
+  const g = new Map();
+  for (const c of cases) {
+    if (!g.has(c.image_id)) g.set(c.image_id, { img: c, pos: null, neg: null });
+    g.get(c.image_id)[c.label === "match" ? "pos" : "neg"] = c;
+  }
+  return [...g.values()];
+}
+
+function renderData() {
+  const f = S.f;
+  let groups = groupByImage(S.cases).filter(({ img, pos, neg }) => {
+    if (f.source && img.source !== f.source) return false;
+    if (f.view && img.view !== f.view) return false;
+    if (f.neg && neg?.neg_type !== f.neg) return false;
+    if (f.style && pos?.desc_style !== f.style && neg?.desc_style !== f.style) return false;
+    const flagged = !!S.reviews[img.image_id];
+    if (f.flag === "flagged" && !flagged) return false;
+    if (f.flag === "unflagged" && flagged) return false;
+    if (f.te === "disagrees" && img.te_color_agree !== false) return false;
+    if (f.te === "agrees" && img.te_color_agree !== true) return false;
+    if (f.te === "no TrafficEye result" && img.te_cached) return false;
+    if (f.q) {
+      const hay = [img.true_make, img.true_model, img.true_color, pos?.description, neg?.description].join(" ").toLowerCase();
+      if (!hay.includes(f.q)) return false;
+    }
+    return true;
+  });
+  const counts = (k) => Object.entries(groups.reduce((a, g) => ((a[g.img[k]] = (a[g.img[k]] || 0) + 1), a), {})).map(([k, v]) => `${k}: ${v}`).join(", ");
+  const all = groupByImage(S.cases);
+  const teCached = all.filter((g) => g.img.te_cached).length;
+  const teDisagree = all.filter((g) => g.img.te_color_agree === false).length;
+  $("stats").innerHTML = `${groups.length} images (${2 * groups.length} cases) · sources ${counts("source")} · views ${counts("view")}` +
+    ` · TrafficEye cached ${teCached}/${all.length}, color disagrees on ${teDisagree}`;
+  paged(groups, ({ img, pos, neg }) => `
+    <div class="card">
+      <img loading="lazy" src="/img?case=${encodeURIComponent((pos || neg).case_id)}">
+      <div class="body">
+        <div><b>${esc(img.true_color)} ${esc(img.true_make)} ${esc(img.true_model)}</b></div>
+        <div class="meta"><span class="tag">${esc(img.source)}</span><span class="tag">${esc(img.view)}</span><span class="tag">${esc(img.body_type)}</span></div>
+        ${teLine(img)}
+        ${pos ? `<div class="desc pos">✓ “${esc(pos.description)}” <span class="meta">${esc(pos.desc_style)}</span></div>` : ""}
+        ${neg ? `<div class="desc neg">✗ “${esc(neg.description)}” <span class="meta">${esc(neg.neg_type)} · ${esc(neg.desc_style)}</span></div>` : ""}
+        ${reviewWidget(img.image_id)}
+        <div class="meta">${esc(img.image_id)}</div>
+      </div>
+    </div>`);
+}
+
+// ---------- Evals tab ----------
+async function loadRun(name) {
+  $("grid").innerHTML = "Loading…";
+  S.run = await api("/api/run?name=" + encodeURIComponent(name));
+  S.runName = name; S.page = 0;
+  S.pipelines = uniq(S.run.rows.map((r) => r.pipeline));
+  S.f.pipeline = S.f.pipeline && S.pipelines.includes(S.f.pipeline) ? S.f.pipeline : S.pipelines[0];
+  S.byCase = new Map();
+  for (const r of S.run.rows) {
+    if (!S.byCase.has(r.case_id)) S.byCase.set(r.case_id, {});
+    S.byCase.get(r.case_id)[r.pipeline] = r;
+  }
+  renderEvalControls(); renderSummary(); renderEvals();
+}
+
+function renderEvalControls() {
+  const c = S.run.cases;
+  $("controls").innerHTML = [
+    select("f_run", "Run", S.index.runs, S.runName),
+    select("f_pipe", "Focus pipeline", S.pipelines, S.f.pipeline),
+    select("f_show", "Show", ["all", "focus wrong", "focus false match", "focus missed match", "focus misread (TE/extract wrong)", "focus compare failure", "focus step 2 wrong (any)", "pipelines disagree"], S.f.show || "all"),
+    select("f_label", "Label", ["", "match", "mismatch"], S.f.label),
+    select("f_source", "Source", ["", ...uniq(c.map((x) => x.source))], S.f.source),
+    select("f_view", "View", ["", ...uniq(c.map((x) => x.view))], S.f.view),
+    select("f_neg", "Negative type", ["", ...uniq(c.map((x) => x.neg_type))], S.f.neg),
+  ].join("");
+  $("f_run").onchange = (e) => loadRun(e.target.value);
+  $("f_pipe").onchange = (e) => { S.f.pipeline = e.target.value; S.page = 0; renderSummary(); renderEvals(); };
+  for (const [id, key] of [["f_show", "show"], ["f_label", "label"], ["f_source", "source"], ["f_view", "view"], ["f_neg", "neg"]])
+    $(id).onchange = (e) => { S.f[key] = e.target.value; S.page = 0; renderEvals(); };
+}
+
+function renderSummary() {
+  const cols = [["n", (x) => x], ["accuracy", pct], ["false_match_rate", pct], ["true_match_rate", pct], ["retry_rate", pct], ["error_rate", pct],
+    ["p50_latency_s", (x) => x?.toFixed(2)], ["p95_latency_s", (x) => x?.toFixed(2)], ["p50_llm_latency_s", (x) => x?.toFixed(2)], ["usd_per_1k", (x) => "$" + x?.toFixed(3)],
+    ["read_ok_rate", pct], ["compared_rate", pct], ["misread_error_rate", pct], ["compare_error_rate", pct],
+    ["compare_accuracy", pct], ["compare_false_match_rate", pct], ["compare_missed_match_rate", pct]];
+  const best = {};
+  for (const [k] of cols) {
+    const vals = S.run.summary.map((r) => r[k]).filter((v) => v != null);
+    best[k] = ["accuracy", "true_match_rate", "read_ok_rate", "compared_rate", "compare_accuracy"].includes(k) ? Math.max(...vals) : Math.min(...vals);
+  }
+  $("summary").innerHTML = `<table><thead><tr><th>pipeline</th>${cols.map(([k]) => `<th>${k}</th>`).join("")}</tr></thead><tbody>${
+    S.run.summary.map((r) => `<tr class="${r.pipeline === S.f.pipeline ? "sel" : ""}" data-p="${esc(r.pipeline)}"><td>${esc(r.pipeline)}</td>${
+      cols.map(([k, fmt]) => `<td class="${k !== "n" && r[k] === best[k] && S.run.summary.length > 1 ? "good" : ""}">${fmt(r[k])}</td>`).join("")}</tr>`).join("")
+  }</tbody></table>`;
+  $("summary").querySelectorAll("tbody tr").forEach((tr) => (tr.onclick = () => {
+    S.f.pipeline = tr.dataset.p; $("f_pipe").value = tr.dataset.p; S.page = 0; renderSummary(); renderEvals();
+  }));
+}
+
+const isCorrect = (r, c) => (r.decision === "match") === (c.label === "match");
+
+function renderEvals() {
+  const f = S.f;
+  const items = S.run.cases.filter((c) => {
+    const rs = S.byCase.get(c.case_id) || {};
+    const focus = rs[f.pipeline];
+    if (f.label && c.label !== f.label) return false;
+    if (f.source && c.source !== f.source) return false;
+    if (f.view && c.view !== f.view) return false;
+    if (f.neg && c.neg_type !== f.neg) return false;
+    if (f.show === "focus wrong") return focus && !isCorrect(focus, c);
+    if (f.show === "focus false match") return focus && c.label === "mismatch" && focus.decision === "match";
+    if (f.show === "focus missed match") return focus && c.label === "match" && focus.decision !== "match";
+    if (f.show === "focus misread (TE/extract wrong)") return focus?.failure === "misread";
+    if (f.show === "focus compare failure") return focus?.failure === "compare";
+    if (f.show === "focus step 2 wrong (any)") return focus?.compare_ok === false;
+    if (f.show === "pipelines disagree") return new Set(Object.values(rs).map((r) => r.decision === "match")).size > 1;
+    return true;
+  });
+  $("stats").innerHTML = `${items.length} cases`;
+  paged(items, (c) => {
+    const rs = S.byCase.get(c.case_id) || {};
+    const chips = S.pipelines.filter((p) => rs[p]).sort((a, b) => (a === f.pipeline ? -1 : b === f.pipeline ? 1 : 0)).map((p) => {
+      const r = rs[p];
+      return `<div class="chip ${isCorrect(r, c) ? "correct" : "wrong"}" title="${esc(r.error || "")}">
+        <span class="d">${esc(r.decision)}</span> <span class="x">${esc(p)} · ${r.total_latency_s?.toFixed(2)}s</span>
+        ${r.failure === "misread" ? `<span class="badv"> · misread</span>` : r.failure === "compare" ? `<span class="badv"> · compare failure</span>` : r.failure === "ambiguous_read" ? `<span class="badv"> · ambiguous read</span>` : ""}
+        ${r.expected_given_read ? `<span class="x"> · step 2 should say ${r.expected_given_read}${r.compare_ok === false ? " ✗" : r.compare_ok === true ? " ✓" : ""}</span>` : ""}
+        ${r.read_ok === true && r.failure !== "compare" ? `<span class="x"> · read ok</span>` : ""}
+        ${r.detail ? `<div class="x">saw: ${esc(r.detail)}</div>` : ""}</div>`;
+    }).join("");
+    return `<div class="card">
+      <img loading="lazy" src="/img?case=${encodeURIComponent(c.case_id)}">
+      <div class="body">
+        <div class="desc ${c.label === "match" ? "pos" : "neg"}">${c.label === "match" ? "✓ should match" : "✗ should reject"}: “${esc(c.description)}”</div>
+        <div class="meta">truth: ${esc(c.true_color)} ${esc(c.true_make)} ${esc(c.true_model)}</div>
+        ${teLine(c)}
+        <div class="meta"><span class="tag">${esc(c.source)}</span><span class="tag">${esc(c.view)}</span>${c.neg_type ? `<span class="tag">${esc(c.neg_type)}</span>` : ""}</div>
+        <div class="chips">${chips}</div>
+        ${reviewWidget(c.image_id)}
+      </div></div>`;
+  });
+}
+
+// ---------- shared ----------
+function teLine(c) {
+  if (!c.te_cached) return `<div class="meta">TrafficEye: not cached</div>`;
+  if (!c.te_desc) return `<div class="meta">TrafficEye: no vehicle detected</div>`;
+  const cls = c.te_color_agree === false ? "badv" : "";
+  const score = c.te_color_score != null ? ` (color ${c.te_color_score.toFixed(2)})` : "";
+  return `<div class="meta">TrafficEye: <span class="${cls}">${esc(c.te_desc)}</span>${esc(score)} · ${esc(c.te_view)}` +
+    (c.te_color_agree === false ? ` <span class="badv">≠ GPT color</span>` : "") + `</div>`;
+}
+function paged(items, render) {
+  const pages = Math.max(1, Math.ceil(items.length / PAGE));
+  S.page = Math.min(S.page, pages - 1);
+  $("grid").innerHTML = items.slice(S.page * PAGE, (S.page + 1) * PAGE).map(render).join("");
+  $("pager").innerHTML = pages > 1 ? `<button id="prev" ${S.page === 0 ? "disabled" : ""}>‹ Prev</button> Page ${S.page + 1} / ${pages} <button id="next" ${S.page >= pages - 1 ? "disabled" : ""}>Next ›</button>` : "";
+  if (pages > 1) {
+    $("prev").onclick = () => { S.page--; rerender(); scrollTo(0, 0); };
+    $("next").onclick = () => { S.page++; rerender(); scrollTo(0, 0); };
+  }
+  bindReviews();
+}
+
+const rerender = () => (S.tab === "data" ? renderData() : renderEvals());
+
+function reviewWidget(imageId) {
+  const r = S.reviews[imageId] || { flags: [], note: "" };
+  return `<div class="review" data-id="${esc(imageId)}">${FLAGS.map((fl) => `<button class="${r.flags.includes(fl) ? "on" : ""}" data-flag="${fl}">${fl}</button>`).join("")}
+    <input placeholder="note" value="${esc(r.note)}"></div>`;
+}
+
+function bindReviews() {
+  document.querySelectorAll(".review").forEach((el) => {
+    const id = el.dataset.id;
+    const save = () => {
+      const flags = [...el.querySelectorAll("button.on")].map((b) => b.dataset.flag);
+      const note = el.querySelector("input").value;
+      const value = flags.length || note ? { flags, note } : null;
+      fetch("/api/reviews", { method: "POST", body: JSON.stringify({ [id]: value }) }).then((r) => r.json()).then((rv) => (S.reviews = rv));
+    };
+    el.querySelectorAll("button").forEach((b) => (b.onclick = () => { b.classList.toggle("on"); save(); }));
+    el.querySelector("input").onchange = save;
+  });
+}
+
+init();
+</script>
+</body>
+</html>
