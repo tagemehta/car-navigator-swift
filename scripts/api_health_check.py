@@ -150,6 +150,21 @@ def test_openai(api_key: str) -> bool:
         return False
 
 
+def trafficeye_response_ok(data: object) -> bool:
+    """Accept only TrafficEye's success envelope: {"data": {"combinations": [...]}}.
+
+    Mirrors what TrafficEyeVerifier decodes. The test image is blank, so an empty
+    `combinations` list is a healthy response; this checks API availability, not detection.
+    """
+    payload = data.get("data") if isinstance(data, dict) else None
+    combos = payload.get("combinations", []) if isinstance(payload, dict) else None
+    if not isinstance(payload, dict) or not isinstance(combos, list):
+        log(f"TrafficEye FAIL: unexpected response shape: {json.dumps(data)[:500]}")
+        return False
+    log(f"TrafficEye OK: success envelope with {len(combos)} combination(s)")
+    return True
+
+
 def test_trafficeye(api_key: str) -> bool:
     endpoint = "https://trafficeye.ai/recognition"
     image_bytes = base64.b64decode(TEST_JPEG_B64)
@@ -181,10 +196,7 @@ def test_trafficeye(api_key: str) -> bool:
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             data = json.loads(response.read())
-            log(
-                f"TrafficEye OK: received valid JSON response (data={data.get('data') is not None})"
-            )
-            return True
+        return trafficeye_response_ok(data)
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="ignore")
         log(f"TrafficEye FAIL: HTTP {exc.code}: {body}")

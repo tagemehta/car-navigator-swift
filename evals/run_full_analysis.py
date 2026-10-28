@@ -271,7 +271,13 @@ def compute_metrics(df: pd.DataFrame) -> Dict:
         ),
         
         # Confusion matrix counts
-        "confusion_matrix": valid_df.groupby(["expected_decision", "actual_decision"]).size().to_dict(),
+        "confusion_matrix": {
+            str(expected): {str(actual): int(n) for actual, n in row.items() if n}
+            for expected, row in valid_df.groupby(["expected_decision", "actual_decision"])
+            .size()
+            .unstack(fill_value=0)
+            .iterrows()
+        },
     }
     
     return metrics

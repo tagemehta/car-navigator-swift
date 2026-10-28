@@ -71,7 +71,9 @@ def holm(pvals: list[float]) -> list[float]:
     return adj
 
 
-def md_table(df: pd.DataFrame) -> str:
+def md_table(df: pd.DataFrame, empty: str = "_Not applicable to this run._") -> str:
+    if df.empty:
+        return empty
     cols = list(df.columns)
     lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     lines += ["| " + " | ".join(str(v) for v in row) + " |" for row in df.values]
@@ -140,8 +142,8 @@ def paired(df: pd.DataFrame) -> str:
     for subset, idx in subsets.items():
         rows = []
         for p in wide.columns:
-            base = BASELINE[p.split(":")[0]]
-            if p == base:
+            base = BASELINE.get(p.split(":")[0])
+            if base is None or base not in wide.columns or p == base:
                 continue
             a, b = wide.loc[idx, base].astype(bool), wide.loc[idx, p].astype(bool)
             fixed, broke, pv = mcnemar(a, b)
@@ -157,14 +159,18 @@ def paired(df: pd.DataFrame) -> str:
                 "p (Holm)": f"{adj:.3g}",
                 "sig": "yes" if adj < 0.05 else "",
             })
-    return md_table(pd.DataFrame(out))
+    return md_table(
+        pd.DataFrame(out),
+        "_Skipped: no pipeline in this run has its baseline "
+        f"({', '.join(sorted(set(BASELINE.values())))}) in the same run._",
+    )
 
 
 def head_to_head(df: pd.DataFrame, pairs: list[tuple[str, str]]) -> str:
     wide = df.pivot(index="case_id", columns="pipeline", values="correct")
     labels = df.drop_duplicates("case_id").set_index("case_id")
     out = []
-    for a, b in pairs:
+    for a, b in [(a, b) for a, b in pairs if a in wide.columns and b in wide.columns]:
         for subset, idx in (
             ("all", wide.index),
             ("positives", labels.index[labels.label == "match"]),
@@ -181,10 +187,14 @@ def head_to_head(df: pd.DataFrame, pairs: list[tuple[str, str]]) -> str:
                 "B broke": broke,
                 "p (raw)": f"{pv:.3g}",
             })
-    return md_table(pd.DataFrame(out))
+    return md_table(
+        pd.DataFrame(out), "_Skipped: none of the head-to-head pairs are both in this run._"
+    )
 
 
 def attribution(df: pd.DataFrame) -> str:
+    if "failure" not in df:
+        return "_Not applicable: no pipeline in this run has a read step._"
     out = []
     for name, g in df[df.failure.notna()].groupby("pipeline"):
         compared = g[g.compare_ok.notna()]
@@ -205,6 +215,8 @@ def attribution(df: pd.DataFrame) -> str:
 
 
 def slice_table(df: pd.DataFrame, col: str, pipelines: list[str], label: str) -> str:
+    if not pipelines:
+        return f"_Slices by {col} skipped: none of the key pipelines are in this run._"
     sub = df[df.pipeline.isin(pipelines)]
     if label == "match":
         sub, metric = sub[sub.label == "match"], "true-match"
@@ -223,7 +235,11 @@ def slice_table(df: pd.DataFrame, col: str, pipelines: list[str], label: str) ->
 
 def compare_failure_kinds(df: pd.DataFrame) -> str:
     """Why did step 2 fail when the read was usable? Classify by what differs."""
+    if "failure" not in df:
+        return "_Not applicable: no pipeline in this run has a read step._"
     f = df[(df.failure == "compare")].copy()
+    if f.empty:
+        return "_No comparison-step failures in this run._"
 
     def kind(r) -> str:
         seen = {"make": r.seen_make, "model": r.seen_model, "color": r.seen_color}

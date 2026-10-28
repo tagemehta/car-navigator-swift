@@ -113,7 +113,7 @@ Using those rules, `attribute()` in `run_eval.py` computes per row:
 | Field | Meaning |
 |---|---|
 | `read_ok` | Step 1 (TrafficEye or the extractor) agrees with the truth on every attribute the description mentions. Gated outcomes (`no_vehicle`, `insufficient_info`, `occluded`, `low_confidence`) count as misreads. |
-| `expected_given_read` | Correct step-2 answer given **only what step 1 output**: `match`, `mismatch`, or `either` for an ambiguous `~` read that includes the described model. |
+| `expected_given_read` | Correct step-2 answer given **only what step 1 output**: `match`, `mismatch`, `either` for an ambiguous `~` read that includes the described model, or `maybe` when nothing contradicts but a color the description mentions wasn't read (unread colors are unconfirmed, not agreement; `read_ok` is false for them). |
 | `compare_ok` | Step 2's decision is correct for its input (`maybe` = non-match; `either` accepts match or maybe). |
 | `failure` | For wrong final decisions: `misread`, `compare` (read right, comparison wrong), or `ambiguous_read`. |
 

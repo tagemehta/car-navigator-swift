@@ -118,10 +118,15 @@ def is_ambiguous(seen: dict) -> bool:
     return len(model_alternatives(seen.get("model"))) > 1
 
 
-def mentioned_agree(seen: dict, described: dict) -> bool:
+def mentioned_agree(seen: dict, described: dict) -> bool | None:
     """Do the seen attributes agree with every attribute the description mentions?
     `described` values are None for attributes the description doesn't mention.
-    For a '~' group, the model agrees if any option matches."""
+    For a '~' group, the model agrees if any option matches.
+
+    Returns False on any contradiction, None ("unconfirmed") when nothing contradicts but a
+    mentioned color was not read (missing or unrecognized), and True when every mentioned
+    attribute was read and agrees. A described color that itself maps to no known color group
+    can't be graded and is skipped."""
     if described.get("make") and not make_eq(seen.get("make"), described["make"]):
         return False
     makes = (described.get("make"), seen.get("make"))
@@ -130,9 +135,10 @@ def mentioned_agree(seen: dict, described: dict) -> bool:
         for alt in model_alternatives(seen.get("model"))
     ):
         return False
-    if (
-        described.get("color")
-        and color_eq(described["color"], seen.get("color")) is False
-    ):
-        return False
+    if described.get("color") and color_group(described["color"]) is not None:
+        agree = color_eq(described["color"], seen.get("color"))
+        if agree is False:
+            return False
+        if agree is None:
+            return None
     return True

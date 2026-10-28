@@ -88,7 +88,10 @@ def compare(p: Pipeline, attrs: dict, description: str):
     )
 
 
-def run_case(p: Pipeline, case: dict, allow_te: bool) -> dict:
+def run_case(p: Pipeline, case: dict, prefetched: dict) -> dict:
+    """Run one case. Recognition results come only from the cache or `prefetched`, keyed by
+    (kind, image_id) and including failed calls, so cases never make uncounted recognition
+    requests."""
     row = {
         "pipeline": p.name,
         "case_id": case["case_id"],
@@ -118,9 +121,7 @@ def run_case(p: Pipeline, case: dict, allow_te: bool) -> dict:
 
     if p.kind in RECOGNIZERS:
         rec = RECOGNIZERS[p.kind]
-        te = rec.cached(case["image_id"]) or (
-            rec.recognize(case["image_id"], jpeg) if allow_te else None
-        )
+        te = rec.cached(case["image_id"]) or prefetched.get((p.kind, case["image_id"]))
         if te is None:
             return finish(
                 "error", error=f"{p.kind} result not cached (pass --allow-trafficeye)"
@@ -229,11 +230,15 @@ def attribute(df: pd.DataFrame) -> pd.DataFrame:
     """Grade the read step and the comparison step of te/twostep pipelines separately.
 
     read_ok: the recognizer's make/model/color agree with the truth on every attribute the
-      description mentions (gated decisions like no_vehicle count as misreads).
+      description mentions (gated decisions like no_vehicle count as misreads, and so does a
+      read that omits a mentioned color: unread is not confirmed).
     expected_given_read: the correct comparison answer given only what was read:
-      "match", "mismatch", or "either" when an ambiguous '~' read includes the described model.
+      "match", "mismatch", "either" when an ambiguous '~' read includes the described model, or
+      "maybe" when nothing contradicts but a mentioned color wasn't read (the compare prompt
+      says "maybe" when info is missing).
     compare_ok: the comparison LLM's decision is correct for its input. "maybe" counts as a
-      non-match, as in production; for "either", match or maybe are both acceptable.
+      non-match, as in production; for "either", match or maybe are both acceptable; for
+      "maybe", only maybe is correct.
     failure (only for wrong final decisions): "compare" if the read was right but the
       comparison was wrong, "ambiguous_read" if an ambiguous read made both answers defensible,
       otherwise "misread". "none" if correct; NaN for pipelines without a read step.
@@ -268,10 +273,14 @@ def attribute(df: pd.DataFrame) -> pd.DataFrame:
             "model": r.true_model,
             "color": r.true_color if described["color"] else None,
         }
-        read_ok.append(mentioned_agree(seen, truth))
+        read_ok.append(mentioned_agree(seen, truth) is True)
         agrees = mentioned_agree(seen, described)
         expected.append(
-            ("either" if is_ambiguous(seen) else "match") if agrees else "mismatch"
+            "maybe"
+            if agrees is None
+            else ("either" if is_ambiguous(seen) else "match")
+            if agrees
+            else "mismatch"
         )
     df["read_ok"] = pd.array(read_ok, dtype="boolean")
     df["expected_given_read"] = expected
@@ -285,6 +294,8 @@ def attribute(df: pd.DataFrame) -> pd.DataFrame:
                 if e == "match"
                 else d != "match"
                 if e == "mismatch"
+                else d == "maybe"
+                if e == "maybe"
                 else d in ("match", "maybe")
             )
             for e, d in zip(exp, dec)
@@ -483,23 +494,24 @@ def main() -> None:
         )
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    prefetched: dict[tuple[str, str], dict] = {}
     if args.allow_trafficeye and uncached_te:
         # Prefetch once per image so pos/neg cases sharing an image never double-bill TrafficEye.
         jobs = {(p.kind, c["image_id"]): (p.kind, c) for p, c in todo if (p.kind, c["image_id"]) in uncached}
         with ThreadPoolExecutor(args.workers) as pool:
-            list(
-                pool.map(
-                    lambda kc: RECOGNIZERS[kc[0]].recognize(
-                        kc[1]["image_id"], load_jpeg(Path(kc[1]["image_path"]), kc[1].get("bbox"))
-                    ),
-                    jobs.values(),
-                )
+            results = pool.map(
+                lambda kc: RECOGNIZERS[kc[0]].recognize(
+                    kc[1]["image_id"], load_jpeg(Path(kc[1]["image_path"]), kc[1].get("bbox"))
+                ),
+                jobs.values(),
             )
-        print(f"Prefetched recognition for {len(jobs)} kind/image pairs")
+            prefetched = dict(zip(jobs, results))
+        failed = sum(1 for r in prefetched.values() if r["error"])
+        print(f"Prefetched recognition for {len(jobs)} kind/image pairs ({failed} failed; not retried)")
     if args.trafficeye_only:
         return
     with ThreadPoolExecutor(args.workers) as pool, out_path.open("a") as out:
-        futures = [pool.submit(run_case, p, c, args.allow_trafficeye) for p, c in todo]
+        futures = [pool.submit(run_case, p, c, prefetched) for p, c in todo]
         for i, fut in enumerate(as_completed(futures), 1):
             out.write(json.dumps(fut.result()) + "\n")
             out.flush()

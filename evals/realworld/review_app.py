@@ -9,6 +9,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
+import tempfile
+import threading
 from functools import lru_cache
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -18,11 +21,12 @@ import pandas as pd
 
 import trafficeye
 from matching import color_eq
-from common import CACHE_DIR, DATA_DIR, RESULTS_DIR, load_jpeg
+from common import CACHE_DIR, DATA_DIR, DATASETS, RESULTS_DIR, load_jpeg
 from run_eval import annotate, summarize
 
 HERE = Path(__file__).parent
 REVIEWS = CACHE_DIR / "reviews.json"
+REVIEWS_LOCK = threading.Lock()
 
 
 def case_files() -> list[Path]:
@@ -67,10 +71,43 @@ def runs() -> list[str]:
     return sorted((p.stem for p in RESULTS_DIR.glob("*.jsonl")), reverse=True)
 
 
+def dataset_image(image_path: str) -> Path:
+    """Resolve a case's image path, refusing anything outside datasets/ (incl. via symlinks)."""
+    path = Path(image_path).resolve()
+    if not path.is_relative_to(DATASETS.resolve()):
+        raise KeyError(f"image outside datasets/: {image_path}")
+    return path
+
+
 @lru_cache(maxsize=2048)
 def image_bytes(case_id: str) -> bytes:
     c = all_cases()[case_id]
-    return load_jpeg(Path(c["image_path"]), c.get("bbox"))
+    return load_jpeg(dataset_image(c["image_path"]), c.get("bbox"))
+
+
+def read_reviews() -> dict:
+    return json.loads(REVIEWS.read_text()) if REVIEWS.exists() else {}
+
+
+def update_reviews(update: dict) -> dict:
+    """Apply one client's changes atomically so concurrent saves never drop each other."""
+    with REVIEWS_LOCK:
+        reviews = read_reviews()
+        for key, value in update.items():
+            if value:
+                reviews[key] = value
+            else:
+                reviews.pop(key, None)
+        REVIEWS.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=REVIEWS.parent, prefix=".reviews-", suffix=".json")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(reviews, f, indent=1)
+            os.replace(tmp, REVIEWS)
+        except BaseException:
+            os.unlink(tmp)
+            raise
+        return reviews
 
 
 def clean(obj):
@@ -136,7 +173,7 @@ class Handler(BaseHTTPRequestHandler):
             elif url.path == "/api/run":
                 self._json(run_payload(q["name"]))
             elif url.path == "/api/reviews":
-                self._json(json.loads(REVIEWS.read_text()) if REVIEWS.exists() else {})
+                self._json(read_reviews())
             elif url.path == "/img":
                 self._send(image_bytes(q["case"]), "image/jpeg")
             else:
@@ -148,15 +185,7 @@ class Handler(BaseHTTPRequestHandler):
         if urlparse(self.path).path != "/api/reviews":
             return self._json({"error": "not found"}, 404)
         update = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        reviews = json.loads(REVIEWS.read_text()) if REVIEWS.exists() else {}
-        for key, value in update.items():
-            if value:
-                reviews[key] = value
-            else:
-                reviews.pop(key, None)
-        REVIEWS.parent.mkdir(parents=True, exist_ok=True)
-        REVIEWS.write_text(json.dumps(reviews, indent=1))
-        self._json(reviews)
+        self._json(update_reviews(update))
 
     def log_message(self, *args) -> None:
         pass
