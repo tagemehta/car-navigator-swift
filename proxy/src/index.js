@@ -6,8 +6,10 @@ const TRAFFICEYE_URL = "https://trafficeye.ai/recognition";
 
 const DEFAULT_ALLOWED_MODELS = "gpt-6-luna";
 const DEFAULT_MAX_COMPLETION_TOKENS = 300;
-const MAX_CHAT_BODY_BYTES = 4 * 1024 * 1024;
-const MAX_RECOGNITION_BODY_BYTES = 5 * 1024 * 1024;
+// The app sends uncompressed-quality JPEG crops (base64 in chat bodies). A full 4032x3024 frame
+// can reach ~10 MB, ~13 MB as base64; 16 MB covers it while staying well under Worker memory.
+const MAX_CHAT_BODY_BYTES = 16 * 1024 * 1024;
+const MAX_RECOGNITION_BODY_BYTES = 16 * 1024 * 1024;
 
 export default {
   async fetch(request, env) {

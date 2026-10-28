@@ -118,8 +118,16 @@ test("invalid JSON is 400", async () => {
   assert.equal(res.status, 400);
 });
 
+test("large image crop under the cap is forwarded", async () => {
+  // ~13 MB base64, about a full 4032x3024 quality-1.0 JPEG.
+  const crop = { ...validChat, image: "A".repeat(13 * 1024 * 1024) };
+  const res = await worker.fetch(chat(crop), env());
+  assert.equal(res.status, 200);
+  assert.equal(upstreamCalls.length, 1);
+});
+
 test("oversized chat body is 413", async () => {
-  const big = { ...validChat, pad: "x".repeat(4 * 1024 * 1024 + 1) };
+  const big = { ...validChat, pad: "x".repeat(16 * 1024 * 1024 + 1) };
   const res = await worker.fetch(chat(big), env());
   assert.equal(res.status, 413);
 });

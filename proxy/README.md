@@ -8,8 +8,8 @@ Deployed at `https://curbtocar-proxy.curbtocar.workers.dev`.
 | Route | Forwards to | Limits |
 |---|---|---|
 | `GET /health` | nothing (no auth) | |
-| `POST /v1/chat/completions` | `api.openai.com/v1/chat/completions` | model must be in `ALLOWED_MODELS`; `max_completion_tokens` capped at `MAX_COMPLETION_TOKENS`; `n`, `stream`, `max_tokens` stripped; body ≤ 4 MB |
-| `POST /recognition` | `trafficeye.ai/recognition` | multipart only; body ≤ 5 MB |
+| `POST /v1/chat/completions` | `api.openai.com/v1/chat/completions` | model must be in `ALLOWED_MODELS`; `max_completion_tokens` capped at `MAX_COMPLETION_TOKENS`; `n`, `stream`, `max_tokens` stripped; body ≤ 16 MB |
+| `POST /recognition` | `trafficeye.ai/recognition` | multipart only; body ≤ 16 MB |
 
 Every route except `/health` needs `X-App-Token` (matches the `APP_TOKEN` secret) and `X-Device-Id`.
 Requests are rate-limited per device (150 per 10 s) and per IP (600 per 10 s), about 2× the app's worst case. See `DesignDecisions.md` → API Key Security for the derivation. Anything else is a 404.
