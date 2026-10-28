@@ -10,12 +10,15 @@ ALLOWED_MODELS = "gpt-6-luna"
 MAX_COMPLETION_TOKENS = "300"
 
 # Per-device and per-IP request limits. period must be 10 or 60 seconds.
+# Sized from the app's worst case (thing-finder/Docs/DesignDecisions.md → API Key Security):
+# ~7 calls/s per device with 10 cars retrying, bursting to 10-20 calls in ~2 s.
+# The IP limit allows for several users behind one shared carrier IP.
 [[ratelimits]]
 name = "DEVICE_LIMITER"
 namespace_id = "1001"
-simple = { limit = 60, period = 60 }
+simple = { limit = 150, period = 10 }
 
 [[ratelimits]]
 name = "IP_LIMITER"
 namespace_id = "1002"
-simple = { limit = 120, period = 60 }
+simple = { limit = 600, period = 10 }

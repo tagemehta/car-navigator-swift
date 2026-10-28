@@ -12,7 +12,7 @@ Deployed at `https://curbtocar-proxy.curbtocar.workers.dev`.
 | `POST /recognition` | `trafficeye.ai/recognition` | multipart only; body ≤ 5 MB |
 
 Every route except `/health` needs `X-App-Token` (matches the `APP_TOKEN` secret) and `X-Device-Id`.
-Requests are rate-limited per device (60/min) and per IP (120/min). Anything else is a 404.
+Requests are rate-limited per device (150 per 10 s) and per IP (600 per 10 s), about 2× the app's worst case. See `DesignDecisions.md` → API Key Security for the derivation. Anything else is a 404.
 
 ## Secrets
 

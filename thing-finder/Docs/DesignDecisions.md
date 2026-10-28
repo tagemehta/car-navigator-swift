@@ -228,7 +228,9 @@ The Worker limits what that token can do:
 - Two routes only: `POST /v1/chat/completions` and `POST /recognition`. Everything else is a 404.
 - Model allowlist (`gpt-6-luna`), `max_completion_tokens` capped at 300, and `n`/`stream`/`max_tokens` stripped.
 - Body size caps: 4 MB chat, 5 MB image.
-- 60 requests/min per device ID and 120/min per IP.
+- 150 requests per 10 s per device ID and 600 per 10 s per IP.
+
+  These are sized from the app's real request rate, which is far below the 30 fps frame rate. `VerifierService` sends at most one batch per second (`minVerifyInterval`), and only for `.unknown` candidates. A request moves the candidate to `.waiting`, so each car has at most one verification in flight. A retry waits at least 0.8 s after the last result (`perCandidateMMRInterval`). There are at most 10 candidates, and each verification makes up to 2 API calls. One car retrying is about 40 calls/min. Ten cars retrying at a busy curb is about 7 calls/s, with a first-batch burst of 10–20 calls in about 2 s. The device limit is about 2× that. The IP limit allows for several users behind one carrier IP. The first limits (60/min per device, 120/min per IP) would have stalled verification at a busy pickup. A 429 becomes a retryable `.apiError`, so it never causes a false match, but the user gets no feedback while it stalls. Spend is negligible at this scale, so the limits cap abuse rather than cost.
 
 The OpenAI key is a service-account key in its own project, restricted to Chat Completions, with a project budget cap. That cap is the final limit on spend whatever happens upstream.
 
