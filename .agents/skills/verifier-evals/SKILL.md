@@ -5,6 +5,8 @@ description: Run or analyze the real-image car verifier evals (TrafficEye / TwoS
 
 # Verifier model evals
 
+**Prerequisite:** the eval code is tracked in git starting with the `realworld-evals` branch (commit `8c6d33d`). That branch also replaces the old `evals/**` ignore rule, which hid the whole directory. If `evals/realworld/` doesn't exist in your checkout, check `git log --oneline -1 -- evals/realworld` or `git branch -a | rg realworld-evals`. Then tell the user that branch needs to be merged or checked out. Don't recreate the scripts. Eval data (`evals/data/`) and results (`evals/results/`) are never committed: they're local only, regenerated with `build_dataset.py` / `run_eval.py`. Ask the user before regenerating, because both call paid APIs.
+
 - Start by reading `evals/realworld/README.md`. It covers pipeline specs, dataset, and the API caveats that affect the Swift code.
 - Run scripts from `evals/realworld/` with `python3`. They refuse runs over 60 API requests unless you pass `--yes`.
 - **Cost gate:** ask the user before any large run. They want to approve anything around 1k requests or more. State the request count and the models first.

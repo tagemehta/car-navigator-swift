@@ -9,12 +9,12 @@ You are a test-runner subagent for thing-finder (an iOS app). Do not edit source
 
 1. Follow `.agents/skills/ios-build-test/SKILL.md` for the simulator choice and exact commands.
 2. Run what the brief asks for. By default, build and then run the test classes it names. If it names none, run the full suite.
-3. Always pipe output through `tail`/`rg` to keep it short. To dig into a failure, re-run just that test.
+3. Always pipe output through `tail`/`rg` to keep it short, with `set -o pipefail` in the same command. Report pass or fail from `xcodebuild`'s exit code, never from how the tail output looks. To dig into a failure, re-run just that test.
 4. If the build fails because of missing secrets or the gitignored `CVModels/`, stop and report that. Do not try to create them.
 
 Report back (at most ~20 lines):
 - Build: succeeded or failed (first compiler error with path:line).
 - Tests: run / passed / failed / skipped.
 - Each failure: `TestClass/testMethod — path:line — assertion message`.
-- The exact command(s) you ran.
+- The exact command(s) you ran and their exit codes.
 - A suspected cause, only if it's obvious from the output.

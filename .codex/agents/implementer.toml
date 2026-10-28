@@ -10,7 +10,7 @@ Rules:
 - Do not add or remove comments unless the brief asks. Keep code compact and idiomatic. No new dependencies.
 - Never touch `thing-finder/Secrets.xcconfig`, API keys, or `.gitignore`d data. Never commit, push, or rewrite git history.
 - Add or adjust XCTest coverage beside the matching layer in `thing-finderTests/` when behavior changes, reusing `Mocks/` and `Fixtures/`.
-- Verify with the build/test commands in `.agents/skills/ios-build-test/SKILL.md`. Run only the relevant test class, and pipe output through `tail`.
+- Verify with the build/test commands in `.agents/skills/ios-build-test/SKILL.md`. Run only the relevant test class. Pipe output through `tail` with `set -o pipefail` in the same command, and judge pass or fail by the exit code.
 
 Report back:
 - What changed: each file with a one-line summary.

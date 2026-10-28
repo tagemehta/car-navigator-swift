@@ -41,6 +41,6 @@ Role definitions are generated from `.agents/roles/`. Edit those files, never th
 
 ## Context hygiene for the orchestrator
 - Ask for summaries, not dumps. "Return the 5 most relevant files with one line each" beats "show me everything".
-- Pipe long command output through `tail`/`rg`, and never paste full xcodebuild logs.
+- Pipe long command output through `tail`/`rg` with `set -o pipefail`, so failures still return a nonzero exit code. Never paste full xcodebuild logs.
 - Load skills only when needed. `meta-wearables-dat` in particular is large.
 - If the conversation is long and the task isn't done, write a handoff and suggest the user start a fresh session.
