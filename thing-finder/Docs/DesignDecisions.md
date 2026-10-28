@@ -213,6 +213,46 @@ Original rationale: TrafficEye is about 1.9 s per call (retry more), the LLM abo
 
 ---
 
+## API Key Security
+
+### Provider Keys Behind a Cloudflare Worker Proxy — Current (2026-10-28, PR #40)
+**Files:** `proxy/`, `Utilities/Networking/APIProxy.swift`
+
+**Problem.** The OpenAI and TrafficEye keys were build settings expanded into `Info.plist`, so every shipped build carried them in plain text. Keeping `Secrets.xcconfig` out of git doesn't help: Xcode copies the values into the compiled app. The OpenAI key kept leaking and its credits were drained. Separately, an older key was committed in `396af64` (2025-03) to this public repo. It is off all branches now but GitHub still serves the commit by hash.
+
+**Threat model.** Automated scrapers that unzip public app builds, search for known provider key formats (OpenAI's `sk-…`), and use or resell any that work. The user base is a few thousand people, and there's no sign of anyone targeting CurbToCar specifically. The goal is to make a build worthless to a key scraper, not to stop a determined attacker aimed at this app.
+
+**Decision.** The app ships no provider keys. Verifier requests go to a Cloudflare Worker that holds the keys as Worker secrets and forwards to OpenAI and TrafficEye. The app sends only `X-App-Token` (a random 64-hex-character token) and a per-install `X-Device-Id`.
+
+The Worker limits what that token can do:
+- Two routes only: `POST /v1/chat/completions` and `POST /recognition`. Everything else is a 404.
+- Model allowlist (`gpt-6-luna`), `max_completion_tokens` capped at 300, and `n`/`stream`/`max_tokens` stripped.
+- Body size caps: 4 MB chat, 5 MB image.
+- 60 requests/min per device ID and 120/min per IP.
+
+The OpenAI key is a service-account key in its own project, restricted to Chat Completions, with a project budget cap. That cap is the final limit on spend whatever happens upstream.
+
+**Why this is enough for now.** A scraper finds no provider key in the build. The app token matches no known key format and only works against this proxy, under the limits above. Even someone who extracts the token by hand can spend at most what the rate limits and the budget cap allow.
+
+**Why Cloudflare Workers.** There's no cold start (isolates, not containers), and it runs at the edge closest to the user. Measured overhead is roughly 20–60 ms on calls that already take 1–3 s. Hosts with cold starts (Lambda, Cloud Run) would add 0.3–10 s to the first verification of most sessions, because usage comes in bursts.
+
+**Remaining risk.** The app token can be extracted from a build. That's acceptable under the threat model above. If it gets abused, rotate it (`wrangler secret put APP_TOKEN`, then ship a build with the new value) and move to App Attest (below).
+
+**Rollout.** See `proxy/README.md` → Rollout for the steps, including retiring the old key.
+
+### App Attest — Deferred (planned as the next phase)
+App Attest would replace the extractable app token with per-install proof that a request comes from the genuine app on a real Apple device. The Secure Enclave generates a key, Apple attests it once per install, and the app signs every request. The proxy verifies the signature and a counter that must always increase.
+
+It was deferred on 2026-10-28 because the proxy already defeats key scraping, which is the observed threat. Do it if Worker traffic stops looking like real users: sustained high volume from a few device IDs, round-the-clock use, or the OpenAI budget cap getting hit.
+
+When it's picked up:
+- **Roll out in soft mode first.** Unattested requests still pass with stricter limits and get logged. Turn on rejection once nearly all active users are on an attesting build. The Simulator, a few devices, and every build released before App Attest can't attest, so rejecting them on day one would stop car verification for those users.
+- **Store the per-key counter in a Durable Object,** not KV. The counter check needs strongly consistent storage, and KV can briefly return stale values.
+- **Use a vetted library for attestation verification** (Apple's certificate chain and CBOR). Hand-written X.509 chain validation is where security bugs hide.
+- **App setup:** the App Attest capability (entitlement `com.apple.developer.devicecheck.appattest-environment`: `development` for Debug, `production` for Release). Users get no permission prompt, and the App Store privacy labels don't change.
+
+---
+
 ## Tuning Guidelines
 
 When adjusting thresholds, consider:
