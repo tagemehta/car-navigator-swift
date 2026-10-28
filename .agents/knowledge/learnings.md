@@ -5,6 +5,9 @@ Follow the `record-learning` skill: newest first, absolute dates, include eviden
 Open bugs live in `KNOWN_BUGS.md`, not here.
 
 ## Build & tooling
+- 2026-10-28 — Cron cannot read `~/Desktop` without Full Disk Access for `/usr/sbin/cron` (not `/usr/bin/crontab`); the API health-check cron failed silently with `Operation not permitted`, visible only in `/var/mail/$USER`. (source: claude-code)
+- 2026-10-28 — `.xcconfig` treats `//` as a comment, so URLs must be written `https:/$()/host` (e.g. `PROXY_BASE_URL`). (source: claude-code)
+- 2026-10-28 — `xcodebuild` with `name=iPhone 16 Pro` is ambiguous (several OS versions installed; 18.0/18.1 are below the 18.2 deployment target) and exits 70. Pick a simulator by `id=` from `xcrun simctl list devices available`. A parallel full-suite run once hung ~10 min in `simctl diagnose`; `-parallel-testing-enabled NO` avoided it. macOS has no `timeout` command. (source: claude-code)
 - 2026-10-27 — Agent config is generated: edit `AGENTS.md`, `.agents/skills/`, `.agents/roles/`, then run `python3 scripts/sync_agent_config.py`. Claude Code only reads `.claude/skills/`, so those entries are symlinks. New custom subagent profiles only register in a fresh Devin session. (source: devin)
 - 2026-10-27 — Schemes are `thing-finder` and `thing-finder-prod`. The test target is `thing-finderTests` (28 classes) with plan `thing-finderTests/thing-finder.xctestplan`. There is no CI workflow. Evidence: `xcodebuild -list`, `thing-finder/Docs/TestingPlan.md`. (source: devin)
 - 2026-10-27 — The working tree may hold uncommitted Verification changes from another session. Verify behavior against `git diff`, not just HEAD. (source: devin)
@@ -22,6 +25,7 @@ Open bugs live in `KNOWN_BUGS.md`, not here.
 - 2026-06-13 — Record an announcement only after speech actually fires. Recording it earlier silently drops cooldown-suppressed phrases. Evidence: `ffcb28b`. (source: git history)
 
 ## Verification / models / network
+- 2026-10-28 — Provider keys no longer ship in the app: verifiers call the Cloudflare Worker in `proxy/` (`https://curbtocar-proxy.curbtocar.workers.dev`) via `APIProxy`, because keys in `Info.plist` are readable from any build and kept leaking. A new `workers.dev` subdomain took ~100 s to get its TLS cert. App Attest deferred by the user on 2026-10-28; the extractable app token is bounded by per-device/IP rate limits and the model/token caps. (source: claude-code)
 - 2026-10-27 — Uncommitted migration: every verifier uses `ChatCompletionRequest.verifierModel = "gpt-6-luna"` with `max_completion_tokens: 300` and `reasoning_effort: "none"` (function calling on Chat Completions requires effort `none`). TrafficEye infoQ gate 0.4 → 0.85. `maxTrafficEyeRetries` 3 → 1. In hybrid mode a TrafficEye mismatch escalates instead of rejecting. Rationale: `evals/realworld/` (rider match 75% → 90%, strict false matches 0.3% → 1.0%). (source: git diff + evals)
 - 2026-10-16 — `gpt-4.1-mini` is removed from the API on 2027-01-14. (source: user)
 - 2026-09-05 — `NetworkMonitor.currentConnectivity()` waits up to 0.3 s for the first path callback, so a Shortcut cold launch doesn't start an offline search based on a guess. Evidence: `b249bbc`. (source: git history)

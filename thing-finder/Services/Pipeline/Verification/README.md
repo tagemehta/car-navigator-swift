@@ -246,7 +246,7 @@ API caveats that constrain these params (see [`evals/realworld/README.md`](../..
 - `gpt-6-luna` supports function calling on Chat Completions only with `reasoning_effort: "none"`.
 - Reasoning models take `max_completion_tokens`, not `max_tokens`, and the budget includes reasoning tokens.
 
-Keys are read from `Info.plist`: `OPENAI_API` (all OpenAI calls) and `TRAFFICEYE_API_KEY`. Missing keys become empty strings, so requests fail at the API rather than at startup. TwoStep and AdvancedLLM read the key and use `URLSession.shared` directly; only TrafficEye accepts injected keys and session.
+All calls go through the CurbToCar Cloudflare Worker (`proxy/`), which holds the OpenAI and TrafficEye keys; the app never ships them. The proxy exposes the same paths (`/v1/chat/completions`, `/recognition`), so the endpoints in the table above are what the Worker forwards to. `APIProxy` (`Utilities/Networking/APIProxy.swift`) reads `PROXY_BASE_URL` and `PROXY_APP_TOKEN` from `Info.plist` and adds `X-App-Token` and a per-install `X-Device-Id` header. A missing URL falls back to an unreachable host, so requests fail at the network rather than at startup. TwoStep and AdvancedLLM use `APIProxy.shared` and `URLSession.shared` directly; only TrafficEye accepts an injected proxy and session (tests use `APIProxy.test`, host `proxy.test`).
 
 Latency (historical, measured with `gpt-4.1-mini`): TrafficEye path about 1.9 s, TwoStep and AdvancedLLM 4-5 s. The eval reports the `gpt-6-luna` comparison call as about 0.5 s slower at p50 and 1 s slower at p95 than `gpt-4.1-mini`.
 
