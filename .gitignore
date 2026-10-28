@@ -24,3 +24,8 @@ scripts/api-health-check.log
 evals/cache/
 evals/data/
 evals/results/
+
+# Cloudflare Worker proxy
+proxy/.dev.vars
+proxy/.wrangler/
+proxy/node_modules/

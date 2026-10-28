@@ -1,0 +1,21 @@
+name = "curbtocar-proxy"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Secrets (set with `wrangler secret put <NAME>`, never committed):
+#   OPENAI_KEY, TRAFFICEYE_KEY, APP_TOKEN
+
+[vars]
+ALLOWED_MODELS = "gpt-6-luna"
+MAX_COMPLETION_TOKENS = "300"
+
+# Per-device and per-IP request limits. period must be 10 or 60 seconds.
+[[ratelimits]]
+name = "DEVICE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
+
+[[ratelimits]]
+name = "IP_LIMITER"
+namespace_id = "1002"
+simple = { limit = 120, period = 60 }

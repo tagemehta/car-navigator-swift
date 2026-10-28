@@ -109,11 +109,7 @@ private func parseVehicleView(mmr: MMR?) -> (Candidate.VehicleView, Double?) {
 public final class TrafficEyeVerifier: ImageVerifier {
   private var lastVerifiedDate = Date()
 
-  private let trafficEyeEndpoint = URL(string: "https://trafficeye.ai/recognition")!
-  private let openAIEndpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
-
-  private let trafficEyeApiKey: String
-  private let openAIApiKey: String
+  private let proxy: APIProxy
 
   private let jsonEncoder = JSONEncoder()
   private let jsonDecoder = JSONDecoder()
@@ -137,17 +133,14 @@ public final class TrafficEyeVerifier: ImageVerifier {
     config: VerificationConfig,
     imgUtils: ImageUtilities = .shared,
     urlSession: URLSessionProtocol = URLSession.shared,
-    trafficEyeApiKey: String? = nil,
-    openAIApiKey: String? = nil
+    proxy: APIProxy = .shared
   ) {
     self.targetClasses = targetClasses
     self.targetTextDescription = targetTextDescription
     self.config = config
     self.imgUtils = imgUtils
     self.urlSession = urlSession
-    self.trafficEyeApiKey =
-      trafficEyeApiKey ?? (Bundle.main.infoDictionary?["TRAFFICEYE_API_KEY"] as? String ?? "")
-    self.openAIApiKey = openAIApiKey ?? (Bundle.main.infoDictionary?["OPENAI_API"] as? String ?? "")
+    self.proxy = proxy
   }
 
   public func verify(image: UIImage, candidateId: UUID) -> AnyPublisher<VerificationOutcome, Error>
@@ -304,11 +297,11 @@ public final class TrafficEyeVerifier: ImageVerifier {
     DebugPublisher.shared.info(
       "[TrafficEye][\(candidateId.uuidString.suffix(8))] Sending API request...")
     let boundary = "Boundary-\(UUID().uuidString)"
-    var request = URLRequest(url: trafficEyeEndpoint)
+    var request = URLRequest(url: proxy.recognitionURL)
     request.httpMethod = "POST"
     request.setValue(
       "multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-    request.setValue(trafficEyeApiKey, forHTTPHeaderField: "apiKey")
+    proxy.authorize(&request)
 
     let requestBody = createMultipartBody(boundary: boundary, image: imageBytes)
     request.httpBody = requestBody
@@ -462,10 +455,10 @@ public final class TrafficEyeVerifier: ImageVerifier {
         )
       ], max_completion_tokens: 300
     )
-    var request = URLRequest(url: openAIEndpoint)
+    var request = URLRequest(url: proxy.chatCompletionsURL)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("Bearer \(openAIApiKey)", forHTTPHeaderField: "Authorization")
+    proxy.authorize(&request)
     request.httpBody = try? JSONEncoder().encode(requestPayload)
     let _ = Date()
     return urlSession.dataTaskPublisherForRequest(request)

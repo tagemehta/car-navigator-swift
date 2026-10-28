@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>OPENAI_API</key>
-	<string>$(OPENAI_API)</string>
-	<key>TRAFFICEYE_API_KEY</key>
-	<string>$(TRAFFICEYE_API_KEY)</string>
+	<key>PROXY_BASE_URL</key>
+	<string>$(PROXY_BASE_URL)</string>
+	<key>PROXY_APP_TOKEN</key>
+	<string>$(PROXY_APP_TOKEN)</string>
 </dict>
 </plist>
