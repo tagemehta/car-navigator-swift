@@ -60,6 +60,19 @@ enum SupportedLanguage: String, CaseIterable, Identifiable {
 /// Settings model that stores user preferences for the navigation experience.
 /// Uses @AppStorage for persistence and provides defaults matching the original implementation.
 public class Settings: ObservableObject {
+  public init() {
+    Self.migrateLegacyPartialNavigation()
+  }
+
+  /// One-time migration of the removed `allow_partial_nav` preference to its inverse, `require_license_plate`.
+  static func migrateLegacyPartialNavigation(defaults: UserDefaults = .standard) {
+    guard defaults.object(forKey: "require_license_plate") == nil,
+      let legacy = defaults.object(forKey: "allow_partial_nav") as? Bool
+    else { return }
+    defaults.set(!legacy, forKey: "require_license_plate")
+    defaults.removeObject(forKey: "allow_partial_nav")
+  }
+
   // MARK: - Navigation Settings
   /// Speech rate (-1.0 to 1.0, where 0 is normal)
   @AppStorage("speech_rate") var speechRate: Double = 0.5
@@ -141,8 +154,8 @@ public class Settings: ObservableObject {
   /// Enable speech feedback
   @AppStorage("enable_speech") var enableSpeech: Bool = true
 
-  /// Allow navigation cues before plate confirm (partial match)
-  @AppStorage("allow_partial_nav") var allowPartialNavigation: Bool = true
+  /// Require a confirmed license plate before giving navigation cues (no cues for partial matches)
+  @AppStorage("require_license_plate") var requireLicensePlate: Bool = false
 
   /// Announce rejected candidates — now handled by PreMatchFeedbackController.
   @AppStorage("announce_rejected") var announceRejected: Bool = true
@@ -309,7 +322,7 @@ extension Settings {
     directionRightThreshold = 0.66
     speechRepeatInterval = 6.0
     speechChangeInterval = 4.0
-    allowPartialNavigation = true
+    requireLicensePlate = false
     announceRejected = true
     announceWaitingMessages = true
     // Distance Feedback Settings

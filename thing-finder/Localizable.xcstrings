@@ -1576,16 +1576,6 @@
         }
       }
     },
-    "Navigate Before Plate Match" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Navegar Antes de Emparejar Placas"
-          }
-        }
-      }
-    },
     "Navigation Feedback" : {
       "localizations" : {
         "es" : {
@@ -1764,6 +1754,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "a tu derecha"
+          }
+        }
+      }
+    },
+    "Only start guidance once the license plate is fully verified" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar la orientación solo cuando la matrícula esté completamente verificada"
           }
         }
       }
@@ -2020,6 +2020,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Intervalo de repetición: %@s"
+          }
+        }
+      }
+    },
+    "Require License Plate" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requerir Matrícula"
           }
         }
       }
@@ -2284,17 +2294,8 @@
         }
       }
     },
-    "Start navigation before a license plate match is confirmed." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar navegación antes de confirmar la coincidencia de matrícula."
-          }
-        }
-      }
-    },
     "Start receiving guidance before license plate is fully verified" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2596,6 +2597,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Patrones de vibración que pulsan más rápido al acercarse a su objetivo"
+          }
+        }
+      }
+    },
+    "Wait for a confirmed license plate match before starting navigation." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperar la confirmación de la matrícula antes de iniciar la navegación."
+          }
+        }
+      }
+    },
+    "Wait for a confirmed license plate match if provided before starting navigation." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si se proporcionó una matrícula, esperar su confirmación antes de iniciar la navegación."
           }
         }
       }

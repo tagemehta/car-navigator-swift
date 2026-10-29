@@ -119,7 +119,7 @@ Notes:
 | ---- | --- | ------------------ |
 | `TwoStepVerifier` / `AdvancedLLMVerifier` | No response parsing or match logic tests; `AdvancedLLMVerifier` (paratransit) has none | `MockURLSession` + recorded OpenAI tool-call JSON in `TestAPIResponses` |
 | `DetectionManager` | Real filtering/stability not exercised (CoreML not loaded) | Inject a stub `VNCoreMLModel` or test the filter/stability logic separately |
-| `FramePipelineCoordinator` | Only depth-coordinate tests; no per-frame orchestration tests (target box selection, `allowPartialNavigation`, median depth) | Build with mocks (`MockObjectDetector`, `MockVisionTracker`, `MockVerifierService`, `MockNavigationSpeaker`) and assert `tickCallCount` / `lastTargetBox` / `lastDistance` |
+| `FramePipelineCoordinator` | Only depth-coordinate tests; no per-frame orchestration tests (target box selection, `requireLicensePlate`, median depth) | Build with mocks (`MockObjectDetector`, `MockVisionTracker`, `MockVerifierService`, `MockNavigationSpeaker`) and assert `tickCallCount` / `lastTargetBox` / `lastDistance` |
 | `FrameNavigationManager` | 2 tests; controller ordering and `hasActiveMatch` gating mostly untested | Inject mocks and assert speech order |
 | `Speaker`, `SmoothBeeper`, `HapticManager`, `AudioControl` | Untested (AVFoundation/UIKit side effects) | Test pause/resume notification handling; keep audio output behind protocols |
 | `EmbeddingComputer` / `VisionEmbeddingProvider` | No tests | Use `Assets/` images (see below) |

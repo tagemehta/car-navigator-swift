@@ -30,7 +30,7 @@ All speaking controllers share one `AnnouncementCache` and one `HapticManager` i
 | ----- | ----------------------------------------------------- |
 | `at` | `Date()` wall clock at navigation time (not the capture timestamp) |
 | `candidates` | Snapshot of `CandidateStore` |
-| `targetBox` | Phase `.found(id)`: that candidate's box if `isBoundingBoxFresh` (`missCount == 0`). Phase `.verifying`: the first fresh `.partial` candidate's box, only if `settings.allowPartialNavigation`. Otherwise `nil`. |
+| `targetBox` | Phase `.found(id)`: that candidate's box if `isBoundingBoxFresh` (`missCount == 0`). Phase `.verifying`: the first fresh `.partial` candidate's box, only if `!settings.requireLicensePlate`. Otherwise `nil`. |
 | `distance` | Median of valid depths at 5 points inside `targetBox` (center and ±25% on each axis), via the batched `depthAt([CGPoint]) -> [Float?]` closure from the frame provider. `nil` if no valid sample. |
 
 ### Depth sources
@@ -234,7 +234,7 @@ Hard-coded in controllers: heartbeat quiet window 10 s, grouped-rejection cooldo
 | `enableHaptics` | `false` | All haptics (pulses, detection, success/failure) | Yes |
 | `announceRejected` | `true` | "Not yours" / grouped rejection phrases | Yes ("Announce All Detected Cars") |
 | `announceWaitingMessages` | `true` | "Still looking…" heartbeat | Yes |
-| `allowPartialNavigation` | `true` | Provide `targetBox` (direction, beeps, haptics) for `.partial` matches | Yes ("Navigate Before Plate Match") |
+| `requireLicensePlate` | `false` | When `false`, provide `targetBox` (direction, beeps, haptics) for `.partial` matches; when `true`, wait for a full plate match | Yes ("Require License Plate") |
 | `speechRate` | 0.5 | TTS rate fraction 0–1 | Yes |
 | `speechRepeatInterval` | 6.0 s | Same-phrase suppression in `NavAnnouncer` | Advanced (1–10 s) |
 | `speechChangeInterval` | 4.0 s | Direction debounce | No (slider commented out) |

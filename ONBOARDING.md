@@ -76,7 +76,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 ### `thing-finder/Models/`
 | File | Purpose |
 |------|---------|
-| `Settings.swift` | `@AppStorage` preferences. Navigation-relevant defaults: `enable_beeps`/`enable_speech` true, `enable_haptics` **false**, `allow_partial_nav` true, `speech_rate` 0.5, beep interval 0.1–1.0 s, direction thresholds 0.33/0.66, `use_ar_mode` false. Also `SupportedLanguage`, `Direction`, and `hasLiDAR`. |
+| `Settings.swift` | `@AppStorage` preferences. Navigation-relevant defaults: `enable_beeps`/`enable_speech` true, `enable_haptics` **false**, `require_license_plate` false, `speech_rate` 0.5, beep interval 0.1–1.0 s, direction thresholds 0.33/0.66, `use_ar_mode` false. Also `SupportedLanguage`, `Direction`, and `hasLiDAR`. |
 | `SearchMode.swift` | `.uberFinder` / `.objectFinder`. |
 | `SearchHistoryItem.swift` | Codable favorite/recent entry (description, mode, paratransit, favorite). |
 | `DetectionPhase.swift` | `searching`, `verifying(candidateIDs:)`, `found(candidateID:)`. |
@@ -113,7 +113,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 ### `thing-finder/Services/`
 
 #### `Services/Coordinator/FramePipelineCoordinator.swift`
-The heart of the app. It runs each frame synchronously on the caller's queue. The order is listed under [Core Architecture](#core-architecture). Distance is the **median of 5 depth samples** (the center plus 4 quarter points) inside the target box. The target box is used only when it is fresh. A `.partial` candidate is targeted only when `allow_partial_nav` is on.
+The heart of the app. It runs each frame synchronously on the caller's queue. The order is listed under [Core Architecture](#core-architecture). Distance is the **median of 5 depth samples** (the center plus 4 quarter points) inside the target box. The target box is used only when it is fresh. A `.partial` candidate is targeted only when `require_license_plate` is off.
 
 #### `Services/Pipeline/`
 | File | Purpose |

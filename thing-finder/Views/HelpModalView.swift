@@ -74,8 +74,8 @@ struct HelpModalView: View {
               description: "Vibration patterns that pulse faster when approaching your target"
             )
             HelpItem(
-              title: "Navigate Before Plate Match",
-              description: "Start receiving guidance before license plate is fully verified"
+              title: "Require License Plate",
+              description: "Only start guidance once the license plate is fully verified"
             )
             HelpItem(
               title: "Announce All Cars",
