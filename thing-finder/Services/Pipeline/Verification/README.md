@@ -1,6 +1,6 @@
 # Verification Pipeline
 
-> Describes the working tree as of 2026-10-27, including uncommitted changes (see [Status / in progress](#10-status--in-progress)).
+> Updated 2026-10-27 for the `gpt-6-luna` migration (version 1.2.2). See [Status](#10-status).
 
 The verification subsystem decides whether a tracked vehicle candidate is the rider's car (or, in paratransit mode, the target bus). It crops each candidate from the camera frame, sends it to a remote verifier, and writes the result (`full`, `partial`, `unknown`, `rejected`) to `CandidateStore`. Navigation announces only verified candidates.
 
@@ -286,9 +286,9 @@ Build and test commands (simulator selection, `-only-testing:thing-finderTests/V
 
 ---
 
-## 10  Status / in progress
+## 10  Status
 
-The working tree has uncommitted changes to this folder, `Models/OpenAIModel.swift` and the verification tests. They migrate off `gpt-4.1-mini`, which OpenAI removes on 2027-01-14, and apply findings from the real-image eval:
+Version 1.2.2 changed this folder, `Models/OpenAIModel.swift` and the verification tests to migrate off `gpt-4.1-mini`, which OpenAI removes on 2027-01-14, and to apply findings from the real-image eval:
 
 | Change | Before | After |
 |--------|--------|-------|
