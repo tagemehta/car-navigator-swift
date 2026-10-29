@@ -6,7 +6,17 @@ Keep it short. Anything procedural or long belongs in a skill (`.agents/skills/`
 ## Project
 An assistive iOS app (Swift/SwiftUI, XCTest) that helps blind users find their rideshare car and other objects.
 Per-frame pipeline: YOLO detection → Vision tracking → drift repair → candidate lifecycle → TrafficEye/LLM verification → state machine → speech/beep/haptic navigation.
-User-facing name: CurbToCar. Meta Ray-Ban glasses support is implemented but commented out (disabled since 2026-04). Python eval/dataset tooling lives in `evals/` and `scripts/`.
+User-facing name: CurbToCar. Meta Ray-Ban glasses are a live capture source on branch `meta-s26` (DAT SDK 1.0.0; on `main` the glasses code is still commented out, since 2026-04). Python eval/dataset tooling lives in `evals/` and `scripts/`.
+
+## Meta glasses (DAT SDK) — branch `meta-s26`
+- **Code:** `Services/MetaGlasses/MetaGlassesViewModel.swift` (one consolidated state machine: unconfigured → idle → registering → registered → requestingPermission → ready → streaming/paused/failed), `FramePublishers/MetaGlassesFrameProvider.swift`, `Views/MetaGlassesSettingsSection.swift`, `Views/MetaGlassesSetupView.swift`, SDK init + `onOpenURL` in `App/App.swift`. Gated by `FeatureFlags.metaGlassesEnabled`. Capture source is `.metaGlasses`.
+- **Modules:** `MWDATCore` (registration, devices, permissions), `MWDATCamera` (Stream, VideoFrame), `MWDATMockDevice` (DEBUG/tests only). Package pinned `from: "1.0.0"`; the API changes between releases, so check live docs (`wearables` MCP `search_dat_docs`, or https://wearables.developer.meta.com/llms.txt?full=true) before relying on remembered signatures.
+- **Flow:** `Wearables.configure()` once at launch → registration via Meta AI → camera permission → `createSession(deviceSelector:)` → wait for `.started` → `addStream(config:)` → `stream.start()`. Observe with `.listen {}` / `stateStream()`; hop to `@MainActor` for UI; never process frames on the main thread.
+- **Session rules:** don't restart while `paused`; release resources only after `stopped`; opening hinges does not restart sessions.
+- **Streaming config:** `.raw` codec, 720p (`.high`) / 30 fps always (no user quality setting). Lower resolution/fps would be higher quality per frame, but the Wi-Fi path handles the bandwidth.
+- **Required app config** (missing items fail silently): `Info.plist` `MWDAT` dict (`AppLinkURLScheme`, `ClientToken`, `DAMEnabled`, `MetaAppID`, `TeamID`), URL scheme `thingfinder`, `NSBonjourServices`, local-network and Bluetooth usage strings, `bluetooth-central` background mode; entitlements `HotspotConfiguration` + `wifi-info`. Without the Wi-Fi/Bonjour pieces the stream stalls mid-session with no error on any channel (`8beb068`). `META_CLIENT_TOKEN` / `META_APP_ID` come from `Secrets.xcconfig` (never print them).
+- **Testing:** use MockDeviceKit (no hardware needed). Real glasses need Developer Mode on in the Meta AI app (it resets after firmware updates).
+- **Open bug:** phone-camera fallback / re-pair race — see `KNOWN_BUGS.md`. Deeper SDK guidance: `meta-wearables-dat` skill.
 
 ## Start of every session
 1. If `.agents/HANDOFF.md` exists, follow the `handoff` skill to resume before doing anything else.
@@ -19,6 +29,7 @@ User-facing name: CurbToCar. Meta Ray-Ban glasses support is implemented but com
 | Gotchas, past decisions, eval outcomes, preferences | `.agents/knowledge/learnings.md` |
 | Open bugs, suspected bugs, inconsistencies | `KNOWN_BUGS.md` |
 | Verifier design (TrafficEye / TwoStep / AdvancedLLM, OCR, models) | `thing-finder/Services/Pipeline/Verification/README.md` |
+| Meta glasses SDK detail, plist/entitlements, re-enable checklist | `meta-wearables-dat` skill, `ONBOARDING.md` (Meta glasses) |
 | Navigation & audio behavior | `thing-finder/Docs/NavigationBehavior.md` |
 | Design decisions (current + superseded) | `thing-finder/Docs/DesignDecisions.md` |
 | Test inventory, mocks, gaps | `thing-finder/Docs/TestingPlan.md` |

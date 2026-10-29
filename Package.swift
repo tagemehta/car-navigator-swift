@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
   name: "thing-finder",
   platforms: [
-    .iOS(.v16),
+    .iOS(.v17),
     .macOS(.v13),
   ],
   products: [
@@ -17,17 +17,17 @@ let package = Package(
   ],
   dependencies: [
     // Dependencies declare other packages that this package depends on.
-    // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
-    // .package(url: "https://github.com/facebook/meta-wearables-dat-ios", from: "0.5.0")
+    // Meta Ray-Ban glasses (DAT SDK); requires Bluetooth, local network, and Wi-Fi entitlements
+    .package(url: "https://github.com/facebook/meta-wearables-dat-ios", from: "1.0.0")
   ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.
     .target(
       name: "ThingFinder",
       dependencies: [
-        // COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
-        // .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
-        // .product(name: "MWDATCamera", package: "meta-wearables-dat-ios"),
+        // Meta Ray-Ban glasses (DAT SDK); requires Bluetooth, local network, and Wi-Fi entitlements
+        .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
+        .product(name: "MWDATCamera", package: "meta-wearables-dat-ios"),
       ],
       path: "thing-finder",
       resources: [

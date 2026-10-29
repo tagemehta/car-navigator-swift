@@ -80,7 +80,6 @@
       }
     },
     "• **Connect**: Tap 'Connect Glasses' to pair with Meta AI app" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -91,7 +90,6 @@
       }
     },
     "• **Hands-Free**: Keep your phone in your pocket while glasses do the work" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -102,7 +100,6 @@
       }
     },
     "• **Permissions**: Grant camera access when prompted" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -113,7 +110,6 @@
       }
     },
     "• Glasses are connected via Bluetooth" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -124,7 +120,6 @@
       }
     },
     "• Glasses are open (unfolded)" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -135,7 +130,6 @@
       }
     },
     "• Meta Glasses mode is enabled in Settings" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -411,6 +405,9 @@
         }
       }
     },
+    "Camera Source" : {
+
+    },
     "Can't see the plate, retrying" : {
       "comment" : "Speech: retry due to plate not visible",
       "extractionState" : "stale",
@@ -424,7 +421,6 @@
       }
     },
     "Cancel" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -558,6 +554,12 @@
         }
       }
     },
+    "Closes this sheet and returns to settings" : {
+
+    },
+    "Complete each step to start streaming from your Ray-Ban Meta glasses." : {
+
+    },
     "Complete the setup in Meta AI app, then return here." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -581,7 +583,6 @@
       }
     },
     "Connect Meta Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -612,8 +613,10 @@
         }
       }
     },
+    "Connect your Meta glasses to stream from them." : {
+
+    },
     "Connected!" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -622,6 +625,9 @@
           }
         }
       }
+    },
+    "Connection Checklist" : {
+
     },
     "Connection Error" : {
       "extractionState" : "stale",
@@ -888,7 +894,6 @@
       }
     },
     "Disconnect Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1375,7 +1380,6 @@
       }
     },
     "Important:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1384,6 +1388,9 @@
           }
         }
       }
+    },
+    "Important: the glasses camera will only be used when the glasses are open and unfolded, connected via Bluetooth, and Meta Glasses mode is enabled in Settings." : {
+
     },
     "Key" : {
       "extractionState" : "manual",
@@ -1492,7 +1499,6 @@
       }
     },
     "Meta Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1514,7 +1520,6 @@
       }
     },
     "Meta Ray-Ban Glasses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1768,6 +1773,9 @@
         }
       }
     },
+    "Open Meta Glasses Settings" : {
+
+    },
     "Opens email composer to send feedback to the development team" : {
       "localizations" : {
         "es" : {
@@ -1777,6 +1785,12 @@
           }
         }
       }
+    },
+    "Opens Meta glasses settings to connect or fix the connection." : {
+
+    },
+    "Opens the step-by-step glasses connection guide" : {
+
     },
     "Paratransit Description" : {
       "localizations" : {
@@ -2076,6 +2090,9 @@
           }
         }
       }
+    },
+    "Resuming when the device is ready…" : {
+
     },
     "Right side of car" : {
       "comment" : "Speech: vehicle viewed from right",
@@ -2442,7 +2459,6 @@
       }
     },
     "The glasses camera will only be used when:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2526,7 +2542,6 @@
       }
     },
     "Use Meta Glasses Camera" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2558,7 +2573,6 @@
       }
     },
     "Use your Meta Ray-Ban smart glasses for hands-free, first-person detection:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2709,7 +2723,6 @@
       }
     },
     "Your Meta Ray-Ban glasses are now connected. The app will use the glasses camera when they are open and connected." : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {

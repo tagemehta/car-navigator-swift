@@ -44,44 +44,34 @@ A candidate whose OCR reads never pass the confidence or regex check stays `.par
 - `VerifierService.swift:125` comment says 15%, but the minimum box-area check at `:129` is 1%.
 - `TwoStepVerifier` uses `URLSession.shared` directly, so it can't be network-mocked in tests.
 
-## Meta Glasses: Phone camera fallback after unpair/repair in same session
+## Meta Glasses: Phone camera fallback during cold-start / repair race
 
-**Status:** Open, but dormant. All Meta glasses code has been commented out and the DAT SDK has been removed from the build since 2026-04-04 (`f60d50e`). The bug comes back if glasses are re-enabled, unless one of the fixes below is applied.
+**Status:** Resolved
 
 **Description:**
-When unpairing and repairing Meta glasses within the same app session, the camera falls back to the phone camera instead of using the glasses stream.
+On a second cold launch (and after unpair/repair within a session), the camera
+fell back to the phone's back camera even when glasses were selected and
+permission was requested.
 
 **Root Cause:**
-`DetectorContainer.captureSource` requires `streamSessionVM.isStreaming || streamSessionVM.hasActiveDevice` to be true before returning `.metaGlasses`. However, when registration completes, these values are not yet populated because:
-1. `hasActiveDevice` depends on `AutoDeviceSelector.activeDeviceStream()`, an async stream that doesn't emit immediately
-2. `isStreaming` is only true after the stream has started
+The capture source in `DetectorContainer` was *derived* from several
+asynchronously-populated, volatile flags (`isRegistered`, `isStreaming`,
+`isReady`, `hasActiveDevice`) and recomputed via scattered `.onChange`
+observers. On cold start these flags populate in a non-deterministic order, so
+the detector picked `.avFoundation` first and could flip back to it mid-handshake
+(e.g. while in `.requestingPermission` before `hasActiveDevice` latched true).
+Each flip rebuilt the `FrameProvider`, tearing down the in-flight glasses
+session, so the view settled on the phone camera.
 
-By the time `captureSource` is evaluated, both values are still `false`, so it returns `.avFoundation` (phone camera).
-Also note: the current `DetectorContainer` computes the capture source once in `.onAppear` (`thing-finder/Views/DetectorContainer.swift:56-70,110`). The `onChange` observers that would re-evaluate it are commented out.
+**Fix:**
+The capture source is now a pure function of durable user settings
+(`settings.useMetaGlasses` / `useARMode`) — see `DetectorContainer.computeCaptureSource()`.
+When glasses are selected the source is always `.metaGlasses`; connection
+progress and terminal errors are surfaced via `GlassesPhaseOverlay` (driven by
+`MetaGlassesViewModel.displayPhase`) instead of silently falling back to the
+phone camera. `startStreaming` also has a 15s timeout so "connecting" can no
+longer hang forever when no glasses are reachable.
 
-**Workaround:**
-Close and reopen the app after repairing glasses.
-
-**Potential Fixes (not yet implemented):**
-1. Proactively start streaming when registration completes (in `MetaGlassesEnvironment`)
-2. Use `wearablesVM.devices.isEmpty` as the guard instead of `hasActiveDevice`
-3. Add a delay/retry mechanism when registration completes to wait for device availability
-
-## Python tooling
-
-**Status:** Open (found in the 2026-10-27 doc audit). Details are in `scripts/README.md` and `evals/README.md`.
-
-- `scripts/build_uber_allow.py` writes a flat list of makes, but `datasets/uber_eligible.json` must be a make → models dict for `evals/realworld/build_dataset.py`. Re-running the script would break the real-image eval.
-- `scripts/gen_car_eval.py` is missing `import re` and `import glob`.
-- `scripts/vehicle_csv_analyzer.py` expects an `expected` column that `results/*.csv` doesn't have, so its confusion matrix is meaningless.
-- `evals/requirements.txt` is missing `pillow`, `scipy`, and `requests`.
-- The legacy synthetic harness (`evals/run_eval.py` and `analyze_results.py`) is broken: `result_counts` is saved as strings, and the python grader failed all 140 cases in `eval_runs.json`. Unlike the realworld scripts, it has **no** request-count guard (one run is about 2,000+ requests).
-- `data/test_cases_metadata.json` is stale until `add_reject_reasons.py` is re-run after regenerating.
-
-## Minor inconsistencies
-
-- `Settings.resetToDefaults()` writes `verification_cooldown = 2.0` and `distance_max = 3.0`, but the `@AppStorage` defaults are `10.0` and `20.0` (`thing-finder/Models/Settings.swift`, around line 327). A fresh install and a post-reset install therefore behave differently.
-- `CandidateLifecycleService.swift:22` comment says "default: 5 consecutive misses", but `missThreshold` is 90.
-- `DetectionManager.stableDetections()` (IoU 0.8, 4 frames) exists but the coordinator doesn't use it.
-- `CameraDependencies` applies `ThresholdProvider(iou: 0.45, confidence: 0.25)`, but `AppContainer.makePipeline` loads `yolo11n` with the default model thresholds. Which thresholds production uses depends on the code path.
-- `DistanceMilestoneController` can mix languages in non-English locales (see its comment around line 62).
+Cross-tab navigation from the error overlay to the Meta Glasses settings section
+is still a placeholder (`GlassesPhaseOverlay.onOpenSettings`) — to be wired up in
+a follow-up.

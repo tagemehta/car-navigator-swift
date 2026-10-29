@@ -75,7 +75,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "313783A32DF497B200C36BEE"
             BuildableName = "thing-finder.app"
-            BlueprintName = "thing-finder"
             ReferencedContainer = "container:thing-finder.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -176,6 +176,7 @@ public class Settings: ObservableObject {
 
   /// Whether to use Meta glasses camera when available
   @AppStorage("use_meta_glasses") var useMetaGlasses: Bool = false
+
 }
 
 /// Volume curve types for distance mapping
@@ -345,6 +346,7 @@ extension Settings {
 
     // Meta Glasses Settings
     useMetaGlasses = false
+    UserDefaults.standard.set(false, forKey: "use_high_quality_glasses_stream")
 
     // Language Settings
     appLanguageRaw = SupportedLanguage.system.rawValue

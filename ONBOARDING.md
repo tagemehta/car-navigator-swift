@@ -6,7 +6,7 @@ Last verified against code: 2026-10-27 (working tree, including uncommitted veri
 
 CurbToCar is an assistive iOS app for blind and low-vision users. It helps them identify and walk to their rideshare car or paratransit vehicle, and to general objects. The repo, Xcode project, and Swift module are called `thing-finder`. The user-facing name is **CurbToCar**.
 
-It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-device license-plate OCR. Guidance is delivered through speech, beeps, and haptics. A Meta Ray-Ban glasses capture path is fully implemented but currently **disabled** (see [Meta glasses](#meta-glasses-disabled)).
+It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-device license-plate OCR. Guidance is delivered through speech, beeps, and haptics. A Meta Ray-Ban glasses capture path is implemented: enabled on branch `meta-s26`, commented out on `main` (see [Meta glasses](#meta-glasses-enabled-on-meta-s26-disabled-on-main)).
 
 ---
 
@@ -53,7 +53,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 ### `thing-finder/App/`
 | File | Purpose |
 |------|---------|
-| `App.swift` | `@main ThingFinderApp`. Injects `Settings` and the locale. `MainTabView`, `ExperimentalDisclaimerView`. Meta glasses setup is commented out. |
+| `App.swift` | `@main ThingFinderApp`. Injects `Settings` and the locale. `MainTabView`, `ExperimentalDisclaimerView`. Meta glasses setup (configure, `onOpenURL`) is live on `meta-s26`, commented out on `main`. |
 | `AppShortcuts.swift` | App Intents (`FindCarIntent`, `FindParatransitIntent`), Siri phrases, and the `ShortcutNavigationState` hand-off singleton. |
 
 ### Root of `thing-finder/`
@@ -92,7 +92,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 | `CameraPreviewView.swift` | `CameraPreviewWrapper` (forces `.videoFile` on simulator DEBUG builds) plus the representable and coordinator that create and hot-swap the `FrameProvider`. |
 | `SettingsView.swift`, `HelpModalView.swift`, `FeedbackSection.swift` | Settings, help guide, and the feedback mail composer. |
 | `BoundingBox.swift`, `DebugOverlayView.swift` | Overlays. |
-| `MetaGlasses*View.swift`, `CompassView.swift` | Entirely commented out. |
+| `MetaGlasses*View.swift`, `CompassView.swift` | Live on `meta-s26`; commented out on `main`. |
 
 ### `thing-finder/ViewModels/`
 | File | Purpose |
@@ -106,7 +106,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 | `VideoCapture.swift` | AVFoundation. Prefers the LiDAR depth camera. Uses `AVCaptureDataOutputSynchronizer` for video plus depth. Frames are processed on `camera-queue`. |
 | `ARVideoCapture.swift` | ARKit. Uses the scene-depth map, falling back to raycasts. Raycasts need **view** coordinates, converted via `ImageUtilities`. |
 | `VideoFileFrameProvider.swift` | Loops the bundled `IMG_7211.MOV` for the simulator. No depth. |
-| `MetaGlassesFrameProvider.swift` | Commented out (glasses path). |
+| `MetaGlassesFrameProvider.swift` | Glasses path (live on `meta-s26`, commented out on `main`). |
 
 `CaptureSourceType` (in `PipelineProtocols.swift`): `.avFoundation`, `.arKit`, `.videoFile`, `.metaGlasses`.
 
@@ -149,8 +149,8 @@ Full details are in its `README.md`. In summary:
 
 `NavigationProtocol.swift` holds `NavigationFeedbackConfig` (timing constants) and the `SpeechOutput`/`Beeper`/`NavigationSpeaker` protocols.
 
-#### `Services/MetaGlasses/` (commented out)
-`MetaGlassesManager`, `MetaGlassesEnvironment`, `WearablesViewModel` (registration/devices), and `StreamSessionViewModel` (`StreamSession` raw/high/30fps; a `streamGeneration` counter guards against stale stops).
+#### `Services/MetaGlasses/` (live on `meta-s26`)
+`MetaGlassesViewModel`: one consolidated DAT 1.0 view model (registration, permission, `DeviceSession` + `Stream`, raw/720p/30fps, `displayPhase` for the error overlay). It replaced MetaGlassesManager / MetaGlassesEnvironment / WearablesViewModel / StreamSessionViewModel.
 
 #### `Services/FPSManager.swift`
 Rolling one-second FPS, capped at 60.
@@ -218,8 +218,8 @@ Before a match, `PreMatchFeedbackController` does all the talking. After a match
 ### Network health
 `NetworkMonitor` detects outages and `APIHealthMonitor` detects weak signal. TrafficEye reports network failures as an outcome (`RejectReason.networkError`) rather than as a publisher error. `VerificationOutcome.didCompleteNetworkRequest` keeps local failures from clearing the degraded state.
 
-### Meta glasses (disabled)
-Since 2026-04-04 the glasses code has been commented out ("COMMENTED OUT FOR APP STORE SUBMISSION") and the DAT SDK has been removed from `Package.swift`. To re-enable it, restore all of the following:
+### Meta glasses (enabled on `meta-s26`, disabled on `main`)
+On `meta-s26` the code is live on DAT SDK 1.0.0; required Info.plist keys, build-setting usage strings, and Wi-Fi/Hotspot entitlements are listed in the `meta-wearables-dat` skill. On `main`, since 2026-04-04 the glasses code has been commented out ("COMMENTED OUT FOR APP STORE SUBMISSION") and the DAT SDK has been removed from `Package.swift`. To re-enable it, restore all of the following:
 - **Code:** the Package dependency; in `App.swift`, the configure call, environment objects, and `onOpenURL`; in `DetectorContainer`, the environment objects, the capture-source branch, and the `onChange` observers; the `CameraPreviewView` provider case; the Settings and Help sections.
 - **`Info.plist` keys:** MWDAT, URL scheme, Bluetooth, and background modes.
 

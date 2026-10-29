@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		31D29E15304F131E0082E5A4 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 31D29E14304F131E0082E5A4 /* MWDATCamera */; };
+		31D29E17304F131E0082E5A4 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 31D29E16304F131E0082E5A4 /* MWDATCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3106F9122E2C3DBD00A9092B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -59,6 +64,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31D29E15304F131E0082E5A4 /* MWDATCamera in Frameworks */,
+				31D29E17304F131E0082E5A4 /* MWDATCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,6 +133,8 @@
 			);
 			name = "thing-finder";
 			packageProductDependencies = (
+				31D29E14304F131E0082E5A4 /* MWDATCamera */,
+				31D29E16304F131E0082E5A4 /* MWDATCore */,
 			);
 			productName = "thing-finder";
 			productReference = 313783A42DF497B200C36BEE /* thing-finder.app */;
@@ -160,6 +169,7 @@
 			mainGroup = 3137839B2DF497B200C36BEE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				31D29E13304F131E0082E5A4 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 313783A52DF497B200C36BEE /* Products */;
@@ -378,6 +388,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "thing-finder/thing-finder.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"thing-finder/Preview Content\"";
@@ -387,7 +399,9 @@
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CurbToCar;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Needed to connect to Meta Wearables";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The app uses your camera to identify cars";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Needed to stream from Meta Wearables over Wi-Fi";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The app uses your compass to help navigate you to your car";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -398,9 +412,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.2;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -418,6 +433,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "thing-finder/thing-finder.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"thing-finder/Preview Content\"";
@@ -427,7 +444,9 @@
 				INFOPLIST_FILE = "thing-finder/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CurbToCar;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Needed to connect to Meta Wearables";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The app uses your camera to identify cars";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Needed to stream from Meta Wearables over Wi-Fi";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The app uses your compass to help navigate you to your car";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -438,9 +457,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.2;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.mitat.thing-finder";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -482,6 +502,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		31D29E13304F131E0082E5A4 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/meta-wearables-dat-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		31D29E14304F131E0082E5A4 /* MWDATCamera */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 31D29E13304F131E0082E5A4 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCamera;
+		};
+		31D29E16304F131E0082E5A4 /* MWDATCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 31D29E13304F131E0082E5A4 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3137839C2DF497B200C36BEE /* Project object */;
 }

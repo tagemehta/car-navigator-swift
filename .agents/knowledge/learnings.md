@@ -37,7 +37,9 @@ Open bugs live in `KNOWN_BUGS.md`, not here.
 - 2026-10-16 — An IDE formatter rewrites the Python files in `evals/` on save. Re-read a file right before editing it. Evidence: user report only. It was first recorded in the 2026-10-16 eval notes, now in `.agents/skills/verifier-evals/SKILL.md`. The workspace `.vscode/settings.json` is empty (`{}`), so the formatter comes from user-level editor settings and is unverified here; re-confirm if edits stop being rewritten. (source: user)
 
 ## Meta glasses
-- 2026-04-04 — Disabled for App Store submission: the code is commented out, not deleted, and the SDK has been removed from `Package.swift`. `FeatureFlags.metaGlassesEnabled` has no effect until the code is restored. Evidence: `f60d50e`. (source: git history)
+- 2026-10-28 — Branch `meta-s26` re-enables glasses on DAT SDK 1.0.0 (consolidated `MetaGlassesViewModel`). `main` still has the code commented out. The old "disabled" statement below applies to `main` only. (source: git history, `Package.resolved`)
+- 2026-10-27 — Glasses streams stalled silently (no error on session/stream state or error channels) until Info.plist `NSBonjourServices`, `NSLocalNetworkUsageDescription`, and the `HotspotConfiguration` + `wifi-info` entitlements were added; the SDK otherwise falls back to a degraded transport. Streaming is now fixed at 720p/30fps (no "High Quality Stream" setting). Evidence: `8beb068`. (source: git history)
+- 2026-04-04 — On `main`: disabled for App Store submission: the code is commented out, not deleted, and the SDK has been removed from `Package.swift`. `FeatureFlags.metaGlassesEnabled` has no effect until the code is restored. Evidence: `f60d50e`. (source: git history)
 
 ## User preferences
 - 2026-10-27 — Wants to switch freely between Devin, Claude Code, and Codex in this repo. Keep shared knowledge tool-neutral, under `AGENTS.md` and `.agents/`. (source: user)
