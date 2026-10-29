@@ -1759,7 +1759,14 @@
       }
     },
     "Only start guidance once the license plate is fully verified" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar la orientación solo cuando la matrícula esté completamente verificada"
+          }
+        }
+      }
     },
     "Opens email composer to send feedback to the development team" : {
       "localizations" : {
@@ -2595,11 +2602,22 @@
       }
     },
     "Wait for a confirmed license plate match before starting navigation." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esperar la confirmación de la matrícula antes de iniciar la navegación."
+          }
+        }
+      }
+    },
+    "Wait for a confirmed license plate match if provided before starting navigation." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si se proporcionó una matrícula, esperar su confirmación antes de iniciar la navegación."
           }
         }
       }

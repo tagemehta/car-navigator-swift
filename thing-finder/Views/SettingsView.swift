@@ -44,7 +44,7 @@ struct SettingsView: View {
             .foregroundColor(.secondary)
 
           Toggle("Require License Plate", isOn: $settings.requireLicensePlate)
-          Text("Wait for a confirmed license plate match before starting navigation.")
+          Text("Wait for a confirmed license plate match if provided before starting navigation.")
             .font(.caption)
             .foregroundColor(.secondary)
 
