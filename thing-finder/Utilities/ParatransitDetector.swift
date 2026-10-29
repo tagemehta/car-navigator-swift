@@ -9,7 +9,11 @@
 
 import Foundation
 
-struct ParatransitDetector {
+protocol ParatransitClassifying {
+  func isParatransit(description: String) async throws -> Bool
+}
+
+struct ParatransitDetector: ParatransitClassifying {
   let proxy: APIProxy
   let session: URLSessionProtocol
 

@@ -23,6 +23,10 @@ public final class AppContainer {
 
   private init() {}
 
+  func makeParatransitClassifier() -> ParatransitClassifying {
+    ParatransitDetector()
+  }
+
   // Build a fully-wired coordinator for a given capture mode.
   func makePipeline(
     classes: [String],

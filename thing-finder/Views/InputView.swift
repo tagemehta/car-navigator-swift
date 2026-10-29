@@ -26,6 +26,13 @@ struct InputView: View {
 
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
   @State private var shortcutNavigationState = ShortcutNavigationState.shared
+  private let paratransitClassifier: ParatransitClassifying
+
+  init(
+    paratransitClassifier: ParatransitClassifying = AppContainer.shared.makeParatransitClassifier()
+  ) {
+    self.paratransitClassifier = paratransitClassifier
+  }
 
   private var historyItems: [SearchHistoryItem] {
     (try? JSONDecoder().decode([SearchHistoryItem].self, from: Data(searchHistoryData.utf8))) ?? []
@@ -179,7 +186,7 @@ struct InputView: View {
     // The vehicle type (make-and-model car vs. taxi/transit/paratransit service vehicle) is inferred from the description.
     if request.mode == .uberFinder && needsNetwork {
       do {
-        let isParatransit = try await ParatransitDetector().isParatransit(
+        let isParatransit = try await paratransitClassifier.isParatransit(
           description: request.description)
         guard !Task.isCancelled else { return }
         request.isParatransitMode = isParatransit
