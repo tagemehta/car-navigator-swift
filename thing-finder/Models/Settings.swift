@@ -60,6 +60,19 @@ enum SupportedLanguage: String, CaseIterable, Identifiable {
 /// Settings model that stores user preferences for the navigation experience.
 /// Uses @AppStorage for persistence and provides defaults matching the original implementation.
 public class Settings: ObservableObject {
+  public init() {
+    Self.migrateLegacyPartialNavigation()
+  }
+
+  /// One-time migration of the removed `allow_partial_nav` preference to its inverse, `require_license_plate`.
+  static func migrateLegacyPartialNavigation(defaults: UserDefaults = .standard) {
+    guard defaults.object(forKey: "require_license_plate") == nil,
+      let legacy = defaults.object(forKey: "allow_partial_nav") as? Bool
+    else { return }
+    defaults.set(!legacy, forKey: "require_license_plate")
+    defaults.removeObject(forKey: "allow_partial_nav")
+  }
+
   // MARK: - Navigation Settings
   /// Speech rate (-1.0 to 1.0, where 0 is normal)
   @AppStorage("speech_rate") var speechRate: Double = 0.5
