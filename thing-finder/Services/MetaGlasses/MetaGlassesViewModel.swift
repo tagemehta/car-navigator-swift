@@ -1,5 +1,4 @@
-// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
-// Uncomment this file when ready to use Meta glasses in production
+// Meta Ray-Ban glasses (DAT SDK); requires Bluetooth, local network, and Wi-Fi entitlements
 
 //
 //  MetaGlassesViewModel.swift
@@ -9,7 +8,7 @@
 //  Replaces the previous split architecture (MetaGlassesManager, WearablesViewModel,
 //  StreamSessionViewModel, MetaGlassesEnvironment).
 //
-//  Uses DAT SDK 0.9 DeviceSession + Camera/Stream capability model.
+//  Uses DAT SDK 1.0 DeviceSession + Camera/Stream capability model.
 //
 //  State machine:
 //    unconfigured → idle → registering → registered → requestingPermission → ready → streaming
@@ -190,9 +189,9 @@ public final class MetaGlassesViewModel: ObservableObject {
   private var compatibilityListenerTokens: [DeviceIdentifier: any AnyListenerToken] = [:]
   private var linkStateTokens: [DeviceIdentifier: any AnyListenerToken] = [:]
 
-  /// The active DeviceSession (0.9 API).
+  /// The active DeviceSession (1.0 API).
   private var deviceSession: DeviceSession?
-  /// The active Stream capability, obtained via `Camera.stream` (0.9 API).
+  /// The active Stream capability, obtained via `Camera.stream` (1.0 API).
   private var stream: MWDATCamera.Stream?
 
   /// Incremented on each startStreaming call; stopStreaming is a no-op if the
@@ -528,7 +527,7 @@ public final class MetaGlassesViewModel: ObservableObject {
     }
   }
 
-  // MARK: - Public Actions: Streaming (0.9 DeviceSession + Camera/Stream)
+  // MARK: - Public Actions: Streaming (1.0 DeviceSession + Camera/Stream)
 
   /// Wait until the SDK is registered and at least one paired device is known,
   /// so `createSession` won't immediately throw "no eligible devices". Polls the
@@ -986,10 +985,10 @@ public final class MetaGlassesViewModel: ObservableObject {
     case .permissionDenied:
       return "Camera permission denied. Grant access in the Meta AI app."
     case .hingesClosed: return "Glasses hinges are closed. Open them to stream."
-    case .thermalCritical: return "Device is overheating. Streaming paused."
-    case .thermalEmergency: return "Device thermal emergency. Streaming stopped."
-    case .peakPowerShutdown: return "Peak power shutdown. Streaming stopped."
-    case .batteryCritical: return "Battery critically low. Streaming stopped."
+    case .thermalHot: return "Device is overheating. Streaming paused."
+    case .peakPowerLimit: return "Peak power limit reached. Streaming stopped."
+    case .batteryLow: return "Battery low. Streaming stopped."
+    case .audioStreamingError: return "Audio streaming failed. Please try again."
     case .internalError: return "An internal streaming error occurred."
     case .photoCaptureFailed: return "Failed to capture the photo. Please try again."
     @unknown default: return "An unknown streaming error occurred."

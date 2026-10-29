@@ -262,7 +262,7 @@ struct SettingsView: View {
             // }
 
             // MARK: - Meta Glasses
-            // COMMENTED OUT FOR APP STORE SUBMISSION
+            // Meta glasses
             if FeatureFlags.metaGlassesEnabled {
               Section(header: Text("Meta Glasses")) {
                 MetaGlassesSettingsSection(settings: settings)

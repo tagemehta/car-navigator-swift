@@ -4,12 +4,12 @@ import Foundation
 public struct FeatureFlags {
 
   /// Controls whether Meta Ray-Ban glasses integration is available
-  /// Set to false to hide Meta glasses features in production builds
+  /// Set to false to hide Meta glasses features (e.g. to ship a build without them)
   public static let metaGlassesEnabled: Bool = {
     #if DEBUG
-      return true  // Always enabled in debug builds for testing
+      return true
     #else
-      return true  // Disabled in release builds (beta feature)
+      return true  // Shipping in release builds
     #endif
   }()
 }

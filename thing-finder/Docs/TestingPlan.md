@@ -1,617 +1,160 @@
 # Thing Finder Testing Plan
 
-## Overview
-
-Comprehensive testing strategy for Thing Finder, starting from scratch. Prioritizes **testability**, **isolation**, and **determinism** for reliable CI/CD.
-
----
-
-## Testing Layers
-
-| Layer | Scope | Tools | Frequency |
-|-------|-------|-------|-----------|
-| **Unit** | Single class/function | XCTest + mocks | Every commit |
-| **Integration** | Multiple services | XCTest + real deps | PR merge |
-| **Snapshot** | UI consistency | XCTest + snapshots | Weekly |
-| **Manual** | End-to-end | Human tester | Release |
+What test coverage exists in `thing-finderTests/`, how to run it, and what is still planned. Priorities: testability, isolation, determinism.
+Last verified against code: 2026-10-27
 
 ---
 
-## 1. Core Domain Tests
-
-### 1.1 `Candidate` Tests
-**File:** `CandidateTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_init_setsDefaultValues` | New candidate has `.unknown` status, zero missCount, nil embedding |
-| `test_updateView_tracksMaxScore` | `updateView()` only updates if new score > existing |
-| `test_isMatched_returnsTrueForFullAndPartial` | `.full` and `.partial` return true, others false |
-| `test_verificationTracker_countersIncrementCorrectly` | Traffic/LLM attempt counters work independently |
-
-### 1.2 `CandidateStore` Tests
-**File:** `CandidateStoreTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_upsert_createsNewCandidate` | First detection creates candidate |
-| `test_upsert_rejectsDuplicate` | Detection with IoU > 0.6 to existing is rejected |
-| `test_update_mutatesCandidateInPlace` | Closure-based update modifies correct candidate |
-| `test_remove_deletesCandidate` | Candidate removed from store |
-| `test_snapshot_returnsImmutableCopy` | Mutations to snapshot don't affect store |
-| `test_hasActiveMatch_detectsFullOrPartial` | Returns true when any candidate is matched |
-| `test_pruneToSingleMatched_keepsOnlyLatest` | Multiple matched → only most recent survives |
-| `test_threadSafety_concurrentUpdates` | Dispatch 100 updates from background queues, no crashes |
-
-### 1.3 `DetectionStateMachine` Tests
-**File:** `DetectionStateMachineTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_emptyStore_returnsSearching` | No candidates → `.searching` |
-| `test_unknownCandidates_returnsSearching` | All `.unknown` → `.searching` |
-| `test_waitingCandidates_returnsVerifying` | Any `.waiting` → `.verifying(ids:)` |
-| `test_fullCandidate_returnsFound` | Any `.full` → `.found(id:)` |
-| `test_priorityOrder_foundBeatsVerifying` | `.full` takes precedence over `.waiting` |
-
----
-
-## 2. Pipeline Service Tests
-
-### 2.1 `DetectionManager` Tests
-**File:** `DetectionManagerTests.swift`
-
-**Requires:** Mock `VNCoreMLModel` or pre-recorded detection results
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_detect_filtersToTargetClasses` | Only returns detections matching target classes |
-| `test_stableDetections_requiresConsecutiveFrames` | Detection must appear N frames before returned |
-| `test_detect_handlesEmptyFrame` | No crash on frame with zero detections |
-
-### 2.2 `TrackingManager` Tests
-**File:** `TrackingManagerTests.swift`
-
-**Requires:** Mock `VNSequenceRequestHandler`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_tick_updatesExistingCandidateBoundingBox` | Tracked candidate's bbox changes |
-| `test_tick_removesLostTracking` | Tracking request marked finished → candidate updated |
-| `test_tick_handlesEmptyStore` | No crash when store is empty |
-
-### 2.3 `DriftRepairService` Tests
-**File:** `DriftRepairServiceTests.swift`
-
-**Requires:** Mock `ImageUtilities`, pre-computed embeddings
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_tick_skipsNonRepairFrames` | Only runs every N frames (default 15) |
-| `test_tick_reassociatesBySimilarity` | Candidate with drifted bbox snaps to matching detection |
-| `test_tick_marksUnmatchedForDestruction` | No matching detection → bbox set to .zero |
-| `test_similarityThreshold_rejectsLowScores` | Similarity < 0.90 not matched |
-
-### 2.4 `CandidateLifecycleService` Tests
-**File:** `CandidateLifecycleServiceTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_tick_ingestsNewDetections` | Fresh detection creates candidate |
-| `test_tick_skipsIngestWhenActiveMatch` | No new candidates when `.full` exists |
-| `test_tick_incrementsMissCount` | Candidate not overlapping detection gets +1 |
-| `test_tick_removesStaleCandidate` | missCount > threshold → removed |
-| `test_tick_marksFullAsLost` | Matched candidate exceeds miss threshold → `.lost` |
-| `test_tick_removesRejectedAfterCooldown` | Rejected candidate removed after N seconds |
-| `test_tick_returnsLostFlag` | Returns true when matched candidate dropped |
-
----
-
-## 3. Verification Tests
-
-### 3.1 `VerificationStrategyManager` Tests
-**File:** `VerificationStrategyManagerTests.swift`
-
-**Requires:** Mock strategies
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_selectStrategy_choosesHighestPriority` | Strategy with max priority selected |
-| `test_selectStrategy_filtersUnsuitableStrategies` | `shouldUse() == false` excluded |
-| `test_verify_resetsOppositeCounter` | Switching to TrafficEye resets LLM counter |
-| `test_verify_returnsNoSuitableStrategyError` | All strategies unsuitable → error |
-
-### 3.2 `TrafficEyeVerifier` Tests
-**File:** `TrafficEyeVerifierTests.swift`
-
-**Requires:** Mock URLSession, sample API responses
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_verify_rejectsBlurryImage` | blurScore > threshold → immediate reject |
-| `test_verify_parsesMMRResponse` | Correct make/model/color extracted |
-| `test_verify_handlesNetworkError` | Timeout/error → appropriate reject reason |
-| `test_verify_extractsPlateText` | License plate from OCR field parsed |
-| `test_verify_calculatesConfidence` | Score below threshold → ambiguous |
-
-### 3.3 `TwoStepVerifier` Tests
-**File:** `TwoStepVerifierTests.swift`
-
-**Requires:** Mock URLSession, sample OpenAI responses
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_verify_extractsVehicleInfo` | First step extracts make/model/color |
-| `test_verify_matchesDescription` | Second step confirms match |
-| `test_verify_handlesOccludedVehicle` | Low visible_fraction → reject |
-| `test_verify_handlesNoToolResponse` | Missing tool call → error |
-
-### 3.4 `VerifierService` Tests
-**File:** `VerifierServiceTests.swift`
-
-**Requires:** Mock strategy manager, mock store
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_tick_skipsSmallBoundingBox` | bbox < 1% area skipped |
-| `test_tick_skipsTallBoundingBox` | h/w > 3 skipped |
-| `test_tick_rateLimitsVerification` | Respects minVerifyInterval |
-| `test_tick_updatesMatchStatusOnSuccess` | Successful verify → `.full` or `.partial` |
-| `test_tick_handlesRetryableReason` | Retryable reject → stays `.unknown` |
-| `test_tick_handlesHardReject` | Non-retryable → `.rejected` |
-
-### 3.5 OCR Tests
-**File:** `OCREngineTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_recognizePlate_extractsText` | Valid plate image → text returned |
-| `test_recognizePlate_filtersLowConfidence` | Below threshold → nil |
-| `test_levenshteinDistance_calculatesCorrectly` | Edit distance matches expected |
-| `test_plateMatching_allowsOneEdit` | 1 char difference → match |
-| `test_plateMatching_rejectsTwoEdits` | 2+ char difference → reject |
-
----
-
-## 4. Navigation Tests
-
-### 4.1 `NavAnnouncer` Tests
-**File:** `NavAnnouncerTests.swift`
-
-**Requires:** Mock `SpeechOutput`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_tick_speaksOnStatusTransition` | `.unknown` → `.full` triggers speech |
-| `test_tick_suppressesRepeatPhrase` | Same phrase within cooldown not spoken |
-| `test_tick_announcesRetryReason` | Retryable reject → retry phrase |
-| `test_tick_respectsWaitingCooldown` | `.waiting` phrase throttled |
-
-### 4.2 `HapticBeepController` Tests
-**File:** `HapticBeepControllerTests.swift`
-
-**Requires:** Mock `Beeper`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_tick_startsBeepWhenTargetPresent` | Target box → beeper started |
-| `test_tick_stopsBeepWhenTargetLost` | No target → beeper stopped |
-| `test_tick_adjustsIntervalByCentering` | Centered target → shorter interval |
-| `test_tick_respectsEnableBeepsSetting` | Disabled → no beeps |
-| `test_tick_startsHapticsWhenTargetPresent` | Target box + enable haptics → haptic pulsing started |
-| `test_tick_stopsHapticsWhenTargetLost` | No target + enable haptics → haptic pulsing stopped |
-| `test_tick_respectsEnableHapticsSetting` | Disabled → no haptic pulses |
-
-### 4.3 `MatchStatusSpeech` Tests
-**File:** `MatchStatusSpeechTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_phrase_fullWithPlate` | Returns "Found matching plate X" |
-| `test_phrase_fullWithDescription` | Returns "Found [description]" |
-| `test_phrase_rejected` | Includes reject reason |
-| `test_phrase_lost` | Includes compass direction |
-| `test_phrase_unknown` | Returns nil |
-
----
-
-## 5. Utility Tests
-
-### 5.1 `ImageUtilities` Tests
-**File:** `ImageUtilitiesTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_inverseRotation_allOrientations` | Test each CGImagePropertyOrientation |
-| `test_unscaledBoundingBoxes_correctPixelRect` | Normalized → pixel conversion accurate |
-| `test_cvPixelBufferToCGImage_succeeds` | Valid buffer → CGImage |
-
-### 5.2 `EmbeddingComputer` Tests
-**File:** `EmbeddingComputerTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_compute_returnsFeaturePrint` | Valid image → non-nil observation |
-| `test_compute_withBoundingBox_cropsThenEmbeds` | Cropped region embedded |
-| `test_cosineSimilarity_identicalImages` | Same image → similarity ~1.0 |
-| `test_cosineSimilarity_differentImages` | Different images → lower score |
-
-### 5.3 `DescriptionParser` Tests
-**File:** `DescriptionParserTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_extractPlate_findsValidPlate` | "Blue Honda ABC1234" → "ABC1234" |
-| `test_extractPlate_requiresDigitAndLetter` | "12345678" → nil (no letter) |
-| `test_extractPlate_removesFromRemainder` | Plate removed from description |
-| `test_extractPlate_handlesNoPlate` | "Blue Honda Civic" → nil |
-
-### 5.4 `CGRect+IoU` Tests
-**File:** `CGRectIoUTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_iou_identicalRects` | Same rect → 1.0 |
-| `test_iou_noOverlap` | Disjoint rects → 0.0 |
-| `test_iou_partialOverlap` | 50% overlap → ~0.33 |
-
----
-
-## 6. Integration Tests
-
-### 6.1 `FramePipelineCoordinator` Integration
-**File:** `FramePipelineCoordinatorIntegrationTests.swift`
-
-**Setup:** Real services with mock camera frames
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_fullPipeline_detectsAndTracksObject` | Detection → tracking → candidate created |
-| `test_fullPipeline_verifiesCandidate` | Candidate → verification → status update |
-| `test_fullPipeline_handlesLostObject` | Object leaves frame → `.lost` status |
-| `test_fullPipeline_publishesPresentation` | Each frame → `FramePresentation` published |
-
-### 6.2 `AppContainer` Integration
-**File:** `AppContainerIntegrationTests.swift`
-
-| Test Case | Description |
-|-----------|-------------|
-| `test_makePipeline_wiresAllDependencies` | Pipeline has all services non-nil |
-| `test_makePipeline_parsesPlateFromDescription` | Plate extracted and passed to verifier |
-
----
-
-## 7. Mock Objects Required
-
-### Protocols to Mock
-
-| Protocol | Mock Name | Purpose |
-|----------|-----------|---------|
-| `ObjectDetector` | `MockDetector` | Return canned detections |
-| `VisionTracker` | `MockTracker` | Simulate tracking updates |
-| `VerifierServiceProtocol` | `MockVerifier` | Return canned verification results |
-| `DriftRepairServiceProtocol` | `MockDriftRepair` | No-op or controlled behavior |
-| `NavigationSpeaker` | `MockNavigationSpeaker` | Record tick calls |
-| `SpeechOutput` | `MockSpeaker` | Record spoken phrases |
-| `Beeper` | `MockBeeper` | Record start/stop calls |
-| `HapticManagerProtocol` | `MockHapticManager` | Record pulsing interval and success/failure calls |
-| `CandidateLifecycleServiceProtocol` | `MockLifecycle` | Controlled candidate creation |
-| `FrameProvider` | `MockFrameProvider` | Pump test frames |
-| `OCREngine` | `MockOCREngine` | Return canned plate text |
-
-### Test Fixtures
-
-| Fixture | Description |
-|---------|-------------|
-| `TestPixelBuffers` | Pre-recorded CVPixelBuffers for detection |
-| `TestDetections` | Array of `VNRecognizedObjectObservation` |
-| `TestCandidates` | Pre-configured `Candidate` instances |
-| `TestAPIResponses` | JSON for TrafficEye/OpenAI mocks |
-
----
-
-## 8. Test File Organization
-
-```
-thing-finderTests/
-├── Mocks/
-│   ├── MockDetector.swift
-│   ├── MockTracker.swift
-│   ├── MockVerifier.swift
-│   ├── MockSpeaker.swift
-│   ├── MockBeeper.swift
-│   ├── MockOCREngine.swift
-│   └── MockFrameProvider.swift
-├── Fixtures/
-│   ├── TestPixelBuffers.swift
-│   ├── TestDetections.swift
-│   ├── TestCandidates.swift
-│   └── TestAPIResponses.swift
-├── Core/
-│   ├── CandidateTests.swift
-│   ├── CandidateStoreTests.swift
-│   └── DetectionStateMachineTests.swift
-├── Pipeline/
-│   ├── DetectionManagerTests.swift
-│   ├── TrackingManagerTests.swift
-│   ├── DriftRepairServiceTests.swift
-│   └── CandidateLifecycleServiceTests.swift
-├── Verification/
-│   ├── VerificationStrategyManagerTests.swift
-│   ├── TrafficEyeVerifierTests.swift
-│   ├── TwoStepVerifierTests.swift
-│   ├── VerifierServiceTests.swift
-│   └── OCREngineTests.swift
-├── Navigation/
-│   ├── NavAnnouncerTests.swift
-│   ├── HapticBeepControllerTests.swift
-│   └── MatchStatusSpeechTests.swift
-├── Utilities/
-│   ├── ImageUtilitiesTests.swift
-│   ├── EmbeddingComputerTests.swift
-│   ├── DescriptionParserTests.swift
-│   └── CGRectIoUTests.swift
-├── Integration/
-│   ├── FramePipelineCoordinatorIntegrationTests.swift
-│   └── AppContainerIntegrationTests.swift
-└── thing-finderTests.xctestplan
+## 1. How to Run
+
+Follow `.agents/skills/ios-build-test/SKILL.md`. Summary:
+
+| Item | Value |
+| ---- | ----- |
+| Project | `thing-finder.xcodeproj` (run from repo root) |
+| Schemes | `thing-finder` (dev, use for tests), `thing-finder-prod` |
+| Test target | `thing-finderTests` (unit tests only; no UI test target) |
+| Test plan | `thing-finderTests/thing-finder.xctestplan`: random execution order, target parallelizable, code coverage on the `thing-finder` target |
+
+```bash
+SIM="iPhone 16 Pro"   # first from: xcrun simctl list devices available | rg iPhone
+# Whole suite
+xcodebuild test -project thing-finder.xcodeproj -scheme thing-finder \
+  -destination "platform=iOS Simulator,name=$SIM" -quiet 2>&1 | tail -60
+# One class (preferred while iterating)
+xcodebuild test -project thing-finder.xcodeproj -scheme thing-finder \
+  -destination "platform=iOS Simulator,name=$SIM" \
+  -only-testing:thing-finderTests/NavAnnouncerTests -quiet 2>&1 | tail -60
 ```
 
----
-
-## 9. Implementation Priority
-
-### Phase 1: Foundation (Week 1)
-1. Create all mock objects
-2. `CandidateTests`
-3. `CandidateStoreTests`
-4. `DetectionStateMachineTests`
-5. `DescriptionParserTests`
-6. `CGRectIoUTests`
-
-### Phase 2: Pipeline Services (Week 2)
-1. `CandidateLifecycleServiceTests`
-2. `DriftRepairServiceTests`
-3. `TrackingManagerTests`
-4. `DetectionManagerTests`
-
-### Phase 3: Verification (Week 3)
-1. `VerificationStrategyManagerTests`
-2. `VerifierServiceTests`
-3. `OCREngineTests`
-4. `TrafficEyeVerifierTests` (with network mocks)
-5. `TwoStepVerifierTests` (with network mocks)
-
-### Phase 4: Navigation (Week 4)
-1. `NavAnnouncerTests`
-2. `HapticBeepControllerTests`
-3. `MatchStatusSpeechTests`
-
-### Phase 5: Integration (Week 5)
-1. `FramePipelineCoordinatorIntegrationTests`
-2. `AppContainerIntegrationTests`
-3. `ImageUtilitiesTests`
-4. `EmbeddingComputerTests`
+Notes:
+- `thing-finder/Secrets.xcconfig` and `CVModels/` (YOLO model) are gitignored. A build failing on a missing model or keys is an environment problem; don't create or commit secrets.
+- "No such module" errors in VS Code are an indexing artifact; trust `xcodebuild`.
+- Tests use `@testable import thing_finder`.
 
 ---
 
-## 10. CI/CD Integration
+## 2. Current Test Inventory
 
-### Test Targets
-- **Unit Tests**: Every push, < 2 min
-- **Integration Tests**: PR merge, < 5 min
-- **Snapshot Tests**: Weekly or on UI changes
+28 `XCTestCase` classes, 358 test methods (`grep -c "func test"`, 2026-10-27). One class per file, named after the file.
 
-### Coverage Goals
-- **Core**: 90%+
-- **Pipeline Services**: 85%+
-- **Verification**: 80%+
-- **Navigation**: 75%+
-- **Utilities**: 90%+
+| Folder | Class | Tests | Covers |
+| ------ | ----- | ----- | ------ |
+| `Core/` | `CandidateTests` | 11 | Defaults, `isMatched`, verification tracker |
+| | `CandidateStoreTests` | 19 | Upsert/update/remove, duplicates, `pruneToSingleMatched`, snapshot, concurrent updates |
+| | `DetectionStateMachineTests` | 12 | `.searching` / `.verifying` / `.found` reduction |
+| `Models/` | `SearchHistoryItemTests` | 7 | Search history model |
+| `Services/` | `CandidateLifecycleServiceTests` | 16 | Ingest, miss count, lost, reject cooldown, candidate cap |
+| | `DetectionManagerTests` | 8 | `Detection` value type and `MockObjectDetector` (no real CoreML) |
+| | `DriftRepairServiceTests` | 17 | Stride, similarity re-association |
+| | `TrackingManagerTests` | 9 | Vision tracker updates via mock requests |
+| | `FramePipelineCoordinatorTests` | 4 | Depth sample coordinate conversion (ARKit view points vs AVFoundation normalized) |
+| `Verification/` | `VerifierSelectorTests` | 21 | Strategy selection, escalation, counter reset, error mapping |
+| | `VerifierServiceTests` | 12 | Gating, rate limits, status updates |
+| | `TrafficEyeVerifierTests` | 13 | Response parsing via `MockURLSession` + `TestAPIResponses` |
+| | `TwoStepVerifierTests` | 7 | Init and error enum only (no LLM response parsing yet) |
+| | `OCREngineTests` | 16 | Plate OCR and Levenshtein matching |
+| | `NetworkErrorClassifierTests` | 9 | Connectivity vs API error classification |
+| `Navigation/` | `NavAnnouncerTests` | 28 | Transition phrases, repeat suppression, lost compass, view announcements, haptics |
+| | `PreMatchFeedbackControllerTests` | 25 | Session start, detection haptics, heartbeat, rejections, grouping |
+| | `DistanceMilestoneControllerTests` | 17 | Thresholds, skip-to-closest, hysteresis, cooldown |
+| | `NetworkFeedbackControllerTests` | 16 | Offline / restored / weak signal, deferral |
+| | `HapticBeepControllerTests` | 15 | Beep start/stop/interval, haptic distance pulses, toggles |
+| | `MatchStatusSpeechTests` | 13 | Phrase table, transition phrases |
+| | `DirectionSpeechControllerTests` | 11 | Change gating, debounce, reset |
+| | `FrameNavigationManagerTests` | 2 | Cold-start ordering (connectivity warning vs session start) |
+| `Utilities/` | `DescriptionParserTests` | 17 | Plate extraction |
+| | `ImageUtilitiesTests` | 15 | Orientation, rect conversion |
+| | `CGRectIoUTests` | 10 | IoU math |
+| | `APIHealthMonitorTests` | 6 | Degradation tracking |
+| | `NetworkMonitorTests` | 2 | Async connectivity resolution (uses the real `NetworkMonitor.shared`) |
 
-### Xcode Test Plan
-Create `thing-finderTests.xctestplan` with:
-- Parallel execution enabled
-- Code coverage enabled
-- Test repetition for flaky test detection
+### Mocks (`thing-finderTests/Mocks/`)
 
----
+| File | Type(s) | Replaces |
+| ---- | ------- | -------- |
+| `MockObjectDetector.swift` | `MockObjectDetector` | `ObjectDetector` |
+| `MockVisionTracker.swift` | `MockVisionTracker` | `VisionTracker` |
+| `MockTrackingRequest.swift` | `TestTrackingRequest` (factory) | `TrackingRequest` |
+| `MockDriftRepairService.swift` | `MockDriftRepairService` | `DriftRepairServiceProtocol` |
+| `MockCandidateLifecycleService.swift` | `MockCandidateLifecycleService` | `CandidateLifecycleServiceProtocol` |
+| `MockVerifierService.swift` | `MockVerifierService` | `VerifierServiceProtocol` |
+| `MockNavigationSpeaker.swift` | `MockNavigationSpeaker` | `NavigationSpeaker` |
+| `MockSpeechOutput.swift` | `MockSpeechOutput` | `SpeechOutput` |
+| `MockBeeper.swift` | `MockBeeper`, `MockSmoothBeeper` | `Beeper`, `SmoothBeeperProtocol` |
+| `MockHapticManager.swift` | `MockHapticManager` | `HapticManagerProtocol` |
+| `MockCompassProvider.swift` | `MockCompassProvider` | `CompassProvider` |
+| `MockNetworkMonitor.swift` | `MockNetworkMonitor` | `NetworkMonitorProtocol` |
+| `MockAPIHealthMonitor.swift` | `MockAPIHealthMonitor` | `APIHealthMonitorProtocol` |
+| `MockURLSession.swift` | `MockURLSession` | `URLSessionProtocol` |
+| `MockEmbedding.swift`, `MockEmbeddingProvider.swift` | `MockEmbedding`, `MockEmbeddingProvider` | `EmbeddingProtocol`, `EmbeddingProvider` |
+| `MockImageUtilities.swift` | `MockImageUtilities` (subclass) | `ImageUtilities` |
+| `MockSettings.swift` | `TestSettings` (factory) | Configured `Settings` instances |
 
-## 11. Known Testing Challenges
+### Fixtures and assets
 
-| Challenge | Mitigation |
-|-----------|------------|
-| Vision framework requires real images | Use pre-recorded pixel buffers as fixtures |
-| Network calls to TrafficEye/OpenAI | Mock URLSession with recorded responses |
-| CoreML model loading | Use `ThresholdProvider` with mock model or skip in unit tests |
-| ARKit requires device | Use `VideoFileFrameProvider` for simulator tests |
-| Thread safety verification | Use `XCTestExpectation` with concurrent dispatch |
-| Combine publisher testing | Use `XCTestExpectation` or Combine test utilities |
-
----
-
-## 12. Test Naming Convention
-
-```
-test_<methodName>_<scenario>_<expectedResult>
-```
-
-Examples:
-- `test_upsert_duplicateDetection_returnsNil`
-- `test_tick_missCountExceedsThreshold_removesCandidate`
-- `test_verify_blurryImage_rejectsWithUnclearReason`
-
----
-
-## 13. Phase 6 Integration Tests - Detailed Plan
-
-### 13.1 Overview
-
-Phase 6 tests the **full pipeline flow** with real (or realistic) dependencies. Unlike unit tests that mock everything, integration tests verify that services work together correctly.
-
-### 13.2 Test Assets Required
-
-#### Images (for Embedding/Vision tests)
-| Asset | Description | Size | Purpose |
-|-------|-------------|------|---------|
-| `test_car_red_front.jpg` | Red car, front view | 500x500 | Embedding similarity baseline |
-| `test_car_red_side.jpg` | Same red car, side view | 500x500 | Same-car different-angle similarity |
-| `test_car_blue_front.jpg` | Blue car, front view | 500x500 | Different-car similarity (should be lower) |
-| `test_truck_white.jpg` | White truck | 500x500 | Different-class similarity (should be very low) |
-
-#### Videos (for Pipeline integration)
-| Asset | Description | Duration | Purpose |
-|-------|-------------|----------|---------|
-| `test_tracking_simple.mov` | Single car enters, stays, exits | 5-10s | Basic detection → tracking → lost flow |
-| `test_tracking_occlusion.mov` | Car partially occluded mid-video | 5-10s | Drift repair recovery testing |
-| `test_multiple_cars.mov` | 2-3 cars in frame | 5-10s | Multi-candidate handling |
-
-#### Recording Guidelines
-- **Resolution**: 1080p or 720p
-- **Frame rate**: 30fps
-- **Lighting**: Good daylight, minimal shadows
-- **Distance**: Car fills 20-50% of frame
-- **Movement**: Slow, steady camera movement
-
-### 13.3 FramePipelineCoordinatorIntegrationTests
-
-**File:** `thing-finderTests/Integration/FramePipelineCoordinatorIntegrationTests.swift`
-
-#### Test Strategy
-Use `VideoFileFrameProvider` to pump pre-recorded frames through the real pipeline with:
-- Real `DetectionManager` (with mock model OR real model on CI with test video)
-- Real `TrackingManager`
-- Real `DriftRepairService` with `MockEmbeddingProvider`
-- Mock `VerifierService` (to avoid network calls)
-- Mock `NavigationManager`
-
-#### Test Cases
-
-| Test Case | Setup | Verification |
-|-----------|-------|--------------|
-| `test_pipeline_detectsNewObject` | Video with car entering frame | Candidate created with `.unknown` status |
-| `test_pipeline_tracksObjectAcrossFrames` | Video with car moving | Candidate bbox updates each frame |
-| `test_pipeline_handlesObjectExit` | Video with car leaving | Candidate marked `.lost` or removed |
-| `test_pipeline_publishesFramePresentation` | Any video | `FramePresentation` published for each frame |
-| `test_pipeline_respectsTargetClasses` | Video with car + person | Only car candidates created |
-
-#### Mock Configuration
-```swift
-// MockVerifierService - returns canned results based on candidate ID
-mockVerifier.cannedResults = [
-  candidateId1: .success(.full),
-  candidateId2: .success(.rejected(.wrongModelOrColor))
-]
-
-// MockNavigationManager - records calls for verification
-mockNavigation.tickCalls // Array of (candidates, targetBox, distance)
-```
-
-### 13.4 AppContainerIntegrationTests
-
-**File:** `thing-finderTests/Integration/AppContainerIntegrationTests.swift`
-
-#### Test Strategy
-Verify that `AppContainer` correctly wires all dependencies without actually running the pipeline.
-
-#### Test Cases
-
-| Test Case | Verification |
-|-----------|--------------|
-| `test_makePipeline_allServicesNonNil` | Pipeline has detector, tracker, verifier, etc. |
-| `test_makePipeline_settingsInjected` | Services receive shared Settings instance |
-| `test_makePipeline_storeShared` | All services share same CandidateStore |
-| `test_makePipeline_embeddingProviderInjected` | DriftRepairService has VisionEmbeddingProvider |
-
-### 13.5 EmbeddingComputer Integration Tests
-
-**File:** `thing-finderTests/Integration/EmbeddingIntegrationTests.swift`
-
-**Requires:** Real test images (see 13.2)
-
-| Test Case | Setup | Expected |
-|-----------|-------|----------|
-| `test_embedding_sameCarDifferentAngle_highSimilarity` | red_front vs red_side | similarity > 0.85 |
-| `test_embedding_differentCars_lowerSimilarity` | red_front vs blue_front | similarity < 0.80 |
-| `test_embedding_differentClasses_veryLowSimilarity` | red_car vs white_truck | similarity < 0.60 |
-| `test_embedding_croppedRegion_matchesFullImage` | Full image vs cropped bbox | similarity > 0.90 |
-
-### 13.6 Implementation Order
-
-1. **Collect test assets** (images first, videos later)
-2. **Add images to test bundle** (`thing-finderTests/Resources/`)
-3. **Implement EmbeddingIntegrationTests** (validates Vision works)
-4. **Implement AppContainerIntegrationTests** (validates wiring)
-5. **Implement FramePipelineCoordinatorIntegrationTests** (full flow)
+| Path | Contents | Used by |
+| ---- | -------- | ------- |
+| `Fixtures/TestCandidates.swift` | `TestCandidates` factory for `Candidate`s in each status | Core, Services, Navigation, Verification tests |
+| `Fixtures/TestAPIResponses.swift` | `TestAPIResponses` canned TrafficEye/OpenAI JSON | `TrafficEyeVerifierTests` |
+| `Assets/Car1_Base.JPG`, `Car1_Base_shift.JPG`, `Car1_Back.JPG`, `Car2_side.jpg` | Real car photos for embedding/integration tests | Not referenced by any test yet |
 
 ---
 
-## 14. Phase 7+ Future Improvements
+## 3. Conventions
 
-### 14.1 Snapshot Tests (UI Consistency)
-
-**Purpose:** Catch unintended UI changes
-
-| View | Snapshots Needed |
-|------|------------------|
-| `CameraOverlayView` | Empty, single candidate, multiple candidates, matched |
-| `BoundingBoxView` | Each MatchStatus color |
-| `SettingsView` | Default state, all toggles on/off |
-
-**Tool:** `swift-snapshot-testing` or XCTest attachments
-
-### 14.2 Performance Tests
-
-| Test | Metric | Threshold |
-|------|--------|-----------|
-| `test_detection_latency` | Time per frame | < 50ms |
-| `test_embedding_computation` | Time per crop | < 100ms |
-| `test_fullPipeline_fps` | Frames per second | > 25fps |
-
-### 14.3 End-to-End Tests (Manual Checklist)
-
-| Scenario | Steps | Expected |
-|----------|-------|----------|
-| Find matching car | Point at target car | Speech announces "Found [description]" |
-| Reject wrong car | Point at non-matching car | Speech announces rejection reason |
-| Track through occlusion | Car goes behind obstacle | Tracking resumes after occlusion |
-| Handle low light | Test in dim environment | Graceful degradation, no crashes |
+- Put new tests in the folder for their layer; reuse `Mocks/` and `Fixtures/`.
+- Name tests `test_<subject>_<scenario>_<expectedResult>`, e.g. `test_tick_missCountExceedsThreshold_removesCandidate`.
+- Inject time: navigation controllers take a `timestamp`, so cooldown tests pass explicit `Date`s instead of sleeping.
+- Inject everything through constructors (see `AppContainer` / `DesignDecisions.md`). Avoid `.shared` singletons in tests (`NetworkMonitor.shared`, `APIHealthMonitor.shared`, `CompassHeading.shared`); pass mocks. `FrameNavigationManager` and `NavAnnouncer` fall back to those singletons when a dependency is omitted. `NetworkMonitorTests` is the deliberate exception.
+- The test plan randomizes order, so tests must not depend on each other or on `UserDefaults` left behind by `@AppStorage` settings.
 
 ---
 
-## 15. Test Asset Collection Checklist
+## 4. Gaps and Planned Work
 
-### Images Needed (Priority: High)
-- [ ] `test_car_red_front.jpg` - Red sedan, front view, 500x500
-- [ ] `test_car_red_side.jpg` - Same red sedan, side view, 500x500
-- [ ] `test_car_blue_front.jpg` - Blue sedan, front view, 500x500
-- [ ] `test_truck_white.jpg` - White pickup truck, 500x500
+### Missing unit coverage
 
-### Videos Needed (Priority: Medium)
-- [ ] `test_tracking_simple.mov` - Single car, 5-10s, 1080p 30fps
-- [ ] `test_tracking_occlusion.mov` - Car with partial occlusion, 5-10s
-- [ ] `test_multiple_cars.mov` - 2-3 cars in frame, 5-10s
+| Area | Gap | Suggested approach |
+| ---- | --- | ------------------ |
+| `TwoStepVerifier` / `AdvancedLLMVerifier` | No response parsing or match logic tests; `AdvancedLLMVerifier` (paratransit) has none | `MockURLSession` + recorded OpenAI tool-call JSON in `TestAPIResponses` |
+| `DetectionManager` | Real filtering/stability not exercised (CoreML not loaded) | Inject a stub `VNCoreMLModel` or test the filter/stability logic separately |
+| `FramePipelineCoordinator` | Only depth-coordinate tests; no per-frame orchestration tests (target box selection, `allowPartialNavigation`, median depth) | Build with mocks (`MockObjectDetector`, `MockVisionTracker`, `MockVerifierService`, `MockNavigationSpeaker`) and assert `tickCallCount` / `lastTargetBox` / `lastDistance` |
+| `FrameNavigationManager` | 2 tests; controller ordering and `hasActiveMatch` gating mostly untested | Inject mocks and assert speech order |
+| `Speaker`, `SmoothBeeper`, `HapticManager`, `AudioControl` | Untested (AVFoundation/UIKit side effects) | Test pause/resume notification handling; keep audio output behind protocols |
+| `EmbeddingComputer` / `VisionEmbeddingProvider` | No tests | Use `Assets/` images (see below) |
+| `CompassHeading`, `LanguageManager` | No dedicated tests (Levenshtein is covered via `OCREngineTests`) | Small pure-function tests |
+| `CandidateStore` concurrency | Only `test_threadSafety_concurrentUpdates`; unsynchronized reads (`containsDuplicateOf`, `hasActiveMatch`) not covered | Concurrent reads + writes from background queues with `XCTestExpectation` |
+| Frame providers (`VideoCapture`, `ARVideoCapture`, `VideoFileFrameProvider`) | Untested | `VideoFileFrameProvider` with a short bundled clip |
 
-### Recording Tips
-1. Use iPhone in landscape mode
-2. Hold steady or use tripod
-3. Ensure good lighting (outdoor daylight ideal)
-4. Car should be clearly visible, not too far
-5. Avoid motion blur - move camera slowly
+### Planned integration tests (not yet created)
 
-### Adding Assets to Test Bundle
-```
-thing-finderTests/
-└── Resources/
-    ├── Images/
-    │   ├── test_car_red_front.jpg
-    │   ├── test_car_red_side.jpg
-    │   ├── test_car_blue_front.jpg
-    │   └── test_truck_white.jpg
-    └── Videos/
-        ├── test_tracking_simple.mov
-        ├── test_tracking_occlusion.mov
-        └── test_multiple_cars.mov
-```
+| File (planned) | Purpose |
+| -------------- | ------- |
+| `Integration/EmbeddingIntegrationTests.swift` | Using `Assets/`: `Car1_Base` vs `Car1_Base_shift` should be highly similar (> 0.90, the drift-repair threshold); `Car1_Base` vs `Car1_Back` / `Car2_side` lower. Calibrates `DriftRepairService.simThreshold`. |
+| `Integration/AppContainerIntegrationTests.swift` | `makePipeline` wires all services, shares one `Settings`, picks `.paratransit` vs `.hybrid`, enables OCR only for vehicle classes with a parsed plate. Needs the YOLO model in the test bundle. |
+| `Integration/FramePipelineCoordinatorIntegrationTests.swift` | Pump frames from `VideoFileFrameProvider` through real detector/tracker/drift repair with `MockVerifierService` and `MockNavigationSpeaker`: detect, track, exit to `.lost`, presentation published, non-target classes ignored. |
 
-Add to Xcode: Drag into `thing-finderTests` target, ensure "Copy items if needed" and target membership is `thing-finderTests`.
+Assets still needed for pipeline integration: short (5–10 s, 720p/1080p, 30 fps) clips of a single car entering/exiting, a partially occluded car, and 2–3 cars. Add them under `thing-finderTests/Assets/` with `thing-finderTests` target membership.
+
+### Future
+
+| Type | Scope |
+| ---- | ----- |
+| Snapshot | `CameraOverlayView`, `BoundingBoxView` (status colors), `SettingsView` (`swift-snapshot-testing` or XCTest attachments) |
+| Performance | Detection under 50 ms/frame, embedding under 100 ms/crop, pipeline above 25 fps, tracking under 20 ms with 10 candidates (`measure {}` on device) |
+| CI | No CI workflow runs tests yet. Target: unit tests on every push, under 2 min |
+
+### Manual end-to-end checklist (device, release)
+
+| Scenario | Expected |
+| -------- | -------- |
+| Start search | "Searching for {description}" |
+| Point at matching car | "Possible match — plate not visible" or "Found it[ — plate X]"; success haptic if haptics are on; then direction, beeps, distance milestones |
+| Point at wrong car | "Not yours — {desc}"; dense lots collapse to "Several cars nearby, still looking" |
+| Car leaves view, user turns > 60° | "car was last seen N degrees to the left/right" |
+| Car occluded under 3 s | Stays matched; guidance resumes |
+| Airplane mode mid-search | "Connection lost — search paused", then "Connection restored — search resumed" |
+| VoiceOver magic tap | Pauses/resumes speech, beeps, haptics and camera |
+| Spanish language | Phrases and TTS voice in Spanish |
+| Low light | Graceful degradation, no crash |

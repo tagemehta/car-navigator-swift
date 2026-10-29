@@ -1,48 +1,77 @@
 # Design Decisions & Tuning Rationale
 
-This document explains the reasoning behind key thresholds and architectural choices in Thing Finder.
+Explains why key thresholds and architectural choices in Thing Finder are what they are. Superseded decisions are kept, marked, and point to what replaced them.
+Last verified against code: 2026-10-27
+
+Status legend: **Current** = matches code. **Superseded** = replaced; historical. **Legacy** = still in code but no longer pulling its weight.
+
+---
+
+## Quick Reference
+
+| Value | Current | File |
+| ----- | ------- | ---- |
+| Drift repair stride | 15 frames | `Services/Pipeline/DriftRepairService.swift` |
+| Drift repair cosine similarity | > 0.90 | `DriftRepairService.swift` |
+| Miss threshold (drop / mark lost) | 90 frames (~3 s at 30 fps) | `Services/Pipeline/CandidateLifecycleService.swift` |
+| Detection overlap for "seen this frame" | IoU > 0.1 | `CandidateLifecycleService.swift` |
+| Rejected candidate removal | 10 s after last update | `CandidateLifecycleService.swift` |
+| Candidate cap | 10 non-lost candidates | `CandidateLifecycleService.swift` |
+| Duplicate detection | IoU > 0.6 OR center distance < 0.15 | `Core/CandidateStore.swift` |
+| Verifier escalation (hybrid) | TrafficEye 1 fail, then LLM; LLM 3 fails, then TrafficEye (was 3 / 3 in HEAD) | `Services/Pipeline/Verification/VerifierSelector.swift` |
+| Per-call verification timeout | 10 s | `VerifierSelector.swift` |
+| Verification batch interval | 1 s | `Services/Pipeline/Verification/VerifierService.swift` |
+| Per-candidate re-verify interval | 0.8 s | `VerificationConfig.swift` |
+| Min box area / max tallness to verify | 1% of image / h:w <= 3 | `VerifierService.swift` |
+| OCR retries | 30 (legacy) | `VerificationConfig.swift` |
+| Lost-target compass threshold | > 60°, rounded to 30° | `Utilities/MatchStatusSpeech.swift` |
 
 ---
 
 ## Pipeline Thresholds
 
-### Drift Repair Stride (15 frames)
-**File:** `DriftRepairService.swift`
+### Drift Repair Stride (15 frames) — Current
+**File:** `DriftRepairService.swift` (`repairStride: Int = 15`)
 
-- **Value:** Every 15 frames (~0.5s at 30fps)
-- **Tradeoff:** Battery/lag vs accuracy
-- **Rationale:** Empirically tuned to balance:
-  - Lower values = more accurate tracking but higher CPU/battery drain
-  - Higher values = better performance but more drift accumulation
-  - 15 frames provides good accuracy without noticeable lag
+- Every 15 frames (~0.5 s at 30 fps) candidates are re-associated to fresh YOLO detections.
+- Tradeoff: lower stride gives more accurate tracking but costs CPU/battery; higher stride accumulates Vision tracker drift. 15 was tuned empirically on device.
 
-### Embedding Similarity Threshold (0.90)
-**File:** `DriftRepairService.swift`
+### Embedding Similarity Threshold (0.90) — Current
+**File:** `DriftRepairService.swift` (`simThreshold: Float = 0.90`)
 
-- **Value:** 0.90 cosine similarity
-- **Rationale:** Somewhat arbitrarily chosen. High enough to avoid false re-associations, low enough to handle minor appearance changes between frames.
+- Feature-print cosine similarity must exceed 0.90; best score wins, early exit at >= 0.99.
+- Somewhat arbitrary: high enough to avoid false re-associations, low enough to tolerate small appearance changes.
+- The center-distance penalty (max 0.40) is commented out because it added noise on semi-quick camera movement. The file header still mentions IoU/center thresholds; only similarity is used.
 
-### Miss Threshold (15 frames)
-**File:** `CandidateLifecycleService.swift`
+### Miss Threshold — Superseded (15 frames, replaced by 90 frames)
+**File:** `CandidateLifecycleService.swift` (`missThreshold: Int = 90`)
 
-- **Value:** 15 consecutive frames without detection overlap
-- **Rationale:** At 30fps, this is ~0.5 seconds. Provides reasonable tolerance for:
-  - Brief occlusions
-  - Detection flickering
-  - Fast camera movements
+- Original: 15 frames (~0.5 s). Changed to 90 frames (~3 s) in `fb54466` (2026-06-17) because brief occlusions and detection flicker dropped real candidates too often.
+- A candidate's `missCount` resets when any detection overlaps it (IoU > 0.1). At the threshold: `.full` becomes `.lost`; `.lost` is kept; everything else is removed.
+- The file header comment still says "default: 5 consecutive misses" (stale).
 
-### Duplicate Detection (IoU > 0.6, center distance < 0.15)
-**File:** `CandidateStore.swift`
+### Duplicate Detection (IoU > 0.6, center distance < 0.15) — Current
+**File:** `CandidateStore.containsDuplicateOf`
 
-- **Values:** IoU threshold 0.6, center distance 0.15 (normalized)
-- **Rationale:** Empirically tuned to prevent creating duplicate candidates for the same object while still allowing nearby distinct objects.
+- Either condition marks a new detection as a duplicate. `.lost` candidates are ignored, so a re-detected lost car can become a new candidate.
+- Empirically tuned to avoid duplicate candidates for one car while keeping nearby distinct cars.
+
+### Candidate Cap (10) — Current (added 2026-06-18, `aa02bb3`)
+**File:** `CandidateLifecycleService.swift` (`candidateCap: Int = 10`)
+
+- Limits Vision trackers and embeddings in dense scenes (parking lots); about 20 ms/frame of tracking on A15-class hardware.
+- On ingest at the cap, the non-lost candidate with the highest `missCount` is evicted. `.partial`, `.full` and `.lost` are never evicted; if only those remain, the new detection is skipped.
+
+### Ingest Gating — Current
+- New detections are not ingested while a `.full` candidate exists (`CandidateStore.hasActiveMatch` checks `.full` only; `.partial` does not block ingest).
 
 ---
 
 ## Verification System
 
-### Escalation Thresholds
-**File:** `VerificationPolicy.swift`
+### Escalation Thresholds — Superseded (`VerificationPolicy.swift`, replaced by `VerifierSelector`)
+
+Historical table (the file `VerificationPolicy.swift` no longer exists):
 
 | Engine | Fail Threshold | Action |
 |--------|----------------|--------|
@@ -50,59 +79,137 @@ This document explains the reasoning behind key thresholds and architectural cho
 | TrafficEye | 3 fails | Escalate to LLM |
 | LLM | 2 fails | Back to TrafficEye |
 
-**Rationale:** Arbitrarily chosen based on latency characteristics:
-- TrafficEye: ~1.9s per call (fast, can retry more)
-- LLM: ~4-5s per call (slow, fewer retries before switching)
+Original rationale: TrafficEye is about 1.9 s per call (retry more), the LLM about 4–5 s (fewer retries).
 
-The system loops indefinitely between engines until match or hard reject.
+### Verifier Escalation Policy — Current
+**File:** `VerifierSelector.swift` (introduced in `4ae662f`, 2026-03-08, replacing Strategy → StrategyManager → Factory layering)
 
-### OCR Retry Limit (30 attempts)
-**File:** `VerificationConfig.swift`
+| Strategy | Used when | Selection |
+| -------- | --------- | --------- |
+| `.hybrid` | Default car search (`AppContainer`) | TrafficEye; after `maxTrafficEyeRetries = 1` failure, `TwoStepVerifier`; after `maxLLMRetries = 3` LLM failures, back to TrafficEye. Switching engines resets the other engine's counter. Loops until match or hard reject. |
+| `.paratransit` | `isParatransitMode` | Always `AdvancedLLMVerifier`. The TrafficEye-first escalation constants exist but are not used (see comment in `selectVerifier`). |
+| `.llmOnly` | Not wired in `AppContainer` | Always `AdvancedLLMVerifier` |
+| `.trafficEyeOnly` | Not wired in `AppContainer` | Always TrafficEye |
 
-- **Value:** 30 attempts
-- **Status:** ⚠️ **LEGACY** – This high limit was originally needed because OCR might be off by a single character. Now that Levenshtein distance matching is implemented (`maxEditsForMatch: 1`), fuzzy matching handles minor OCR errors automatically.
-- **Note:** This value could be reduced significantly in a future cleanup.
+- In hybrid mode a TrafficEye `.wrongModelOrColor` is not final: `VerifierService` treats it as retryable (candidate back to `.unknown`) so it escalates to TwoStep, and only TwoStep's mismatch hard-rejects.
+- History: `maxTrafficEyeRetries` was 3 (committed HEAD as of 2026-10-27). The value 1 and the TrafficEye-mismatch escalation were uncommitted working-tree changes when this doc was verified; re-check after merge.
+- Why 1 TrafficEye failure: a confident TrafficEye misread can't be distinguished from a correct read by score, so any non-match gets a TwoStep second opinion. Real-image eval: rider's car matched 75% to 90%; strict false match 0.3% to 1.0%.
+- Every call has a 10 s timeout. Errors and timeouts become retryable rejections (`.networkError` / `.apiError` / `.unclearImage` / `.lowConfidence`), so the loop never dies on an exception.
+- Outcomes feed `APIHealthMonitor`: network errors record a failure; only outcomes that actually completed a network request record success, so a thrown or unparseable request can't clear degradation (`a887eed`).
+
+### Verification Rate Limits and Gates — Current
+**File:** `VerifierService.swift`
+
+- Batches at most every 1 s; each candidate at most every 0.8 s (`perCandidateMMRInterval`).
+- Skips boxes under 1% of the image area or taller than 3:1 (people, poles).
+- Skips network verification entirely while offline (`NetworkMonitor.isConnected == false`) without touching `lastVerifyBatch`, so verification resumes on the next tick after reconnecting. This is what makes "search paused" literal. On-device OCR is unaffected.
+
+### OCR Retry Limit (30 attempts) — Legacy
+**File:** `VerificationConfig.swift` (`maxOCRRetries = 30`)
+
+- Originally high because OCR could be off by one character. Levenshtein matching now handles that (`maxEditsForMatch = 1`, `maxEditsForContinue = 2`), so this could be reduced.
+- OCR only runs when the target classes include car/truck/bus/van and `DescriptionParser` found a plate in the description (`AppContainer`).
 
 ---
 
 ## Navigation Feedback
 
-### Lost Target Compass Threshold (60°)
+### Controller Split with Shared AnnouncementCache — Current (2026-06-09 onward)
+**Files:** `Services/Pipeline/Navigation/*`
+
+- `FrameNavigationManager` runs, in order: `NetworkFeedbackController`, `PreMatchFeedbackController`, `NavAnnouncer`, `DirectionSpeechController`, `DistanceMilestoneController`, `HapticBeepController`.
+- Rationale: each controller owns one feedback concern and is unit-testable alone. A shared `AnnouncementCache` (`lastGlobal`, `lastByCandidate`, `priorityFrame`) lets controllers back off from each other. `Speaker.speak` interrupts the current utterance, so later controllers defer instead of cutting off connectivity warnings.
+- See `NavigationBehavior.md` for exact phrases and timings.
+
+### Change-Gated Direction Speech — Current; replaced repeating direction phrases
+- Superseded: "{direction}, {distance} meters" on change and "Still {direction}…" every `speechRepeatInterval`.
+- Current (`acaa0fd`, 2026-06-09): direction is spoken only on the first target frame and when the category changes, debounced by `speechChangeInterval` (4 s). Distance moved to `DistanceMilestoneController` (10 / 5 / 2 m, "almost there" at 1 m, 1.5 m hysteresis). Rationale: repeats were noisy; beeps carry continuous guidance.
+
+### Silent Waiting, Rejection and Retry in MatchStatusSpeech — Current; replaced verbose status phrases
+- Superseded: "Waiting for verification", "{desc} – {reason}" rejections, and retry phrases ("Picture too blurry, trying again", etc.) with 10 s / 8 s cooldowns.
+- Current: `.waiting`, `.rejected`, `.unknown` return `nil`; `retryPhrase` always returns `nil`. Rejections are owned by `PreMatchFeedbackController` ("Not yours — {desc}", grouped to "Several cars nearby, still looking" when dense). Match phrases are short: "Possible match — plate not visible", "Found it", "Plate confirmed — {plate}" / "Got it".
+
+### Detection Haptic Instead of New-Car Earcon — Current
+- Superseded: earcon plus haptic tap on every new car (removed `80768cf`, 2026-09-04).
+- Current (`529c42f`, `cf42049`, 2026-09-06): one light haptic per candidate after 0.3 s of continuously fresh boxes, at least 0.5 s apart, pre-match only, `enableHaptics` only. The stability gate filters YOLO flicker; the timer resets when a box goes stale.
+
+### Beeps = Centering, Haptics = Distance — Current
+**File:** `HapticBeepController.swift`
+- Beep rate tracks horizontal centering. Haptic pulse rate tracks depth distance, with a steady 6 s pulse when depth is unavailable. Two channels give two independent cues.
+
+### Connectivity Warnings Ungated by Category Toggles — Current (`36d31c2`, 2026-09-04)
+- Offline / restored / weak-signal announcements respect only the master speech/haptics switches; they are safety-relevant.
+
+### Lost Target Compass Threshold (60°) — Current
 **File:** `MatchStatusSpeech.swift`
 
-- **Value:** Only announce compass direction if angle > 60°
-- **Rationale:** Balances information vs interruption:
-  - Too small (e.g., 20°) = frequent interruptions as user naturally moves
-  - Too large (e.g., 120°) = user never gets helpful directional info
-  - 60° represents a significant change worth announcing
+- Announce "car was last seen N degrees to the left/right" only when the heading delta since the car was last seen exceeds 60°; N is rounded to 30°.
+- Too small (about 20°) interrupts as the user naturally moves; too large (about 120°) never helps. Announced once per lost transition to avoid bouncing between adjacent buckets.
 
 ---
 
 ## Candidate States
 
-### Match Status: `.full` vs `.lost`
-**File:** `Candidate.swift`
+### Match Status: `.full` vs `.lost` — Current (clarified)
+**File:** `Core/Candidate.swift`
 
-- **`.full`** = Active match with valid bounding box in current frame
-- **`.lost`** = Was previously `.full` but no longer have a box for this candidate
-
-**Key distinction:** A candidate stays `.full` as long as we're actively tracking it, even if temporarily occluded. It only becomes `.lost` when tracking fails completely (missCount exceeds threshold).
+- `.full`: verified match. Stays `.full` through occlusion until `missCount` reaches 90.
+- `.lost`: was `.full`; no YOLO detection has overlapped it (IoU > 0.1) for 90 frames. The trigger is detection overlap, not Vision tracker failure.
+- `.lost` candidates are not removed by the lifecycle service. They disappear when a new `.full` triggers `pruneToSingleMatched`, or on pipeline rebuild.
+- `isMatched` is true only for `.full`. Navigation targeting treats `.partial` as navigable when `allowPartialNavigation` is on.
 
 ---
 
 ## Architecture Decisions
 
-### Single Winner Invariant
-**File:** `CandidateStore.pruneToSingleMatched()`
+### Dependency Injection via AppContainer — Current
+**File:** `AppContainer.swift`
 
-- **Behavior:** At most one candidate can be `.full` at a time
-- **Rationale:** Users get into one rideshare, not multiple. Multiple simultaneous targets is not a supported use case.
+- `AppContainer.shared.makePipeline(classes:description:isParatransitMode:settings:)` is the composition root: it builds `DetectionManager` (YOLO11n), `TrackingManager`, `DriftRepairService`, `VerifierService` (with `VerificationConfig` and strategy), `FrameNavigationManager` (with `Speaker`), `CandidateLifecycleService` and `FramePipelineCoordinator`.
+- Every service is behind a protocol (`ObjectDetector`, `VisionTracker`, `DriftRepairServiceProtocol`, `VerifierServiceProtocol`, `NavigationSpeaker`, `CandidateLifecycleServiceProtocol`, `SpeechOutput`, `Beeper`, `HapticManagerProtocol`, `NetworkMonitorProtocol`, `APIHealthMonitorProtocol`, `CompassProvider`), so tests inject mocks directly into constructors.
+- "Double Check" in `ContentView` rebuilds the whole pipeline (new `detectorKey`) instead of resetting individual services.
 
-### ARKit Usage
+### CandidateStore Main-Thread Synchronization — Current
+**File:** `Core/CandidateStore.swift`
+
+- `candidates` is `@Published` for SwiftUI, so all writes and `snapshot()` hop to main with `DispatchQueue.main.sync` (direct call if already on main).
+- Rationale: frames arrive on capture queues; a single serialization point avoids data races without locks.
+- Caveats: `containsDuplicateOf`, `hasActiveMatch`, the subscript getter and the read at the top of `pruneToSingleMatched` read `candidates` without the hop. If the main thread ever blocks waiting on the frame-processing queue, the `main.sync` hop deadlocks; also, each mutation is a separate main-thread hop, so heavy per-frame mutation adds main-thread load.
+
+### Single Winner Invariant — Current
+**File:** `CandidateStore.pruneToSingleMatched()`, called by `CandidateLifecycleService.tick` every frame
+
+- At most one `.full` candidate. When any `.full` exists, the most recently updated one is kept and all other candidates (including `.unknown`, `.partial`, `.rejected`, `.lost`) are removed. Ingest then stays off while it is `.full`.
+- Rationale: users get into one rideshare; multiple simultaneous targets is unsupported.
+
+### Batched Depth Sampling — Current (`9ea9514`, 2026-09-06; ARKit fix `9708b3b`)
+**Files:** `FramePublishers/FramePublisher.swift`, `FramePipelineCoordinator.swift`
+
+- `FrameProviderDelegate.processFrame` passes `depthAt: ([CGPoint]) -> [Float?]` (one result per point, same order) instead of a single-point lookup.
+- The coordinator samples 5 points in the target box (center and ±25% on each axis) and uses the median valid depth. The center often hits a window gap or background.
+- One call per frame amortizes depth-map lock/convert (AVFoundation) and keeps raycasts against the current frame/camera transform (ARKit).
+- Coordinates: AVFoundation/video file get normalized image points; ARKit gets preview-view points (orientation + aspect-fill), because `makeRaycastQuery(from:)` expects view coordinates. `FramePipelineCoordinatorTests` covers this.
+- `DepthProvider` in `PipelineProtocols.swift` is an older single-point protocol not used by the frame path.
+
+### Capture Sources as FrameProviders — Current
+**Files:** `FramePublishers/*`, `Views/CameraPreviewView.swift`
+
+| Source | Class | Status |
+| ------ | ----- | ------ |
+| `.avFoundation` | `VideoCapture` | Default. Prefers LiDAR depth camera, then triple/dual/wide. |
+| `.arKit` | `ARVideoCapture` | When `settings.useARMode`; UI toggle currently commented out. |
+| `.videoFile` | `VideoFileFrameProvider` | Development/testing; no depth. |
+| `.metaGlasses` | `MetaGlassesFrameProvider` | **Disabled.** The whole file and its factory case are commented out for App Store submission (`f60d50e`, 2026-04-04), because the Meta DAT SDK requires Bluetooth permissions. Design: a thin adapter polling `StreamSessionViewModel` at about 30 fps, orientation `.up`, no depth. |
+
+### ARKit Usage — Current
 **File:** `ARVideoCapture.swift`
 
-- **Current use:** Depth data via raycasting
-- **Future potential:** Spatial audio and AR anchors exist as possibilities but are not currently implemented. ARKit integration provides the foundation if needed.
+- Current use: depth via raycasting (`.estimatedPlane`). Not the default mode.
+- Spatial audio and AR anchors are possibilities but not implemented.
+- `Settings.recommendedMode` returns `.avFoundation` with LiDAR and `.arKit` without, but nothing in the UI currently uses it.
+
+### Localization — Current (`7c3f933`)
+- All spoken phrases use `String(localized:)` / `NSLocalizedString`; English and Spanish. `Speaker` picks the voice from `settings.appLanguage`. Distance milestones use `MeasurementFormatter` (locale units; may mix languages).
 
 ---
 
@@ -110,9 +217,9 @@ The system loops indefinitely between engines until match or hard reject.
 
 When adjusting thresholds, consider:
 
-1. **Battery impact** – More frequent operations drain battery faster
-2. **Latency** – Users need responsive feedback
-3. **Accuracy** – False positives/negatives affect trust
-4. **Interruption frequency** – Too many announcements annoy users
+1. **Battery impact** – more frequent operations drain battery faster.
+2. **Latency** – users need responsive feedback.
+3. **Accuracy** – false positives/negatives affect trust.
+4. **Interruption frequency** – too many announcements annoy users; check the shared cooldowns in `NavigationBehavior.md`.
 
-Most thresholds were empirically tuned on real devices. When in doubt, test on hardware with representative usage patterns.
+Most thresholds were tuned empirically on real devices. When in doubt, test on hardware with representative usage. Update this file and the Quick Reference table when a value changes.

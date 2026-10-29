@@ -1,12 +1,11 @@
-// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
-// Uncomment this file when ready to use Meta glasses in production
+// Meta Ray-Ban glasses (DAT SDK); requires Bluetooth, local network, and Wi-Fi entitlements
 
 //
 //  MetaGlassesSettingsSection.swift
 //  thing-finder
 //
 //  Settings section for Meta Ray-Ban glasses configuration.
-//  Uses consolidated MetaGlassesViewModel (DAT SDK 0.9).
+//  Uses consolidated MetaGlassesViewModel (DAT SDK 1.0).
 //
 
 import MWDATCore

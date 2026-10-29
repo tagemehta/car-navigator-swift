@@ -87,7 +87,7 @@ struct HelpModalView: View {
           Divider()
 
           // MARK: - Meta Glasses
-          // COMMENTED OUT FOR APP STORE SUBMISSION
+          // Meta glasses
           if FeatureFlags.metaGlassesEnabled {
             HelpSection(
               title: "Meta Ray-Ban Glasses",

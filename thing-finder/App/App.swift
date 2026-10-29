@@ -1,5 +1,5 @@
 // MARK: - App Entry
-// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
+// Meta Ray-Ban glasses (DAT SDK); requires Bluetooth, local network, and Wi-Fi entitlements
 import MWDATCore
 import SwiftUI
 
@@ -8,7 +8,7 @@ struct ThingFinderApp: App {
   @AppStorage("app_language") private var appLanguageRaw: String = SupportedLanguage.system.rawValue
   @StateObject private var sharedSettings = Settings()
   @StateObject private var router = AppRouter()
-  // COMMENTED OUT FOR APP STORE SUBMISSION
+  // Meta glasses
   @StateObject private var glassesVM = MetaGlassesViewModel.shared
 
   private var appLanguage: SupportedLanguage {
@@ -22,7 +22,7 @@ struct ThingFinderApp: App {
           ?? SupportedLanguage.system.rawValue) ?? .system
     LanguageManager.applyLanguage(language)
 
-    // COMMENTED OUT FOR APP STORE SUBMISSION
+    // Meta glasses
     // Configure Wearables SDK on launch (matches Meta sample pattern)
     do {
       try Wearables.configure()
@@ -42,7 +42,7 @@ struct ThingFinderApp: App {
         .onChange(of: appLanguageRaw) { _, newValue in
           LanguageManager.applyLanguage(SupportedLanguage(rawValue: newValue) ?? .system)
         }
-        // COMMENTED OUT FOR APP STORE SUBMISSION
+        // Meta glasses
         .environmentObject(glassesVM)
         // Stop the glasses stream when the app moves to background.
         // The SDK delivers STOPPED itself when Bluetooth drops (glasses fold

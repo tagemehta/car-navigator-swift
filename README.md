@@ -9,45 +9,49 @@ The app uses a sophisticated multi-stage pipeline combining YOLO object detectio
 ## Mission
 
 Enable blind users to independently locate their rideshare or paratransit vehicle in crowded pickup areas by:
-- Detecting vehicles in real-time using the phone camera or Meta Ray-Ban smart glasses
+- Detecting vehicles in real time using the phone camera (Meta Ray-Ban glasses support is implemented but currently disabled)
 - Verifying vehicle details (make, model, color, license plate) against ride information
 - Providing continuous audio-haptic directional guidance to the correct vehicle
-- Supporting multiple capture modes: iPhone camera, ARKit depth, and Meta glasses integration
+- Supporting multiple capture modes: iPhone camera (with LiDAR depth when available), ARKit depth, and simulator video playback
+
+New contributors and coding agents: start with `ONBOARDING.md` (architecture) and `AGENTS.md` (agent setup for Devin, Claude Code, and Codex).
 
 ## Key Features
 
 ### 🎯 Multi-Stage Detection Pipeline
-1. **Object Detection**: YOLO11 CoreML models detect vehicles in real-time
+1. **Object Detection**: YOLO11n CoreML model detects vehicles in real time
 2. **Vision Tracking**: Apple Vision framework tracks candidates across frames
 3. **AI Verification**: Hybrid verification strategy using:
-   - **TrafficEye API**: Fast multi-modal reasoning for vehicle attributes
-   - **LLM Verification**: OpenAI GPT-4 Vision for detailed analysis
+   - **TrafficEye API**: Make/model/color recognition, compared with the rider's description by an OpenAI model
+   - **LLM Verification**: OpenAI vision model (`gpt-6-luna`; migration from `gpt-4.1-mini` in progress)
    - **OCR**: Vision framework text recognition for license plate matching
 4. **Drift Repair**: Embedding-based re-association when tracking fails
-5. **Navigation**: Spatial audio cues, haptic feedback, and directional speech
+5. **Navigation**: Directional and distance speech, centering beeps, and distance haptics
 
 ### 📱 Multiple Capture Sources
-- **AVFoundation**: Standard iPhone camera
-- **ARKit**: LiDAR depth sensing for accurate distance measurement
-- **Meta Ray-Ban Glasses**: First-person POV via Meta Wearables DAT SDK
-- **Video File Playback**: Testing and development mode
+- **AVFoundation**: Standard iPhone camera (uses the LiDAR depth camera when available)
+- **ARKit**: Scene depth / raycast distance measurement
+- **Meta Ray-Ban Glasses**: First-person POV via Meta Wearables DAT SDK (implemented, currently disabled)
+- **Video File Playback**: Used automatically on the simulator
 
 ### 🔍 Intelligent Verification Strategies
-- **Hybrid Mode** (default): TrafficEye → TwoStepVerifier escalation for cars
-- **Paratransit Mode**: TrafficEye → AdvancedLLMVerifier for buses/vans with route numbers
-- **LLM-Only Mode**: Direct OpenAI verification for custom use cases
-- **TrafficEye-Only Mode**: Fast MMR-only verification without LLM fallback
+- **Hybrid Mode** (car search): TrafficEye first; any non-match escalates to the two-step LLM verifier
+- **Paratransit Mode**: AdvancedLLMVerifier (single image call that reads route numbers and logos)
+- **LLM-Only / TrafficEye-Only**: available in `VerificationConfig`, not currently used by the app
+- **License plates**: exact TrafficEye plate match, or on-device OCR with fuzzy (Levenshtein) matching
 
 ### 🎧 Accessibility-First Navigation
 - **Audio Beeps**: Beeps that increase frequency as user centers on target
-- **Haptic Feedback**: Vibration patterns for distance and direction
-- **Speech Announcements**: Status updates, vehicle descriptions, and turn-by-turn guidance
-- **VoiceOver Compatible**: Full screen reader support
+- **Haptic Feedback**: Pulses that speed up with distance, a tap when a car is first detected, and success/connectivity haptics
+- **Speech Announcements**: Status updates, direction changes, distance milestones (locale units), and network warnings
+- **Siri Shortcuts**: "Find my car with CurbToCar" and "Find my paratransit with CurbToCar"
+- **VoiceOver Compatible**: Full screen reader support, Magic Tap to pause
+- **Languages**: English and Spanish
 
 ### 🧪 Robust Testing Infrastructure
-- **MockDeviceKit**: Simulated Meta glasses for development without hardware
-- **Unit Tests**: Comprehensive coverage of verification pipeline, tracking, and state management
-- **Integration Tests**: End-to-end pipeline validation
+- **Unit Tests**: 28 XCTest classes covering core state, pipeline services, verification, navigation, and utilities (see `thing-finder/Docs/TestingPlan.md`)
+- **Mocks**: A fake for every pipeline protocol in `thing-finderTests/Mocks/`
+- **Verifier evals**: Real-image Python evals in `evals/realworld/`
 
 ## Architecture
 
@@ -65,22 +69,22 @@ Thread-safe observable store managing all detected vehicle candidates with their
 - `rejected` (wrong vehicle) or `lost` (tracking failed)
 
 #### `VerifierSelector`
-Intelligent verifier selection with automatic escalation:
-- Tries fast TrafficEye API first (3 attempts)
-- Escalates to LLM verification after failures
-- Cycles between verifiers based on strategy
+Verifier selection with automatic escalation:
+- Hybrid: TrafficEye first, escalating to the two-step LLM verifier after a failure
+- Paratransit: always the advanced LLM verifier
+- 10 s timeout per request; errors become retryable outcomes
 
-#### `MetaGlassesManager`
-Singleton managing Meta Ray-Ban glasses SDK lifecycle:
-- Device registration and connection state
-- Stream session management
-- Mock device support for testing
+#### `MetaGlassesManager` (disabled)
+Meta Ray-Ban glasses SDK lifecycle (registration, streaming, mock devices). The code is commented out and the SDK is removed from the build. See `ONBOARDING.md` for the re-enable checklist.
 
-#### `NavigationManager`
-Frame-driven navigation with three coordinated controllers:
-- **NavAnnouncer**: Status phrases and vehicle descriptions
-- **DirectionSpeechController**: Left/right/straight guidance
-- **HapticBeepController**: Distance-based beeps and haptics
+#### `FrameNavigationManager`
+Frame-driven navigation with coordinated controllers:
+- **NetworkFeedbackController**: Offline / weak-signal warnings
+- **PreMatchFeedbackController**: "Searching", detection haptic, heartbeat, rejections
+- **NavAnnouncer**: Match / lost transitions
+- **DirectionSpeechController**: Left/right/ahead on change
+- **DistanceMilestoneController**: 10/5/2/1 m milestones
+- **HapticBeepController**: Centering beeps and distance haptics
 
 ### Data Flow
 
@@ -135,45 +139,42 @@ def export_and_zip_yolo_models(
 export_and_zip_yolo_models()
 ```
 
-### 2. Configure Meta Glasses (Optional)
+Place the exported `yolo11n.mlpackage` in `thing-finder/CVModels/` (gitignored).
 
-For Meta Ray-Ban integration, add to `Info.plist`:
-- URL scheme for Meta AI callbacks
-- External accessory protocols
-- Bluetooth permissions
-- Background modes
+### 2. API Keys
 
-See `AGENTS.md` for detailed Meta Wearables DAT SDK setup.
+Create `thing-finder/Secrets.xcconfig` (gitignored) defining:
+- `OPENAI_API`: OpenAI key for LLM verification
+- `TRAFFICEYE_API_KEY`: TrafficEye key
 
-### 3. API Keys
+`Info.plist` expands these build settings, and the verifiers read them at runtime. Never commit this file.
 
-Set environment variables or configure in Settings:
-- `OPENAI_API_KEY`: For LLM verification
-- TrafficEye API credentials (if using)
+### 3. Meta Glasses (currently disabled)
+
+Glasses support is commented out and the DAT SDK is not in the build. To re-enable it, follow the checklist in `ONBOARDING.md` ("Meta glasses (disabled)"). SDK setup details are in `.agents/skills/meta-wearables-dat/`.
 
 ## Usage
 
-1. **Launch App**: Grant camera and location permissions
-2. **Enter Ride Details**: Vehicle description and license plate
-3. **Start Detection**: Point camera at pickup area
+1. **Launch App**: Accept the experimental disclaimer; grant camera and location permissions
+2. **Enter Ride Details**: Vehicle description and license plate (or toggle Paratransit), or use Siri
+3. **Start Detection**: Point camera at pickup area (requires a network connection when a description is given)
 4. **Follow Audio Cues**: Listen for directional guidance
 5. **Verify Match**: App announces when correct vehicle is found
 
 ### Settings
-- **Meta Glasses Mode**: Use Ray-Ban glasses instead of phone camera
-- **ARKit Mode**: Enable depth sensing with LiDAR
-- **Partial Navigation**: Allow navigation to partially verified vehicles
-- **Speech Intervals**: Customize announcement frequency
-- **Debug Overlay**: Show verification errors and pipeline state
+- **Language**: System, English, or Spanish
+- **Navigation**: Beeps, speech, haptics, partial navigation, rejection/waiting announcements, speech rate
+- **Display**: Show favorites and recent searches
+- **Advanced**: Direction repeat interval, beep tuning, debug overlay
 
 ## Testing
 
-Run unit tests:
+Run unit tests (pick any available iPhone simulator):
 ```bash
-xcodebuild test -scheme thing-finder -destination 'platform=iOS Simulator,name=iPhone 15'
+xcodebuild test -project thing-finder.xcodeproj -scheme thing-finder -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
 ```
 
-Use MockDeviceKit for Meta glasses testing without hardware.
+See `.agents/skills/ios-build-test/SKILL.md` for focused test runs and `thing-finder/Docs/TestingPlan.md` for coverage.
 
 ## Technical Highlights
 

@@ -1,324 +1,262 @@
-# Thing Finder Onboarding Guide
+# CurbToCar (thing-finder) Onboarding Guide
+
+Last verified against code: 2026-10-27 (working tree, including uncommitted verifier-model migration).
 
 ## Project Overview
 
-Thing Finder is an assistive technology iOS app for blind users that helps identify and navigate to vehicles (rideshare) and objects. It combines YOLO object detection with LLM/API verification and provides audio/haptic navigation feedback.
+CurbToCar is an assistive iOS app for blind and low-vision users. It helps them identify and walk to their rideshare car or paratransit vehicle, and to general objects. The repo, Xcode project, and Swift module are called `thing-finder`. The user-facing name is **CurbToCar**.
+
+It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-device license-plate OCR. Guidance is delivered through speech, beeps, and haptics. A Meta Ray-Ban glasses capture path is implemented: enabled on branch `meta-s26`, commented out on `main` (see [Meta glasses](#meta-glasses-enabled-on-meta-s26-disabled-on-main)).
 
 ---
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Folder-by-Folder Reference](#folder-by-folder-reference)
-3. [Core Architecture](#core-architecture)
-4. [Data Flow](#data-flow)
+2. [User Flow](#user-flow)
+3. [Folder-by-Folder Reference](#folder-by-folder-reference)
+4. [Core Architecture](#core-architecture)
 5. [Key Concepts](#key-concepts)
-6. [Engineering Principles](#engineering-principles)
+6. [Python Tooling](#python-tooling)
+7. [Engineering Principles](#engineering-principles)
+8. [Further Reading](#further-reading)
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Xcode 14+
-- iOS device with camera (simulator supported via video file playback)
-- API keys in `Secrets.xcconfig`: `TRAFFICEYE_API_KEY`, `OPENAI_API`
+- Xcode 15+, iOS 16+ deployment target. No third-party SPM dependencies are active.
+- A device with a camera. A LiDAR device gives the best distance cues. The simulator plays a bundled video (`IMG_7211.MOV`) instead of the camera.
+- `thing-finder/Secrets.xcconfig` (gitignored) defines `OPENAI_API` and `TRAFFICEYE_API_KEY`. `Info.plist` expands them, and the verifiers read them via `Bundle.main.infoDictionary`.
+- `thing-finder/CVModels/` (gitignored) must contain `yolo11n.mlpackage`. `Image2Image.mlmodel` is only referenced by commented-out code.
 
-### Quick Start
-1. Clone repo, open `thing-finder.xcodeproj`
-2. Add API keys to `thing-finder/Secrets.xcconfig`
-3. Build & run on device
+### Build & test
+- Schemes: `thing-finder` (dev) and `thing-finder-prod`. Test target: `thing-finderTests`, test plan `thing-finderTests/thing-finder.xctestplan`.
+- Exact `xcodebuild` commands: `.agents/skills/ios-build-test/SKILL.md`.
+
+---
+
+## User Flow
+
+1. **Launch.** `ThingFinderApp` shows `ExperimentalDisclaimerView` once (`hasAcceptedExperimentalDisclaimer`), then `MainTabView` with the **Find** (`InputView`) and **Settings** (`SettingsView`) tabs.
+2. **Input** (`InputView`). The user types or pastes a vehicle description and can toggle **Paratransit**. Search classes are fixed to `car`, `truck`, `bus`. The 80-class object picker exists in code but never renders. Favorites and recents (max 5) appear only when `show_favorites_and_recents` is on (default **off**).
+3. **Offline gate.** A search with a description first awaits `NetworkMonitor.currentConnectivity()` and is blocked if offline. Description-less object searches run fully on-device.
+4. **Detection screen** (`ContentView`). It hosts `DetectorContainer` with Pause/Resume and **Double Check**. Double Check changes `detectorKey`, which rebuilds the whole pipeline. **Magic Tap** pauses or resumes all audio.
+5. **Siri / Shortcuts** (`AppShortcuts.swift`). `FindCarIntent` and `FindParatransitIntent` ("find my car with CurbToCar") open the app. They pass the description through `ShortcutNavigationState`, which `InputView` consumes.
+6. **Settings.** Language (system/English/Spanish; needs a restart), navigation toggles (beeps, speech, haptics, partial nav, announcements), speech rate, display options. An Advanced toggle reveals direction/beep tuning and the debug overlay. There is also a help sheet and a feedback email (`assistivetech@mit.edu`).
 
 ---
 
 ## Folder-by-Folder Reference
 
 ### `thing-finder/App/`
-**Entry point and root navigation.**
-
 | File | Purpose |
 |------|---------|
-| `App.swift` | `@main` entry. Contains `MainTabView` (Find + Settings tabs) and `ExperimentalDisclaimerView` shown on first launch. |
+| `App.swift` | `@main ThingFinderApp`. Injects `Settings` and the locale. `MainTabView`, `ExperimentalDisclaimerView`. Meta glasses setup (configure, `onOpenURL`) is live on `meta-s26`, commented out on `main`. |
+| `AppShortcuts.swift` | App Intents (`FindCarIntent`, `FindParatransitIntent`), Siri phrases, and the `ShortcutNavigationState` hand-off singleton. |
 
-### `thing-finder/AppContainer.swift`
-**Dependency injection / composition root.**
-
-- Singleton `AppContainer.shared` wires all services together
-- `makePipeline(classes:description:)` builds a fully-configured `FramePipelineCoordinator`
-- Parses license plate from description via `DescriptionParser`
-- Configures: `DetectionManager`, `TrackingManager`, `DriftRepairService`, `VerifierService` (with `VerifierSelector`), `FrameNavigationManager`, `CandidateLifecycleService`
-- **Verification flow:** `VerifierService` → `VerifierSelector` → `[TrafficEyeVerifier, TwoStepVerifier]`
-
----
+### Root of `thing-finder/`
+| File | Purpose |
+|------|---------|
+| `AppContainer.swift` | Composition root. `makePipeline(classes:description:isParatransitMode:settings:)` builds a `FramePipelineCoordinator` with the YOLO model, tracker, drift repair, lifecycle, `VerifierService` (strategy `.hybrid` or `.paratransit`), and `FrameNavigationManager`. It also parses license plates via `DescriptionParser`. |
+| `Info.plist` | Only `OPENAI_API` and `TRAFFICEYE_API_KEY`, expanded from `Secrets.xcconfig`. |
+| `Localizable.xcstrings`, `InfoPlist.xcstrings` | English source with Spanish translations. |
+| `Debugging.swift` | Dead file; entirely commented out. |
 
 ### `thing-finder/Core/`
-**Central domain models and state machine.**
-
 | File | Purpose |
 |------|---------|
-| `Candidate.swift` | Value type representing a tracked object. Key fields: `id`, `trackingRequest`, `lastBoundingBox`, `embedding`, `matchStatus`, `verificationTracker`, `view` (front/rear/side), `missCount`, `ocrText`. |
-| `CandidateStore.swift` | Thread-safe `@Published` dictionary of candidates. All mutations go through `syncOnMain` for SwiftUI safety. Methods: `upsert`, `update`, `remove`, `containsDuplicateOf` (IoU + center distance). |
-| `DetectionStateMachine.swift` | Pure reducer: given candidate snapshot → derives `DetectionPhase` (`.searching`, `.verifying`, `.found`). |
-
-**MatchStatus enum values:** `unknown` → `waiting` → `partial`/`full`/`rejected`/`lost`
-
----
+| `Candidate.swift` | Value type for a tracked object. Fields include `trackingRequest`, `lastBoundingBox`, `embedding`, `matchStatus`, `verificationTracker`, `rejectReason`, `ocrText`, `view` (`VehicleView`), `degrees`, and `missCount`. **`isBoundingBoxFresh` (`missCount == 0`) must be checked before using a box for direction or depth.** Also defines `MatchStatus` and `RejectReason` (with `isRetryable`). |
+| `CandidateStore.swift` | `ObservableObject` dictionary. Every mutation goes through `syncOnMain` (`DispatchQueue.main.sync` when off-main). `containsDuplicateOf`: IoU > 0.6 or center distance < 0.15. `pruneToSingleMatched` keeps the newest `.full`. |
+| `DetectionStateMachine.swift` | Pure reducer: no candidates → `.searching`, any `.full` → `.found(id)`, otherwise `.verifying(allIDs)`. |
+| `FeatureFlags.swift` | `metaGlassesEnabled` (true in DEBUG, false in release). It has no effect while the glasses code is commented out. |
+| `TrackingRequest.swift`, `VisionAbstractions.swift` | Testable wrappers: `TrackingRequest`, `Detection`, `EmbeddingProtocol`/`Embedding`. |
 
 ### `thing-finder/Models/`
-**Data models and configuration.**
-
 | File | Purpose |
 |------|---------|
-| `Settings.swift` | `@AppStorage`-backed user preferences. Navigation thresholds, beep intervals, speech rate, detection confidence, developer mode toggle, etc. |
-| `SearchMode.swift` | Enum: `.uberFinder` (vehicles) vs `.objectFinder` (80 YOLO classes). |
-| `DetectionPhase.swift` | Enum for pipeline state: `searching`, `verifying(candidateIDs:)`, `found(candidateID:)`. |
-| `DebugOverlayModel.swift` | Observable model for on-screen debug messages. Subscribes to `DebugPublisher`. |
-| `OpenAIModel.swift` | Request/response structs for OpenAI chat completions API (tool calls). |
-| `BoundingBoxModel.swift` | Simple struct: `imageRect`, `viewRect`, `label`, `color`. |
-
----
+| `Settings.swift` | `@AppStorage` preferences. Navigation-relevant defaults: `enable_beeps`/`enable_speech` true, `enable_haptics` **false**, `allow_partial_nav` true, `speech_rate` 0.5, beep interval 0.1–1.0 s, direction thresholds 0.33/0.66, `use_ar_mode` false. Also `SupportedLanguage`, `Direction`, and `hasLiDAR`. |
+| `SearchMode.swift` | `.uberFinder` / `.objectFinder`. |
+| `SearchHistoryItem.swift` | Codable favorite/recent entry (description, mode, paratransit, favorite). |
+| `DetectionPhase.swift` | `searching`, `verifying(candidateIDs:)`, `found(candidateID:)`. |
+| `OpenAIModel.swift` | Chat Completions request/response structs. `ChatCompletionRequest.verifierModel` is shared by every verifier. |
+| `BoundingBoxModel.swift`, `DebugOverlayModel.swift` | UI models. |
 
 ### `thing-finder/Views/`
-**SwiftUI views.**
-
 | File | Purpose |
 |------|---------|
-| `InputView.swift` | Home screen. Text field for vehicle description, object class picker, "Find My Ride" button → navigates to `ContentView`. |
-| `ContentView.swift` | Detection screen wrapper. Contains `DetectorContainer`, Pause/Resume/Double Check buttons. Changing `detectorKey` UUID forces full pipeline reset. |
-| `DetectorContainer.swift` | Owns `CameraViewModel` as `@StateObject`. Composes camera preview + bounding box overlay + FPS display + optional debug overlay. |
-| `CameraPreviewView.swift` | `UIViewControllerRepresentable` wrapping `FrameProvider`. Coordinator holds the actual capture instance. |
-| `BoundingBox.swift` | Renders colored rectangles over detected objects. |
-| `DebugOverlayView.swift` | Scrollable list of debug messages (error/warning/info/success). |
-| `SettingsView.swift` | User-configurable navigation, beep, and developer settings. |
-| `CompassView.swift` | (Commented out) Compass display for directional guidance. |
-
----
+| `InputView.swift` | Home screen (described above). Navigates to `ContentView` via `navigationDestination(item:)`. |
+| `ContentView.swift` | Detection screen: Pause/Resume, Double Check (`detectorKey` reset), Magic Tap. |
+| `DetectorContainer.swift` | Owns `CameraViewModel`. `computeCaptureSource()` returns `.arKit` if `use_ar_mode`, else `.avFoundation`. It is computed **once** in `onAppear`. Composes the preview, box overlay, FPS readout, and debug overlay. |
+| `CameraPreviewView.swift` | `CameraPreviewWrapper` (forces `.videoFile` on simulator DEBUG builds) plus the representable and coordinator that create and hot-swap the `FrameProvider`. |
+| `SettingsView.swift`, `HelpModalView.swift`, `FeedbackSection.swift` | Settings, help guide, and the feedback mail composer. |
+| `BoundingBox.swift`, `DebugOverlayView.swift` | Overlays. |
+| `MetaGlasses*View.swift`, `CompassView.swift` | Live on `meta-s26`; commented out on `main`. |
 
 ### `thing-finder/ViewModels/`
-**View models bridging UI and services.**
-
 | File | Purpose |
 |------|---------|
-| `CameraViewModel.swift` | Implements `FrameProviderDelegate`. On each frame: caches dimensions, calls `pipeline.process(...)`, subscribes to `pipeline.$presentation` to update `@Published boundingBoxes`. |
-
----
+| `CameraViewModel.swift` | `FrameProviderDelegate`. Builds the pipeline via `AppContainer` and computes orientation (`.up` for glasses). Calls `pipeline.process(...)` with the `depthAt` closure. Republishes boxes on the main thread. |
 
 ### `thing-finder/FramePublishers/`
-**Camera frame sources conforming to `FrameProvider` protocol.**
-
 | File | Purpose |
 |------|---------|
-| `FramePublisher.swift` | Protocols: `FrameProvider` (start/stop/previewView) and `FrameProviderDelegate` (processFrame callback with pixel buffer + depth closure). |
-| `VideoCapture.swift` | AVFoundation capture. Uses `AVCaptureDataOutputSynchronizer` for synchronized video + depth. Handles device rotation. |
-| `ARVideoCapture.swift` | ARKit capture. Uses `ARSession` with scene depth and raycasting for depth lookup. |
-| `VideoFileFrameProvider.swift` | Plays local `.MOV` file for simulator testing. Uses `CADisplayLink` to pump frames. |
+| `FramePublisher.swift` | `FrameProvider` and `FrameProviderDelegate.processFrame(buffer:depthAt:)`. `depthAt` takes **a batch of normalized points** and returns `[Float?]` metres. |
+| `VideoCapture.swift` | AVFoundation. Prefers the LiDAR depth camera. Uses `AVCaptureDataOutputSynchronizer` for video plus depth. Frames are processed on `camera-queue`. |
+| `ARVideoCapture.swift` | ARKit. Uses the scene-depth map, falling back to raycasts. Raycasts need **view** coordinates, converted via `ImageUtilities`. |
+| `VideoFileFrameProvider.swift` | Loops the bundled `IMG_7211.MOV` for the simulator. No depth. |
+| `MetaGlassesFrameProvider.swift` | Glasses path (live on `meta-s26`, commented out on `main`). |
 
-**CaptureSourceType enum:** `.avFoundation`, `.arKit`, `.videoFile`
-
----
+`CaptureSourceType` (in `PipelineProtocols.swift`): `.avFoundation`, `.arKit`, `.videoFile`, `.metaGlasses`.
 
 ### `thing-finder/Services/`
-**Business logic services.**
 
-#### `Services/Coordinator/`
-
-| File | Purpose |
-|------|---------|
-| `FramePipelineCoordinator.swift` | **Heart of the app.** Per-frame orchestrator. Calls in order: detector → tracker → driftRepair → lifecycle → verifier → stateMachine → navigation → publishes `FramePresentation`. |
+#### `Services/Coordinator/FramePipelineCoordinator.swift`
+The heart of the app. It runs each frame synchronously on the caller's queue. The order is listed under [Core Architecture](#core-architecture). Distance is the **median of 5 depth samples** (the center plus 4 quarter points) inside the target box. The target box is used only when it is fresh. A `.partial` candidate is targeted only when `allow_partial_nav` is on.
 
 #### `Services/Pipeline/`
-
 | File | Purpose |
 |------|---------|
-| `PipelineProtocols.swift` | Protocols: `ObjectDetector`, `VisionTracker`, `VerifierServiceProtocol`, `DriftRepairServiceProtocol`, `NavigationSpeaker`, etc. |
-| `DetectionManager.swift` | `ObjectDetector` impl. Runs `VNCoreMLRequest` with YOLO model. `stableDetections()` filters by consecutive-frame persistence. |
-| `TrackingManager.swift` | `VisionTracker` impl. Executes `VNTrackObjectRequest`s via `VNSequenceRequestHandler`. Updates candidate bounding boxes. |
-| `DriftRepairService.swift` | Every N frames (default 15), re-associates candidates with fresh detections using IoU + embedding cosine similarity (threshold 0.90). Prevents tracker drift. |
-| `CandidateLifecycleService.swift` | Ingests new detections (if no active match), enforces single-winner invariant, increments `missCount`, removes stale/rejected candidates. |
-| `FPSManager.swift` | Calculates and publishes FPS from frame timestamps. |
-
-#### `Services/Pipeline/Navigation/`
-
-| File | Purpose |
-|------|---------|
-| `NavigationProtocol.swift` | Protocols: `SpeechOutput`, `Beeper`, `NavigationSpeaker`. Config struct for timing thresholds. |
-| `NavigationManager.swift` | `FrameNavigationManager` façade. Composes `NavAnnouncer`, `DirectionSpeechController`, `HapticBeepController`. Single `tick()` call per frame. |
-| `NavAnnouncer.swift` | Phrase selection engine. Handles status transitions, retry announcements, cooldown suppression. Triggers success/failure haptics on match/reject when enabled. |
-| `DirectionSpeechController.swift` | Speaks "left/right/straight ahead" based on target position. |
-| `HapticBeepController.swift` | Maps target centering → beep interval. Drives `SmoothBeeper`. Also drives haptic pulses when enabled. |
-| `AnnouncementCache.swift` | Shared state for phrase throttling across controllers. |
+| `PipelineProtocols.swift` | `ObjectDetector`, `VisionTracker`, `VerifierServiceProtocol`, `DriftRepairServiceProtocol`, `CaptureSourceType`, … |
+| `DetectionManager.swift` | YOLO via `VNCoreMLRequest`, filtered to the target classes. `stableDetections()` exists but is unused. |
+| `TrackingManager.swift` | `VNSequenceRequestHandler` tracker. **See `KNOWN_BUGS.md`:** nothing calls `addTracking`, so per-frame tracking is currently a no-op. |
+| `DriftRepairService.swift` | Runs every **15** frames. Re-associates candidates with detections by embedding similarity ≥ **0.90**. It can recover `.lost` → `.full`. When there is no match, it zeroes the box on purpose to speed up eviction. |
+| `CandidateLifecycleService.swift` | Ingests detections that don't overlap an existing candidate (skipped once a `.full` exists). Resets `missCount` when a detection overlaps with IoU > 0.1. `missThreshold` is **90** frames: `.full` → `.lost`, everything else is removed. `rejectCooldown` is 10 s. Caps candidates at **10** by evicting the highest `missCount`; `.partial`/`.full` are never evicted. |
+| `VisionEmbeddingProvider.swift` | Feature-print embeddings for crops. |
 
 #### `Services/Pipeline/Verification/`
+Full details are in its `README.md`. In summary:
+- `VerifierService.tick` checks `.unknown` candidates at most once per second. It skips boxes under 1% of the frame or with an aspect ratio over 3:1, enforces 0.8 s per-candidate spacing, and pauses while offline.
+- `VerifierSelector` picks an engine from `VerificationConfig.strategy`, applies a 10 s timeout, maps errors to retryable outcomes, and reports to `APIHealthMonitor`.
+- **Hybrid** (car search): `TrafficEyeVerifier` (TrafficEye make/model/color, then a `gpt-6-luna` text comparison; reads with infoQ < 0.85 are retried without the LLM). Any TrafficEye non-match escalates to `TwoStepVerifier` (LLM extract, then compare). Only TwoStep's mismatch is a hard reject.
+- **Paratransit:** always `AdvancedLLMVerifier` (one image call; match / unclear / reject). `.llmOnly` and `.trafficEyeOnly` exist but are unused.
+- **Plates** (when one is parsed from the description): an exact TrafficEye plate match gives `.full`. Otherwise `.partial`, and Vision OCR decides by Levenshtein distance: ≤ 1 → `.full`, 2 → keep trying, more → `.rejected`.
+- `NetworkErrorClassifier` separates connectivity failures from other errors so network-health tracking stays accurate.
+- **In progress (uncommitted):** migrating from `gpt-4.1-mini` (removed from the API on 2027-01-14) to `gpt-6-luna` with `max_completion_tokens: 300` and `reasoning_effort: "none"`.
 
-**Simplified 2-layer architecture.** Two main engines cycle until match or hard reject:
+#### `Services/Pipeline/Navigation/`
+`FrameNavigationManager.tick()` runs its controllers in this order. They share `AnnouncementCache`, because `Speaker.speak` interrupts whatever is currently playing.
 
-| File | Purpose |
-|------|---------|
-| `VerifierService.swift` | Frame-driven orchestrator. Rate-limits verification, crops images, delegates to `VerifierSelector`, handles OCR for license plates. |
-| `VerifierSelector.swift` | Selection logic. Uses `VerificationPolicy.nextKind()` to pick TrafficEye or LLM, resets opposite counter, applies 5s timeout, converts errors to outcomes. |
-| `TrafficEyeVerifier.swift` | **Hybrid verifier:** Calls TrafficEye API for make/model/color → OpenAI for semantic comparison. Robust to side views (as of 10/23). ~1.9s latency. |
-| `TwoStepVerifier.swift` | **Pure LLM verifier:** Two-step OpenAI verification: (1) extract make/model/color, (2) match against description. ~4-5s latency. |
-| `VerificationConfig.swift` | Config: expected plate, OCR settings, retry limits, MMR interval, `useCombinedVerifier` flag. |
-| `VerificationPolicy.swift` | Escalation logic: `nextKind()` returns `.trafficEye` or `.llm` based on attempt counters. Thresholds: `maxPrimaryRetries=3`, `maxLLMRetries=3`. |
-| `VerifierService+OCR.swift` | OCR extension using Vision framework for license plate reading. |
-| `VisionOCREngine.swift` | `OCREngine` impl using `VNRecognizeTextRequest`. |
-| `ImageVerifier.swift` | Protocol for verifiers: `verify(image:candidateId:)` → `VerificationOutcome`. |
+| Controller | Responsibility |
+|---|---|
+| `NetworkFeedbackController` | Offline, connection lost/restored, and weak-signal/improved announcements and haptics. Claims priority for the frame. |
+| `PreMatchFeedbackController` | Owns all speech before a match: "Searching for …", a stable-candidate **detection haptic** (0.3 s gate, 0.5 s cooldown), a "Still looking" heartbeat every 20 s, and rejections. Three or more rejections in 30 s collapse to "Several cars nearby". |
+| `NavAnnouncer` | Speaks only on transitions to `.partial`/`.full`/`.lost`, plus vehicle-view phrases. Plays the success haptic on a match. |
+| `DirectionSpeechController` | Left/ahead/right, spoken only when the category changes (debounced to 4 s). |
+| `DistanceMilestoneController` | 10/5/2/1 m ("almost there"), using locale units, 1.5 m hysteresis, and only the closest milestone when several are crossed at once. Silent without depth. |
+| `HapticBeepController` | Beep rate follows **centering**. Haptic pulse rate follows **distance** (a steady pulse when there's no depth). |
 
-**Verification flow:**
-1. TrafficEye (hybrid: API + OpenAI) attempts first
-2. On failure, counter increments → after 3 failures, escalates to LLM
-3. LLM failures (after 3) escalate back to TrafficEye
-4. Loops until match or hard reject (wrong make/model/plate)
+`NavigationProtocol.swift` holds `NavigationFeedbackConfig` (timing constants) and the `SpeechOutput`/`Beeper`/`NavigationSpeaker` protocols.
 
-**VerificationOutcome:** `isMatch`, `description`, `vehicleView`, `viewScore`, `rejectReason`, `isPlateMatch`
+#### `Services/MetaGlasses/` (live on `meta-s26`)
+`MetaGlassesViewModel`: one consolidated DAT 1.0 view model (registration, permission, `DeviceSession` + `Stream`, raw/720p/30fps, `displayPhase` for the error overlay). It replaced MetaGlassesManager / MetaGlassesEnvironment / WearablesViewModel / StreamSessionViewModel.
 
----
+#### `Services/FPSManager.swift`
+Rolling one-second FPS, capped at 60.
 
 ### `thing-finder/Utilities/`
-**Shared helpers and utilities.**
-
 | File | Purpose |
 |------|---------|
-| `ImageUtilities.swift` | Coordinate transforms between Vision normalized rects and pixel/view space. Handles all `CGImagePropertyOrientation` cases. `cvPixelBuffertoCGImage()`, `unscaledBoundingBoxes()`, `blurScore()`. |
-| `EmbeddingComputer.swift` | Computes `VNFeaturePrintObservation` for images/crops. Used for drift repair similarity. |
-| `CameraDependencies.swift` | Factory struct bundling all `CameraViewModel` dependencies. |
-| `Constants.swift` | Color palette for bounding boxes. |
-| `DescriptionParser.swift` | Extracts license plate tokens from natural language (5-8 alphanumeric with digit+letter). |
-| `MatchStatusSpeech.swift` | Maps `MatchStatus` → spoken phrases. Includes compass-based "car was last seen X degrees to the left/right". |
-| `CompassHeading.swift` | Singleton wrapping `CLLocationManager` for magnetic heading. |
-| `DebugPublisher.swift` | Global singleton for publishing debug messages. Always prints to console; sends to overlay if enabled. |
-| `CGRect+IoU.swift` | Extension for intersection-over-union calculation. |
-| `String+Levenshtein.swift` | Edit distance for fuzzy plate matching. |
-| `DeviceRotationViewModifier.swift` | SwiftUI modifier for orientation change callbacks. |
-
-#### `Utilities/Audio/`
-
-| File | Purpose |
-|------|---------|
-| `Speaker.swift` | `SpeechOutput` impl using `AVSpeechSynthesizer`. |
-| `SmoothBeeper.swift` | `Beeper` impl. Generates click sounds, smoothly adjusts interval via EMA. Handles background/foreground transitions. |
-| `HapticManager.swift` | Haptic feedback manager. Provides interval-based pulses and one-shot success/failure haptics. |
-| `AudioControl.swift` | Notification-based pause mechanism for all audio. |
-
-#### `Utilities/CoreML/`
-
-| File | Purpose |
-|------|---------|
-| `ThresholdProvider.swift` | Custom `MLFeatureProvider` to override YOLO IoU/confidence thresholds. |
-| `FeaturePrint+Similarity.swift` | Extension for cosine similarity between `VNFeaturePrintObservation`s. |
-
----
-
-### `thing-finder/Docs/`
-**Internal documentation (may be outdated).**
-
-- `PipelineOverview.md` – High-level architecture
-- `VerificationStrategySystem.md` – Strategy pattern docs
-- `LicensePlateVerification.md` – OCR flow
-- `NavigationManagerRefactor.md` – Navigation system design
-- `CodeReview.md`, `DocumentationStandard.md` – Style guides
-
----
+| `ImageUtilities.swift` | Vision ↔ pixel ↔ view rect transforms for every orientation, `cvPixelBuffertoCGImage`, `unscaledBoundingBoxes`. |
+| `EmbeddingComputer.swift`, `CoreML/FeaturePrint+Similarity.swift` | Feature prints and cosine similarity remapped to 0–1. |
+| `CoreML/ThresholdProvider.swift` | YOLO IoU/confidence override (0.45 / 0.25). Only `CameraDependencies` applies it. |
+| `CameraDependencies.swift` | Dependency bundle for `CameraViewModel`. |
+| `DescriptionParser.swift`, `String+Levenshtein.swift`, `CGRect+IoU.swift` | Plate token extraction (5–8 characters with at least one digit and one letter), fuzzy plate matching, and IoU. |
+| `MatchStatusSpeech.swift`, `CompassHeading.swift` | Status phrases. A `.lost` target gets a compass hint when the heading has changed by more than 60°. Retry phrases are no longer spoken. |
+| `LanguageManager.swift` | Overrides `AppleLanguages` with en/es/system. |
+| `DebugPublisher.swift`, `DeviceRotationViewModifier.swift`, `Constants.swift` | Debug messages, rotation callbacks, and the box palette. |
+| `Audio/` | `Speaker` (AVSpeechSynthesizer; each `speak` interrupts the current one), `SmoothBeeper` (EMA interval), `HapticManager` (pulses plus success/failure/detection), `AudioControl` (pause/resume all). |
+| `Networking/` | `NetworkMonitor` (an NWPathMonitor singleton; `currentConnectivity()` waits up to 0.3 s for the first callback on cold start), `APIHealthMonitor` (degraded after 3 consecutive connectivity failures), and `URLSessionProtocol` (a dependency-injection shim). |
 
 ### `thing-finderTests/`
-**Unit tests using XCTest.**
-
-Tests for lifecycle service, verification strategies, pipeline integration, and mock objects.
+XCTest, grouped by layer: `Core/`, `Models/`, `Services/`, `Navigation/`, `Verification/`, `Utilities/`. Shared fakes for every protocol are in `Mocks/`, canned API JSON and candidates in `Fixtures/`, and test photos in `Assets/`. See `thing-finder/Docs/TestingPlan.md` for coverage and gaps.
 
 ---
 
 ## Core Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         SwiftUI Layer                           │
-│  InputView → ContentView → DetectorContainer → BoundingBoxes    │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      CameraViewModel                            │
-│  - Receives frames from FrameProvider                           │
-│  - Delegates to FramePipelineCoordinator                        │
-│  - Publishes boundingBoxes for UI                               │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  FramePipelineCoordinator                       │
-│  Per-frame orchestration:                                       │
-│  1. DetectionManager.detect()                                   │
-│  2. TrackingManager.tick()                                      │
-│  3. DriftRepairService.tick()                                   │
-│  4. CandidateLifecycleService.tick()                            │
-│  5. VerifierService.tick()                                      │
-│  6. DetectionStateMachine.update()                              │
-│  7. NavigationManager.tick()                                    │
-│  8. Publish FramePresentation                                   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       CandidateStore                            │
-│  Thread-safe dictionary of Candidate structs                    │
-│  - Mutations sync to main thread                                │
-│  - Duplicate detection via IoU + center distance                │
-└─────────────────────────────────────────────────────────────────┘
+SwiftUI:  InputView → ContentView → DetectorContainer → BoundingBox overlay
+                                          │
+FrameProvider (VideoCapture | ARVideoCapture | VideoFileFrameProvider)
+                                          │ processFrame(buffer, depthAt)
+CameraViewModel ─────────────────────────▶ FramePipelineCoordinator.process()
+  1. DetectionManager.detect            (YOLO, class filter)
+  2. TrackingManager.tick               (Vision tracking; see KNOWN_BUGS)
+  3. DriftRepairService.tick            (every 15 frames, embeddings)
+  4. CandidateLifecycleService.tick     (ingest, missCount, cap, lost)
+  5. VerifierService.tick               (async TrafficEye/LLM/OCR)
+  6. DetectionStateMachine.update       (searching/verifying/found)
+  7. target box + 5-point median depth
+  8. FrameNavigationManager.tick        (network → pre-match → announcer → direction → milestones → beeps/haptics)
+  9. publish FramePresentation {phase, candidates}
+                                          │
+CandidateStore (main-thread-synchronized dictionary of Candidate values)
 ```
 
----
-
-## Data Flow
-
-1. **Frame arrives** from `VideoCapture`/`ARVideoCapture`/`VideoFileFrameProvider`
-2. **Detection** – YOLO finds objects, filters by target classes
-3. **Tracking** – Vision updates existing candidate bounding boxes
-4. **Drift Repair** – Every 15 frames, re-associates via embedding similarity
-5. **Lifecycle** – Creates new candidates, removes stale ones (missCount > 15)
-6. **Verification** – TrafficEye/LLM determines if candidate matches description
-7. **State Machine** – Derives phase: searching → verifying → found
-8. **Navigation** – Speaks status, plays beeps based on centering
-9. **UI Update** – `FramePresentation` published, SwiftUI renders boxes
+The pipeline runs synchronously on the capture queue (`camera-queue` for AVFoundation). Store writes are synchronized onto the main thread. Verification network calls are asynchronous (Combine) and write results back through the store.
 
 ---
 
 ## Key Concepts
 
-### Candidate Lifecycle
-- **Created** when detection doesn't overlap existing candidate (IoU < 0.6)
-- **Tracked** via `VNTrackObjectRequest` each frame
-- **Verified** by TrafficEye → LLM escalation loop
-- **Removed** when `missCount` exceeds threshold or hard rejected
-
-### Match Status Flow
+### Match Status
 ```
 unknown → waiting → partial (vehicle matched, plate pending)
-                  → full (complete match)
-                  → rejected (wrong vehicle/plate)
-                  → lost (was full, now out of frame)
+                  → full    (complete match)  → lost (missed 90 frames; drift repair can restore it)
+                  → rejected (hard reject; removed after 10 s)
 ```
+Retryable reject reasons (`unclearImage`, `lowConfidence`, `insufficientInfo`, `apiError`, `ambiguous`, `licensePlateNotVisible`, `networkError`) keep the candidate eligible for another attempt. Hard ones (`wrongModelOrColor`, `licensePlateMismatch`, `wrongObjectClass`) reject it.
 
-### Verification Escalation
-- TrafficEye attempts: 1 fail → try side view, 3 fails → escalate to LLM
-- LLM attempts: 2 fails → back to TrafficEye
-- Counters reset when switching engines
+### Single-winner invariant
+Once any candidate is `.full`, lifecycle stops ingesting new detections and `pruneToSingleMatched` keeps only the newest match.
 
-### Navigation Feedback
-- **Speech**: Status announcements, directional cues, retry explanations
-- **Beeps**: Interval varies with target centering (faster = more centered)
-- **Haptics**: Optional pulse feedback matching beep interval, plus success/failure haptics on match/reject
-- **Compass**: Lost targets announced with compass direction
+### Speech ownership
+Before a match, `PreMatchFeedbackController` does all the talking. After a match, speech is driven by transitions and milestones. Record an announcement only after speech actually fires, and respect the same-tick `AnnouncementCache` checks.
+
+### Network health
+`NetworkMonitor` detects outages and `APIHealthMonitor` detects weak signal. TrafficEye reports network failures as an outcome (`RejectReason.networkError`) rather than as a publisher error. `VerificationOutcome.didCompleteNetworkRequest` keeps local failures from clearing the degraded state.
+
+### Meta glasses (enabled on `meta-s26`, disabled on `main`)
+On `meta-s26` the code is live on DAT SDK 1.0.0; required Info.plist keys, build-setting usage strings, and Wi-Fi/Hotspot entitlements are listed in the `meta-wearables-dat` skill. On `main`, since 2026-04-04 the glasses code has been commented out ("COMMENTED OUT FOR APP STORE SUBMISSION") and the DAT SDK has been removed from `Package.swift`. To re-enable it, restore all of the following:
+- **Code:** the Package dependency; in `App.swift`, the configure call, environment objects, and `onOpenURL`; in `DetectorContainer`, the environment objects, the capture-source branch, and the `onChange` observers; the `CameraPreviewView` provider case; the Settings and Help sections.
+- **`Info.plist` keys:** MWDAT, URL scheme, Bluetooth, and background modes.
+
+Also fix the `KNOWN_BUGS.md` re-pair issue. SDK guidance is in `.agents/skills/meta-wearables-dat/`.
+
+---
+
+## Python Tooling
+
+The Python tooling is not part of the app build. See `scripts/README.md`, `evals/README.md`, and `evals/realworld/README.md`.
+- `evals/realworld/`: real-image, end-to-end evaluation of the Swift verifier pipelines (TrafficEye, TwoStep, single-call, Carmen). Used to choose `gpt-6-luna` and the new thresholds.
+- `evals/*.py`: an older harness that grades only the text-comparison step, using synthetic TrafficEye outputs.
+- `scripts/`: dataset generation (`gen_car_eval*.py`, `build_uber_allow.py`), CSV analysis, and an API health check.
+- **Cost guardrail:** eval scripts refuse runs of more than 60 API requests without `--yes`. Runs of about 1k requests or more need the maintainer's approval.
+- `datasets/`, `evals/cache/`, and `results/` are gitignored.
 
 ---
 
 ## Engineering Principles
 
-1. **Safe from Bugs** – Thread-safe stores, timeout handling, graceful error recovery
-2. **Easy to Understand** – Protocol-based services, clear data flow, value types where possible
-3. **Ready for Change** – Dependency injection via `AppContainer`, strategy pattern for verification
+1. **Safe from bugs.** Thread-safe store, timeouts on every network call, and graceful degradation when offline. A wrong announcement can physically mislead a blind user.
+2. **Easy to understand.** Protocol-based services, one per-frame data flow, and value types where possible.
+3. **Ready for change.** Dependency injection via `AppContainer`, a strategy-based verifier selection, and a mock for every protocol in `thing-finderTests/Mocks/`.
 
 ---
 
+## Further Reading
+
+| Topic | Doc |
+|---|---|
+| Verification internals | `thing-finder/Services/Pipeline/Verification/README.md` |
+| Navigation and audio behavior | `thing-finder/Docs/NavigationBehavior.md` |
+| Design decisions | `thing-finder/Docs/DesignDecisions.md` |
+| Test coverage and plan | `thing-finder/Docs/TestingPlan.md` |
+| Open bugs | `KNOWN_BUGS.md` |
+| Agent setup (Devin / Claude Code / Codex) | `AGENTS.md` |
+
 ## Contact
 
-For questions: mitassistivetechnologyclub@gmail.com
+For questions: assistivetech@mit.edu

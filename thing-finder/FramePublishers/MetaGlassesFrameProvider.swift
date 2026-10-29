@@ -1,10 +1,9 @@
-// COMMENTED OUT FOR APP STORE SUBMISSION - Meta SDK requires Bluetooth permissions
-// Uncomment this file when ready to use Meta glasses in production
+// Meta Ray-Ban glasses (DAT SDK); requires Bluetooth, local network, and Wi-Fi entitlements
 
 /*
  * MetaGlassesFrameProvider.swift
  *
- * FrameProvider implementation for Meta glasses using the DAT SDK 0.9.
+ * FrameProvider implementation for Meta glasses using the DAT SDK 1.0.
  *
  * Push-based adapter: subscribes to MetaGlassesViewModel's frame publisher
  * and forwards each new frame to the FrameProviderDelegate. No polling.

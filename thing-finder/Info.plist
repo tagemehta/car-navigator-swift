@@ -28,25 +28,17 @@
 		<key>TeamID</key>
 		<string>$(DEVELOPMENT_TEAM)</string>
 	</dict>
-    <!-- Background mode for Bluetooth LE connectivity -->
-  <key>UIBackgroundModes</key>
-  <array>
-    <string>bluetooth-central</string>
-  </array>
-  <key>NSBluetoothAlwaysUsageDescription</key>
-  <string>Needed to connect to Meta Wearables</string>
-
-  <!-- Local network access for Wi-Fi streaming (camera and display) -->
-  <key>NSLocalNetworkUsageDescription</key>
-  <string>Needed to stream from Meta Wearables over Wi-Fi</string>
-  <!-- Enables automatic discovery of devices and services on a local network -->
-  <key>NSBonjourServices</key>
-  <array>
-    <string>_bonjour._tcp</string>
-  </array>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_bonjour._tcp</string>
+	</array>
 	<key>OPENAI_API</key>
 	<string>$(OPENAI_API)</string>
 	<key>TRAFFICEYE_API_KEY</key>
 	<string>$(TRAFFICEYE_API_KEY)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
 </dict>
 </plist>

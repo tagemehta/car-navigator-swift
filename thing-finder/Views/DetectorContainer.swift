@@ -19,7 +19,7 @@ struct DetectorContainer: View {
 
   // MARK: – Dependencies
   @ObservedObject private var debugOverlayModel = AppContainer.shared.debugOverlayModel
-  // COMMENTED OUT FOR APP STORE SUBMISSION
+  // Meta glasses
   @EnvironmentObject private var glassesVM: MetaGlassesViewModel
   @EnvironmentObject private var router: AppRouter
 
@@ -76,11 +76,11 @@ struct DetectorContainer: View {
   /// `.metaGlasses`; connection, permission, and errors are surfaced as an
   /// overlay (see `GlassesPhaseOverlay`) rather than a silent camera fallback.
   private func computeCaptureSource() -> CaptureSourceType {
-    // COMMENTED OUT FOR APP STORE SUBMISSION - begin Meta glasses capture source
+    // begin Meta glasses capture source
     if FeatureFlags.metaGlassesEnabled && settings.useMetaGlasses {
       return .metaGlasses
     }
-    // COMMENTED OUT FOR APP STORE SUBMISSION - end Meta glasses capture source
+    // end Meta glasses capture source
     if settings.useARMode {
       return .arKit
     }
@@ -98,7 +98,7 @@ struct DetectorContainer: View {
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-      // COMMENTED OUT FOR APP STORE SUBMISSION - begin Meta glasses phase overlay
+      // begin Meta glasses phase overlay
       // While glasses are the selected source, surface connection/error state
       // instead of silently falling back to the phone camera.
       if currentCaptureSource == .metaGlasses {
@@ -107,7 +107,7 @@ struct DetectorContainer: View {
           onOpenSettings: { router.openMetaGlassesSettings() }
         )
       }
-      // COMMENTED OUT FOR APP STORE SUBMISSION - end Meta glasses phase overlay
+      // end Meta glasses phase overlay
 
       // Bounding boxes
       BoundingBoxViewOverlay(boxes: $detectionModel.boundingBoxes)
@@ -157,7 +157,7 @@ struct DetectorContainer: View {
   }
 }
 
-// COMMENTED OUT FOR APP STORE SUBMISSION - begin Meta glasses phase overlay
+// begin Meta glasses phase overlay
 
 /// Full-screen overlay shown while the Meta glasses are the selected camera
 /// source but frames are not yet flowing. Communicates connection progress and
@@ -273,4 +273,4 @@ private struct GlassesPhaseOverlay: View {
   }
 }
 
-// COMMENTED OUT FOR APP STORE SUBMISSION - end Meta glasses phase overlay
+// end Meta glasses phase overlay

@@ -1349,9 +1349,6 @@
         }
       }
     },
-    "High Quality Stream" : {
-
-    },
     "How often the same direction is repeated." : {
       "localizations" : {
         "es" : {
@@ -2584,9 +2581,6 @@
           }
         }
       }
-    },
-    "Uses more Bluetooth bandwidth for higher resolution (720p / 30fps)." : {
-
     },
     "Vehicle Description" : {
       "localizations" : {
