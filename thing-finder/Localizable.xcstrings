@@ -1576,16 +1576,6 @@
         }
       }
     },
-    "Require License Plate" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Requerir Matrícula"
-          }
-        }
-      }
-    },
     "Navigation Feedback" : {
       "localizations" : {
         "es" : {
@@ -1767,6 +1757,9 @@
           }
         }
       }
+    },
+    "Only start guidance once the license plate is fully verified" : {
+
     },
     "Opens email composer to send feedback to the development team" : {
       "localizations" : {
@@ -2020,6 +2013,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Intervalo de repetición: %@s"
+          }
+        }
+      }
+    },
+    "Require License Plate" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requerir Matrícula"
           }
         }
       }
@@ -2284,17 +2287,8 @@
         }
       }
     },
-    "Wait for a confirmed license plate match before starting navigation." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esperar la confirmación de la matrícula antes de iniciar la navegación."
-          }
-        }
-      }
-    },
     "Start receiving guidance before license plate is fully verified" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2596,6 +2590,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Patrones de vibración que pulsan más rápido al acercarse a su objetivo"
+          }
+        }
+      }
+    },
+    "Wait for a confirmed license plate match before starting navigation." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperar la confirmación de la matrícula antes de iniciar la navegación."
           }
         }
       }
