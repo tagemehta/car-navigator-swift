@@ -39,8 +39,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     XCTAssertEqual(verifier.targetTextDescription, "blue honda civic")
@@ -54,8 +53,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     XCTAssertEqual(verifier.targetClasses, ["car", "truck"])
@@ -68,8 +66,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     XCTAssertEqual(verifier.targetClasses, ["car"])
@@ -88,8 +85,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     let image = createTestImage()
@@ -115,11 +111,11 @@ final class TrafficEyeVerifierTests: XCTestCase {
     mockImageUtils.mockBlurScore = 0.02  // Low blur score = sharp
     mockURLSession.setJSONResponse(
       TestAPIResponses.trafficEyeSuccess,
-      for: "trafficeye.ai/recognition"
+      for: "proxy.test/recognition"
     )
     mockURLSession.setJSONResponse(
       TestAPIResponses.openAIMatch,
-      for: "api.openai.com/v1/chat/completions"
+      for: "proxy.test/v1/chat/completions"
     )
 
     let config = VerificationConfig(expectedPlate: nil)
@@ -128,8 +124,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     let image = createTestImage()
@@ -160,7 +155,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
 
     mockURLSession.setJSONResponse(
       TestAPIResponses.trafficEyeNoVehicle,
-      for: "trafficeye.ai/recognition"
+      for: "proxy.test/recognition"
     )
 
     let config = VerificationConfig(expectedPlate: nil)
@@ -169,8 +164,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     let image = createTestImage()
@@ -200,7 +194,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
 
     mockURLSession.setResponse(
       .error(URLError(.notConnectedToInternet)),
-      for: "trafficeye.ai/recognition"
+      for: "proxy.test/recognition"
     )
 
     let config = VerificationConfig(expectedPlate: nil)
@@ -209,8 +203,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     let image = createTestImage()
@@ -238,7 +231,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
 
     mockURLSession.setJSONResponse(
       "{ this is not valid json",
-      for: "trafficeye.ai/recognition"
+      for: "proxy.test/recognition"
     )
 
     let config = VerificationConfig(expectedPlate: nil)
@@ -247,8 +240,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     verifier.verify(image: createTestImage(), candidateId: UUID())
@@ -270,7 +262,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
 
     mockURLSession.setJSONResponse(
       TestAPIResponses.trafficEyeLowConfidence,
-      for: "trafficeye.ai/recognition"
+      for: "proxy.test/recognition"
     )
 
     let config = VerificationConfig(expectedPlate: nil)
@@ -279,8 +271,42 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
+    )
+
+    let image = createTestImage()
+    let candidateId = UUID()
+
+    verifier.verify(image: image, candidateId: candidateId)
+      .sink(
+        receiveCompletion: { _ in },
+        receiveValue: { outcome in
+          XCTAssertFalse(outcome.isMatch)
+          XCTAssertEqual(outcome.rejectReason, .insufficientInfo)
+          expectation.fulfill()
+        }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 2.0)
+  }
+
+  /// infoQ 0.72 used to reach the LLM; with the 0.85 gate it is a retryable skip.
+  func test_verify_mediumConfidenceMMR_isGatedBeforeLLM() {
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    mockURLSession.setJSONResponse(
+      TestAPIResponses.trafficEyeBelowInfoGate,
+      for: "proxy.test/recognition"
+    )
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let verifier = TrafficEyeVerifier(
+      targetTextDescription: "blue honda",
+      config: config,
+      imgUtils: mockImageUtils,
+      urlSession: mockURLSession,
+      proxy: .test
     )
 
     let image = createTestImage()
@@ -307,7 +333,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
 
     mockURLSession.setResponse(
       .error(URLError(.notConnectedToInternet)),
-      for: "trafficeye.ai/recognition"
+      for: "proxy.test/recognition"
     )
 
     let config = VerificationConfig(expectedPlate: nil)
@@ -316,8 +342,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     let image = createTestImage()
@@ -346,8 +371,7 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     // Initially should be very small (just created)
@@ -364,12 +388,57 @@ final class TrafficEyeVerifierTests: XCTestCase {
       config: config,
       imgUtils: mockImageUtils,
       urlSession: mockURLSession,
-      trafficEyeApiKey: "test-key",
-      openAIApiKey: "test-key"
+      proxy: .test
     )
 
     // Verify the mock session is used (no requests yet)
     XCTAssertTrue(mockURLSession.requestHistory.isEmpty)
+  }
+
+  // MARK: - Proxy
+
+  func test_verify_sendsProxyAuthAndNoProviderKeys() {
+    let expectation = XCTestExpectation(description: "Verify completes")
+
+    mockImageUtils.mockBlurScore = 0.02
+    mockURLSession.setJSONResponse(
+      TestAPIResponses.trafficEyeSuccess,
+      for: "proxy.test/recognition"
+    )
+    mockURLSession.setJSONResponse(
+      TestAPIResponses.openAIMatch,
+      for: "proxy.test/v1/chat/completions"
+    )
+
+    let config = VerificationConfig(expectedPlate: nil)
+    let verifier = TrafficEyeVerifier(
+      targetTextDescription: "blue honda civic",
+      config: config,
+      imgUtils: mockImageUtils,
+      urlSession: mockURLSession,
+      proxy: .test
+    )
+
+    verifier.verify(image: createTestImage(), candidateId: UUID())
+      .sink(
+        receiveCompletion: { _ in },
+        receiveValue: { _ in expectation.fulfill() }
+      )
+      .store(in: &cancellables)
+
+    wait(for: [expectation], timeout: 2.0)
+
+    let requests = mockURLSession.requestHistory
+    XCTAssertEqual(
+      requests.compactMap { $0.url?.absoluteString },
+      ["https://proxy.test/recognition", "https://proxy.test/v1/chat/completions"]
+    )
+    for request in requests {
+      XCTAssertEqual(request.value(forHTTPHeaderField: "X-App-Token"), APIProxy.test.appToken)
+      XCTAssertEqual(request.value(forHTTPHeaderField: "X-Device-Id"), APIProxy.test.deviceId)
+      XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+      XCTAssertNil(request.value(forHTTPHeaderField: "apiKey"))
+    }
   }
 
   // MARK: - Helpers

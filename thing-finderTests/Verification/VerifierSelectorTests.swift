@@ -60,7 +60,7 @@ final class VerifierSelectorTests: XCTestCase {
       config: config
     )
 
-    let candidate = TestCandidates.make(trafficAttempts: 3)
+    let candidate = TestCandidates.make(trafficAttempts: VerifierSelector.maxTrafficEyeRetries)
     store.upsert(candidate)
 
     let expectation = XCTestExpectation(description: "Verify completes")
@@ -84,7 +84,8 @@ final class VerifierSelectorTests: XCTestCase {
       config: config
     )
 
-    let candidate = TestCandidates.make(trafficAttempts: 3, llmAttempts: 3)
+    let candidate = TestCandidates.make(
+      trafficAttempts: VerifierSelector.maxTrafficEyeRetries, llmAttempts: 3)
     store.upsert(candidate)
 
     let expectation = XCTestExpectation(description: "Verify completes")
@@ -108,7 +109,8 @@ final class VerifierSelectorTests: XCTestCase {
       config: config
     )
 
-    let candidate = TestCandidates.make(trafficAttempts: 2)  // Below threshold of 3
+    let candidate = TestCandidates.make(
+      trafficAttempts: VerifierSelector.maxTrafficEyeRetries - 1)  // Below threshold
     store.upsert(candidate)
 
     let expectation = XCTestExpectation(description: "Verify completes")

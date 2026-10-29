@@ -25,8 +25,7 @@ public final class TwoStepVerifier: ImageVerifier {
   public let targetTextDescription: String
 
   // MARK: - Private
-  private let endpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
-  private let apiKey = Bundle.main.infoDictionary?["OPENAI_API"] as? String ?? ""
+  private let proxy = APIProxy.shared
   private let encoder: JSONEncoder = {
     let e = JSONEncoder()
     e.outputFormatting = [.prettyPrinted]
@@ -119,12 +118,12 @@ public final class TwoStepVerifier: ImageVerifier {
       "[TwoStep][\(candidateId.uuidString.suffix(8))] Starting verification...")
 
     // 1️⃣ Build step-1 request (extract)
-    var req1 = URLRequest(url: endpoint)
+    var req1 = URLRequest(url: proxy.chatCompletionsURL)
     req1.httpMethod = "POST"
-    req1.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    proxy.authorize(&req1)
     req1.setValue("application/json", forHTTPHeaderField: "Content-Type")
     let chat1 = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(
           role: "system",
@@ -133,7 +132,7 @@ public final class TwoStepVerifier: ImageVerifier {
           role: "user", content: [MessageContent(imageURL: "data:image/png;base64,\(base64)")]),
       ],
       tools: [Self.extractToolSchema],
-      max_tokens: 100)
+      max_completion_tokens: 300)
     req1.httpBody = try? encoder.encode(chat1)
 
     return URLSession.shared.dataTaskPublisher(for: req1)
@@ -228,7 +227,7 @@ public final class TwoStepVerifier: ImageVerifier {
       """
 
     let requestPayload = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(role: "system", content: [MessageContent(text: systemPrompt)]),
         Message(role: "user", content: [MessageContent(text: userPrompt)]),
@@ -254,12 +253,12 @@ public final class TwoStepVerifier: ImageVerifier {
               ], required: ["probability_match", "semantic_reason"]))
         )
       ],
-      max_tokens: 50)
+      max_completion_tokens: 300)
 
-    var req = URLRequest(url: endpoint)
+    var req = URLRequest(url: proxy.chatCompletionsURL)
     req.httpMethod = "POST"
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    req.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    proxy.authorize(&req)
     req.httpBody = try? JSONEncoder().encode(requestPayload)
 
     return URLSession.shared.dataTaskPublisher(for: req)

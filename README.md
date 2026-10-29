@@ -143,11 +143,13 @@ Place the exported `yolo11n.mlpackage` in `thing-finder/CVModels/` (gitignored).
 
 ### 2. API Keys
 
-Create `thing-finder/Secrets.xcconfig` (gitignored) defining:
-- `OPENAI_API`: OpenAI key for LLM verification
-- `TRAFFICEYE_API_KEY`: TrafficEye key
+The app does not ship provider keys. Verifier calls go through the Cloudflare Worker in `proxy/`, which holds the OpenAI and TrafficEye keys as Worker secrets (`OPENAI_KEY`, `TRAFFICEYE_KEY`, `APP_TOKEN`).
 
-`Info.plist` expands these build settings, and the verifiers read them at runtime. Never commit this file.
+Create `thing-finder/Secrets.xcconfig` (gitignored) defining:
+- `PROXY_BASE_URL`: the Worker URL. Write `//` as `/$()/` because xcconfig treats `//` as a comment, e.g. `https:/$()/curbtocar-proxy.curbtocar.workers.dev`
+- `PROXY_APP_TOKEN`: must match the Worker's `APP_TOKEN` secret
+
+`Info.plist` expands these build settings, and `APIProxy` reads them at runtime. Never commit this file. The local scripts and evals can still read `OPENAI_API` / `TRAFFICEYE_API_KEY` from this file, but the app no longer uses them.
 
 ### 3. Meta Glasses (currently disabled)
 

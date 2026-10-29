@@ -15,8 +15,7 @@ public final class AdvancedLLMVerifier: ImageVerifier {
   public let targetTextDescription: String
 
   // MARK: - Private
-  private let endpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
-  private let apiKey = Bundle.main.infoDictionary?["OPENAI_API"] as? String ?? ""
+  private let proxy = APIProxy.shared
   private let encoder: JSONEncoder = {
     let e = JSONEncoder()
     e.outputFormatting = [.prettyPrinted]
@@ -98,13 +97,13 @@ public final class AdvancedLLMVerifier: ImageVerifier {
     }
     lastVerifiedDate = Date()
 
-    var req = URLRequest(url: endpoint)
+    var req = URLRequest(url: proxy.chatCompletionsURL)
     req.httpMethod = "POST"
-    req.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    proxy.authorize(&req)
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let chat = ChatCompletionRequest(
-      model: "gpt-4.1-mini",
+      model: ChatCompletionRequest.verifierModel,
       messages: [
         Message(role: "system", content: [MessageContent(text: systemPrompt)]),
         Message(
@@ -119,7 +118,7 @@ public final class AdvancedLLMVerifier: ImageVerifier {
         ),
       ],
       tools: [Self.verifyToolSchema],
-      max_tokens: 100
+      max_completion_tokens: 300
     )
     req.httpBody = try? encoder.encode(chat)
 
