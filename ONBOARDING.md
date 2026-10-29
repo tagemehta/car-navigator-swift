@@ -28,7 +28,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 ### Prerequisites
 - Xcode 15+, iOS 16+ deployment target. No third-party SPM dependencies are active.
 - A device with a camera. A LiDAR device gives the best distance cues. The simulator plays a bundled video (`IMG_7211.MOV`) instead of the camera.
-- `thing-finder/Secrets.xcconfig` (gitignored) defines `OPENAI_API` and `TRAFFICEYE_API_KEY`. `Info.plist` expands them, and the verifiers read them via `Bundle.main.infoDictionary`.
+- `thing-finder/Secrets.xcconfig` (gitignored) defines `PROXY_BASE_URL` and `PROXY_APP_TOKEN`. `Info.plist` expands them, and `APIProxy` reads them via `Bundle.main.infoDictionary`. Provider keys live only in the Cloudflare Worker (`proxy/`).
 - `thing-finder/CVModels/` (gitignored) must contain `yolo11n.mlpackage`. `Image2Image.mlmodel` is only referenced by commented-out code.
 
 ### Build & test
@@ -60,7 +60,7 @@ It combines on-device YOLO detection with TrafficEye/OpenAI verification and on-
 | File | Purpose |
 |------|---------|
 | `AppContainer.swift` | Composition root. `makePipeline(classes:description:isParatransitMode:settings:)` builds a `FramePipelineCoordinator` with the YOLO model, tracker, drift repair, lifecycle, `VerifierService` (strategy `.hybrid` or `.paratransit`), and `FrameNavigationManager`. It also parses license plates via `DescriptionParser`. |
-| `Info.plist` | Only `OPENAI_API` and `TRAFFICEYE_API_KEY`, expanded from `Secrets.xcconfig`. |
+| `Info.plist` | Only `PROXY_BASE_URL` and `PROXY_APP_TOKEN`, expanded from `Secrets.xcconfig`. |
 | `Localizable.xcstrings`, `InfoPlist.xcstrings` | English source with Spanish translations. |
 | `Debugging.swift` | Dead file; entirely commented out. |
 

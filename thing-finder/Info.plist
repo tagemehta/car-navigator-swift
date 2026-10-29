@@ -40,5 +40,9 @@
 	<array>
 		<string>bluetooth-central</string>
 	</array>
+	<key>PROXY_APP_TOKEN</key>
+	<string>$(PROXY_APP_TOKEN)</string>
+	<key>PROXY_BASE_URL</key>
+	<string>$(PROXY_BASE_URL)</string>
 </dict>
 </plist>

@@ -4,7 +4,14 @@ struct ChatCompletionRequest: Encodable {
   let messages: [Message]
   let tools: [Tool]
   let tool_choice: String = "required"
-  let max_tokens: Int
+  /// Reasoning models take `max_completion_tokens`; the budget includes any reasoning tokens.
+  let max_completion_tokens: Int
+  /// `gpt-6-luna` supports function calling on Chat Completions only with effort "none".
+  let reasoning_effort: String = "none"
+
+  /// Shared model for all verifiers (`gpt-4.1-mini` is removed from the API on 2027-01-14).
+  /// Chosen by the real-image eval in `evals/realworld/`.
+  static let verifierModel = "gpt-6-luna"
 }
 
 struct Message: Encodable {

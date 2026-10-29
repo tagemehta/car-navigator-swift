@@ -70,6 +70,25 @@ enum TestAPIResponses {
     }
     """
 
+  /// TrafficEye response whose infoQ (0.72) is above the old 0.4 gate but below 0.85.
+  static let trafficEyeBelowInfoGate = """
+    {
+      "data": {
+        "combinations": [{
+          "roadUsers": [{
+            "mmr": {
+              "make": {"value": "Toyota", "score": 0.80},
+              "model": {"value": "Camry", "score": 0.60},
+              "color": {"value": "GRAY", "score": 0.70},
+              "view": {"value": "side", "score": 0.85}
+            },
+            "plates": []
+          }]
+        }]
+      }
+    }
+    """
+
   /// TrafficEye response with no vehicle detected.
   static let trafficEyeNoVehicle = """
     {

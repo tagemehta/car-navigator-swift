@@ -266,8 +266,14 @@ public final class VerifierService: VerifierServiceProtocol {
               // Convert string rejectReason to enum
               let reason = outcome.rejectReason
 
+              // In hybrid mode a TrafficEye mismatch is not final: it escalates to TwoStep,
+              // and only TwoStep's mismatch hard-rejects the candidate.
+              let escalates =
+                self.verificationConfig.strategy == .hybrid
+                && strategyName.contains("TrafficEye") && reason == .wrongModelOrColor
+
               // Check if the reason is retryable
-              if let reason = reason, reason.isRetryable {
+              if let reason = reason, reason.isRetryable || escalates {
                 DebugPublisher.shared.info(
                   "[Verifier][\(cand.id.uuidString.suffix(8))] State before update: \($0.matchStatus). Retryable reason: \(reason). Updating to .unknown."
                 )

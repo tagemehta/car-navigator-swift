@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-API health check for TrafficEye and OpenAI.
+API health check for TrafficEye and OpenAI, through the CurbToCar proxy (proxy/).
 
-Intended to run from cron (or launchd) to verify that API keys and endpoints
-are working. The script exits with code 0 only when both APIs return valid
-responses.
+Intended to run from cron (or launchd). It calls both APIs the same way the app does,
+so it checks the proxy, its stored keys, and the upstream APIs together. Every run sends
+a Slack summary (or a macOS notification if Slack is unavailable). The script exits with
+code 0 only when both APIs return valid responses.
 
-Key resolution order (first match wins):
-  1. Environment variables: OPENAI_API, TRAFFICEYE_API_KEY
+Setting resolution order (first match wins):
+  1. Environment variables: PROXY_BASE_URL, PROXY_APP_TOKEN, SLACK_WEBHOOK_URL
   2. scripts/.env
   3. thing-finder/Secrets.xcconfig
 """
@@ -18,12 +19,15 @@ import os
 import re
 import sys
 import subprocess
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Fixed ID so the proxy rate-limits health checks separately from real devices.
+HEALTH_CHECK_DEVICE_ID = "api-health-check"
 ENV_FILE = REPO_ROOT / "scripts" / ".env"
 SECRETS_FILE = REPO_ROOT / "thing-finder" / "Secrets.xcconfig"
 
@@ -61,6 +65,7 @@ def notify(title: str, message: str) -> None:
             pass
 
     # Fallback: native macOS notification.
+    message = message.replace('"', "'").replace("\n", " · ")
     try:
         subprocess.run(
             [
@@ -117,37 +122,61 @@ def resolve_api_key(*names: str) -> str | None:
     return None
 
 
-def test_openai(api_key: str) -> bool:
-    endpoint = "https://api.openai.com/v1/chat/completions"
+def proxy_headers(app_token: str) -> dict[str, str]:
+    # Cloudflare blocks the default "Python-urllib" User-Agent (error 1010).
+    return {
+        "X-App-Token": app_token,
+        "X-Device-Id": HEALTH_CHECK_DEVICE_ID,
+        "User-Agent": "curbtocar-health-check/1.0",
+    }
+
+
+def test_openai(base_url: str, app_token: str) -> tuple[bool, str]:
+    endpoint = f"{base_url}/v1/chat/completions"
     payload = {
-        "model": "gpt-4.1-mini",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "none",
         "messages": [{"role": "user", "content": "Say OK"}],
-        "max_tokens": 5,
+        "max_completion_tokens": 5,
     }
     request = urllib.request.Request(
         endpoint,
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
+        headers={**proxy_headers(app_token), "Content-Type": "application/json"},
         method="POST",
     )
+    start = time.monotonic()
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             data = json.loads(response.read())
-            if data.get("choices"):
-                log(f"OpenAI OK: model={data.get('model', 'unknown')}")
-                return True
-            log(f"OpenAI FAIL: unexpected response shape: {json.dumps(data)}")
-            return False
+        elapsed = time.monotonic() - start
+        if data.get("choices"):
+            detail = f"OK in {elapsed:.1f}s (model={data.get('model', 'unknown')})"
+            log(f"OpenAI {detail}")
+            return True, detail
+        log(f"OpenAI FAIL: unexpected response shape: {json.dumps(data)}")
+        return False, "unexpected response shape"
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="ignore")
         log(f"OpenAI FAIL: HTTP {exc.code}: {body}")
-        return False
+        return False, f"HTTP {exc.code}: {summarize_error(body)}"
     except Exception as exc:  # noqa: BLE001
         log(f"OpenAI FAIL: {exc}")
-        return False
+        return False, str(exc)
+
+
+def summarize_error(body: str) -> str:
+    """Pull a short message out of an error body for the notification."""
+    try:
+        data = json.loads(body)
+        error = data.get("error")
+        if isinstance(error, dict):
+            return str(error.get("code") or error.get("message"))[:200]
+        if error:
+            return str(error)[:200]
+    except (ValueError, AttributeError):
+        pass
+    return body.strip()[:200]
 
 
 def trafficeye_response_ok(data: object) -> bool:
@@ -165,8 +194,8 @@ def trafficeye_response_ok(data: object) -> bool:
     return True
 
 
-def test_trafficeye(api_key: str) -> bool:
-    endpoint = "https://trafficeye.ai/recognition"
+def test_trafficeye(base_url: str, app_token: str) -> tuple[bool, str]:
+    endpoint = f"{base_url}/recognition"
     image_bytes = base64.b64decode(TEST_JPEG_B64)
     boundary = "----HealthCheckBoundary7MA4YWxkTrZu0gW"
 
@@ -188,60 +217,59 @@ def test_trafficeye(api_key: str) -> bool:
         endpoint,
         data=body,
         headers={
-            "apiKey": api_key,
+            **proxy_headers(app_token),
             "Content-Type": f"multipart/form-data; boundary={boundary}",
         },
         method="POST",
     )
+    start = time.monotonic()
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             data = json.loads(response.read())
-        return trafficeye_response_ok(data)
+        elapsed = time.monotonic() - start
+        if trafficeye_response_ok(data):
+            return True, f"OK in {elapsed:.1f}s"
+        return False, "unexpected response shape"
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="ignore")
         log(f"TrafficEye FAIL: HTTP {exc.code}: {body}")
-        return False
+        return False, f"HTTP {exc.code}: {summarize_error(body)}"
     except Exception as exc:  # noqa: BLE001
         log(f"TrafficEye FAIL: {exc}")
-        return False
+        return False, str(exc)
 
 
 def main() -> int:
-    openai_key = resolve_api_key("OPENAI_API")
-    trafficeye_key = resolve_api_key("TRAFFICEYE_API_KEY")
+    # xcconfig writes "//" as "/$()/" so it isn't parsed as a comment.
+    base_url = (resolve_api_key("PROXY_BASE_URL") or "").replace("$()", "").rstrip("/")
+    app_token = resolve_api_key("PROXY_APP_TOKEN")
 
-    failures: list[str] = []
-    if not openai_key:
+    if not base_url or not app_token:
         log(
-            "OpenAI FAIL: OPENAI_API key not found in environment, scripts/.env, or Secrets.xcconfig"
+            "FAIL: PROXY_BASE_URL or PROXY_APP_TOKEN not found in environment, scripts/.env, or Secrets.xcconfig"
         )
-        failures.append("openai_key")
-    if not trafficeye_key:
-        log(
-            "TrafficEye FAIL: TRAFFICEYE_API_KEY key not found in environment, scripts/.env, or Secrets.xcconfig"
-        )
-        failures.append("trafficeye_key")
-
-    if failures:
         notify(
             "API Health Check Failed",
-            "Could not find OpenAI or TrafficEye API keys. Check Secrets.xcconfig or scripts/.env.",
+            "Could not find PROXY_BASE_URL or PROXY_APP_TOKEN. Check Secrets.xcconfig or scripts/.env.",
         )
         return 1
 
-    results = [
-        test_openai(openai_key),
-        test_trafficeye(trafficeye_key),
-    ]
+    openai_ok, openai_detail = test_openai(base_url, app_token)
+    trafficeye_ok, trafficeye_detail = test_trafficeye(base_url, app_token)
+    summary = (
+        f"{'✅' if openai_ok else '❌'} OpenAI: {openai_detail}\n"
+        f"{'✅' if trafficeye_ok else '❌'} TrafficEye: {trafficeye_detail}"
+    )
 
-    if all(results):
+    if openai_ok and trafficeye_ok:
         log("All API health checks passed")
+        notify("API Health Check Passed", summary)
         return 0
 
     log("One or more API health checks failed")
     notify(
         "API Health Check Failed",
-        "TrafficEye or OpenAI returned an error. See scripts/api-health-check.log for details.",
+        f"{summary}\nSee scripts/api-health-check.log for details.",
     )
     return 1
 

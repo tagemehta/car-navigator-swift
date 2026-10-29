@@ -2,6 +2,17 @@
 
 Last verified against code: 2026-10-27. Add new entries at the top. Note the evidence (`path:line`) and a status for each.
 
+## Test: `test_detectionHaptic_coolsDownBetweenNearbyCars` fails
+
+**Status:** Open (found 2026-10-28; fails every run, including in isolation; neither the test nor `PreMatchFeedbackController.swift` has uncommitted changes)
+
+**Description:**
+`thing-finderTests/Navigation/PreMatchFeedbackControllerTests.swift:175` expects 1 detection haptic after ticks at `now` and `now + 0.3` but gets 0; `:178` then expects 2 at `now + 0.8` but gets 1. Suspected cause: the test ticks exactly on the thresholds. `detectionHapticStabilityGate` is 0.3 s and `detectionHapticCooldown` is 0.5 s (`NavigationProtocol.swift:15,17`), and the `>=` checks (`PreMatchFeedbackController.swift:147,149`) compare `Date` differences. `Date` stores ~8×10⁸ s as a `Double`, so `(now + 0.3).timeIntervalSince(now)` can come out slightly under 0.3 and the gate doesn't open.
+
+**Impact:** Likely test-only. On device, ticks don't land exactly on the threshold, so the haptic fires one frame later at most. Not confirmed on device.
+
+**Potential fix:** Tick just past the thresholds in the test (e.g. `0.31` and `0.81`), and add a test that pins the intended behavior exactly at the boundary if that matters.
+
 ## Per-frame Vision tracking is a no-op (suspected)
 
 **Status:** Open (suspected, found during a doc audit on 2026-10-27; not yet confirmed on device)
