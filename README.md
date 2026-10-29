@@ -158,7 +158,7 @@ Glasses support is commented out and the DAT SDK is not in the build. To re-enab
 ## Usage
 
 1. **Launch App**: Accept the experimental disclaimer; grant camera and location permissions
-2. **Enter Ride Details**: Vehicle description and license plate (or toggle Paratransit), or use Siri
+2. **Enter Ride Details**: Vehicle description and license plate (paratransit vehicles are detected automatically from the description), or use Siri
 3. **Start Detection**: Point camera at pickup area (requires a network connection when a description is given)
 4. **Follow Audio Cues**: Listen for directional guidance
 5. **Verify Match**: App announces when correct vehicle is found

@@ -18,15 +18,21 @@ private struct SearchRequest: Identifiable, Hashable {
   let description: String
   let mode: SearchMode
   let targetClasses: [String]
-  let isParatransitMode: Bool
+  var isParatransitMode: Bool
 }
 
 struct InputView: View {
   @EnvironmentObject var settings: Settings
 
   @AppStorage("InputView.searchHistory") private var searchHistoryData: String = "[]"
-  @AppStorage("InputView.isParatransitMode") private var isParatransitMode = false
   @State private var shortcutNavigationState = ShortcutNavigationState.shared
+  private let paratransitClassifier: ParatransitClassifying
+
+  init(
+    paratransitClassifier: ParatransitClassifying = AppContainer.shared.makeParatransitClassifier()
+  ) {
+    self.paratransitClassifier = paratransitClassifier
+  }
 
   private var historyItems: [SearchHistoryItem] {
     (try? JSONDecoder().decode([SearchHistoryItem].self, from: Data(searchHistoryData.utf8))) ?? []
@@ -139,16 +145,14 @@ struct InputView: View {
       description = carDesc
       searchMode = .uberFinder
       showPlaceholder = false
-      isParatransitMode = false
-      startSearch(description: carDesc, mode: .uberFinder, paratransit: false)
+      startSearch(description: carDesc, mode: .uberFinder)
     }
 
     if let paratransitDesc = shortcutNavigationState.consumePendingParatransitDescription() {
       description = paratransitDesc
       searchMode = .uberFinder
       showPlaceholder = false
-      isParatransitMode = true
-      startSearch(description: paratransitDesc, mode: .uberFinder, paratransit: true)
+      startSearch(description: paratransitDesc, mode: .uberFinder)
     }
   }
 
@@ -168,12 +172,26 @@ struct InputView: View {
   /// could let an offline search start unannounced.
   @MainActor
   private func attemptStartSearch(_ request: SearchRequest) async {
+    var request = request
     let needsNetwork = !request.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     if needsNetwork {
       let isConnected = await NetworkMonitor.shared.currentConnectivity()
       // A newer start superseded this one while the check was in flight.
       guard !Task.isCancelled else { return }
       guard isConnected else {
+        showNoConnectionAlert = true
+        return
+      }
+    }
+    // The vehicle type (make-and-model car vs. taxi/transit/paratransit service vehicle) is inferred from the description.
+    if request.mode == .uberFinder && needsNetwork {
+      do {
+        let isParatransit = try await paratransitClassifier.isParatransit(
+          description: request.description)
+        guard !Task.isCancelled else { return }
+        request.isParatransitMode = isParatransit
+      } catch {
+        guard !Task.isCancelled else { return }
         showNoConnectionAlert = true
         return
       }
@@ -186,12 +204,12 @@ struct InputView: View {
   }
 
   /// Snapshots the submitted search and runs the connectivity gate for it.
-  private func startSearch(description: String, mode: SearchMode, paratransit: Bool) {
+  private func startSearch(description: String, mode: SearchMode) {
     let request = SearchRequest(
       description: description,
       mode: mode,
       targetClasses: mode == .uberFinder ? vehicleClasses : [selectedClass],
-      isParatransitMode: paratransit)
+      isParatransitMode: false)
     // Connectivity checks can complete out of order, so only the most recent
     // submission is allowed to open a search.
     pendingStart?.cancel()
@@ -283,23 +301,12 @@ struct InputView: View {
           .accessibilityLabel("Paste from clipboard")
           .accessibilityHint("Pastes text from clipboard into the description field")
 
-          if searchMode == .uberFinder {
-            Toggle(isOn: $isParatransitMode) {
-              VStack(alignment: .leading, spacing: 2) {
-                Text("Paratransit Mode")
-                Text("For LLM based vehicle detection using logos or text")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              }
-            }
-            .accessibilityLabel("Paratransit mode")
-          }
         }
 
         Section {
           Button {
             startSearch(
-              description: description, mode: searchMode, paratransit: isParatransitMode)
+              description: description, mode: searchMode)
           } label: {
             if searchMode == .uberFinder {
               Text("Find My Ride")
@@ -324,11 +331,9 @@ struct InputView: View {
               Button {
                 description = item.description
                 searchMode = item.mode
-                isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
                 startSearch(
-                  description: item.description, mode: item.mode,
-                  paratransit: item.isParatransitMode)
+                  description: item.description, mode: item.mode)
               } label: {
                 HStack {
                   Image(systemName: "star.fill")
@@ -404,11 +409,9 @@ struct InputView: View {
               Button {
                 description = item.description
                 searchMode = item.mode
-                isParatransitMode = item.isParatransitMode
                 showPlaceholder = false
                 startSearch(
-                  description: item.description, mode: item.mode,
-                  paratransit: item.isParatransitMode)
+                  description: item.description, mode: item.mode)
               } label: {
                 HStack {
                   Image(systemName: item.mode == .uberFinder ? "car.fill" : "magnifyingglass")
