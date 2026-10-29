@@ -141,8 +141,8 @@ public class Settings: ObservableObject {
   /// Enable speech feedback
   @AppStorage("enable_speech") var enableSpeech: Bool = true
 
-  /// Allow navigation cues before plate confirm (partial match)
-  @AppStorage("allow_partial_nav") var allowPartialNavigation: Bool = true
+  /// Require a confirmed license plate before giving navigation cues (no cues for partial matches)
+  @AppStorage("require_license_plate") var requireLicensePlate: Bool = false
 
   /// Announce rejected candidates — now handled by PreMatchFeedbackController.
   @AppStorage("announce_rejected") var announceRejected: Bool = true
@@ -309,7 +309,7 @@ extension Settings {
     directionRightThreshold = 0.66
     speechRepeatInterval = 6.0
     speechChangeInterval = 4.0
-    allowPartialNavigation = true
+    requireLicensePlate = false
     announceRejected = true
     announceWaitingMessages = true
     // Distance Feedback Settings

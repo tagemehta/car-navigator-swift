@@ -132,7 +132,7 @@ public final class FramePipelineCoordinator: ObservableObject {
       // Prefer a partial match if any of the verifying IDs are currently partial
       if let partial = snapshot.values.first(where: {
         ids.contains($0.id) && $0.matchStatus == .partial && $0.isBoundingBoxFresh
-      }), settings.allowPartialNavigation {
+      }), !settings.requireLicensePlate {
         targetBBox = partial.lastBoundingBox
       }
     default:

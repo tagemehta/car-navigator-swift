@@ -156,7 +156,7 @@ Original rationale: TrafficEye is about 1.9 s per call (retry more), the LLM abo
 - `.full`: verified match. Stays `.full` through occlusion until `missCount` reaches 90.
 - `.lost`: was `.full`; no YOLO detection has overlapped it (IoU > 0.1) for 90 frames. The trigger is detection overlap, not Vision tracker failure.
 - `.lost` candidates are not removed by the lifecycle service. They disappear when a new `.full` triggers `pruneToSingleMatched`, or on pipeline rebuild.
-- `isMatched` is true only for `.full`. Navigation targeting treats `.partial` as navigable when `allowPartialNavigation` is on.
+- `isMatched` is true only for `.full`. Navigation targeting treats `.partial` as navigable when `requireLicensePlate` is off.
 
 ---
 

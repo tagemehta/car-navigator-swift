@@ -1576,12 +1576,12 @@
         }
       }
     },
-    "Navigate Before Plate Match" : {
+    "Require License Plate" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Navegar Antes de Emparejar Placas"
+            "value" : "Requerir Matrícula"
           }
         }
       }
@@ -2284,12 +2284,12 @@
         }
       }
     },
-    "Start navigation before a license plate match is confirmed." : {
+    "Wait for a confirmed license plate match before starting navigation." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Iniciar navegación antes de confirmar la coincidencia de matrícula."
+            "value" : "Esperar la confirmación de la matrícula antes de iniciar la navegación."
           }
         }
       }
